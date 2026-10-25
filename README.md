@@ -50,9 +50,10 @@ git clone https://github.com/AWeebTaku/lyric-widget lyrics-widget && cd lyrics-w
 ```
 
 `rebuild.sh` does a clean cycle each time: sets up the romanization helper (first run only, about 30 s and
-270 MB in `~/.local/share/lyric-widget/venv`), wipes the build folder, the lyrics cache and plasmashell's QML
-cache, builds, installs into `/usr` with `sudo`, and restarts plasmashell. Your widget settings are kept; the
-cache file also holds your per-song sync offsets, so those are reset with it.
+270 MB in `~/.local/share/lyric-widget/venv`), wipes the build folder, the cached lyrics and plasmashell's QML
+cache, builds, installs into `/usr` with `sudo`, and restarts plasmashell. Your widget settings and your
+per-song sync offsets are kept (offsets live in `lyrics.db` next to the cache, which only loses its lyrics table;
+`clear-all.sh` removes everything).
 
 Then right-click the desktop, **Add or Manage Widgets**, drag **Lyric Widget** onto it, and play something.
 Right-click the widget, **Configure**, for the settings.
