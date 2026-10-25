@@ -82,24 +82,20 @@ It keeps this source folder. Remove the Chrome extension yourself at `chrome://e
 
 ## Settings
 
-### Lyrics
-Font, sizes, bold, colours; show romanization; show previous/next lines (hidden automatically when the widget
-is small); line animation; karaoke; colour the current line (and optionally the visualizer) from the album art;
-header line; global sync offset; per-song sync buttons on hover. **Listen to the audio** (off): tempo-matched
-animation, beat pulse, and an experimental check of the lyric timing against the singing.
+Right-click the widget, **Configure**. Three pages (two more appear while the visualizer is on):
 
-### Widget
-Size (free / fixed pixels / full screen width), background panel, hide when idle, fade out after N minutes
-paused, pause everything while a window is full screen (default) or maximized.
-
-### Visualizer, Visualizer style, Audio input (CAVA)
-Master switch and height, plus the original Plasma Audio Visualizer pages (styles, colours, gradients, wave
-and circle modes, cava input, smoothing, equalizer, frame rate). The style pages appear when the visualizer
-is on.
-
-### Accounts
-Look-ahead count (0-5), the Spotify app route (on by default; a **Test** button checks it), the YouTube Music
-receiver with one-click help for installing the extension, and an optional Spotify account route.
+- **Lyrics**: show or hide the lyrics entirely (off = no lookups at all, handy for a visualizer-only widget);
+  font, sizes (0 hides that text), bold, colours; romanization; previous/next lines (hidden automatically when
+  the widget is small); line animation; karaoke; colours from the album art; header; global and per-song sync;
+  **Listen to the audio** (off): tempo-matched animation, beat pulse, experimental timing check.
+- **Layout**: widget size (free / fixed pixels, 0 = as small as possible / full screen width) and background panel;
+  **where the lyrics sit** (3x3 position grid plus pixel shift); the **visualizer** switch, size (% wide and high),
+  position (3x3 grid plus shift), auto-hide when silent; hide when idle, fade out when paused, pause everything
+  while a window is full screen or maximized.
+- **Sources**: look-ahead count (0-5), the Spotify app route (on by default; **Test** button), the YouTube Music
+  receiver with one-click help for installing the extension.
+- **Visualizer style** and **Audio input (CAVA)**: the original Plasma Audio Visualizer pages (styles, colours,
+  gradients, wave and circle modes, cava input, smoothing, equalizer, frame rate).
 
 ## How it works
 
@@ -133,7 +129,7 @@ receiver with one-click help for installing the extension, and an optional Spoti
 Browsers do not expose their queue, so a tiny extension (`extension/`, no store listing, talks only to
 `127.0.0.1`, runs only on `music.youtube.com`) passes the "Up next" list to the widget.
 
-1. **Configure, Accounts**: tick *Receive the YouTube Music queue*, Apply. Check with
+1. **Configure, Sources**: tick *Receive the YouTube Music queue*, Apply. Check with
    `curl -i http://127.0.0.1:8899/ping`.
 2. On the same page click *Open <your browser>'s extensions page*, turn on **Developer mode**, **Load unpacked**,
    and pick `/usr/share/lyric-widget/extension` (use *Copy folder path*; press `Ctrl+L` in the dialog).

@@ -14,6 +14,9 @@ Item {
     property int gapMs: 2000           // how long the current line stays on screen
     property bool animate: true
     property bool showSides: true
+    property int hAlign: 1             // 0 left, 1 centre, 2 right
+    property int vAlign: 1             // 0 top, 1 middle, 2 bottom
+    readonly property int textAlign: hAlign === 0 ? Text.AlignLeft : hAlign === 2 ? Text.AlignRight : Text.AlignHCenter
     property color curColor: cfg.textColor
     property real bpm: 0                // detected tempo, 0 = unknown
     property bool pulseOn: false
@@ -60,7 +63,7 @@ Item {
         id: col
         required property int slotIndex
         width: stage.width
-        anchors.verticalCenter: parent.verticalCenter
+        y: stage.vAlign === 0 ? 0 : stage.vAlign === 2 ? stage.height - height : (stage.height - height) / 2
         spacing: 10
         readonly property bool isActive: stage.active === slotIndex
         opacity: isActive ? 0.3 + 0.7 * stage.t : Math.max(0, 1 - stage.t * 1.6)
@@ -77,28 +80,29 @@ Item {
 
         Text {
             id: p
-            visible: stage.showSides
+            visible: stage.showSides && stage.cfg.sideSize > 0
             width: parent.width
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: stage.textAlign
             elide: Text.ElideRight
             color: stage.cfg.dimColor
             font.family: stage.cfg.fontFamily
-            font.pixelSize: stage.cfg.sideSize
+            font.pixelSize: Math.max(1, stage.cfg.sideSize)
         }
         Text {
             id: c
             width: parent.width
+            visible: stage.cfg.mainSize > 0
             height: stage.cfg.mainSize * 3.2   // room for layered lines, then shrink to fit
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: stage.textAlign
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.WordWrap
             maximumLineCount: 4
             fontSizeMode: Text.Fit
-            minimumPixelSize: 12
+            minimumPixelSize: Math.min(12, Math.max(1, stage.cfg.mainSize))
             elide: Text.ElideRight
             color: col.isActive && stage.karaokeFrac >= 0 ? stage.cfg.dimColor : stage.curColor
             font.family: stage.cfg.fontFamily
-            font.pixelSize: stage.cfg.mainSize
+            font.pixelSize: Math.max(1, stage.cfg.mainSize)
             font.bold: stage.cfg.boldCurrent
 
             // karaoke: the same text in the bright colour, clipped at the word being sung
@@ -121,7 +125,9 @@ Item {
                     text: c.text.substring(0, parent.ci + 1)
                 }
                 width: c.text.length === 0 ? 0
-                       : (c.width - c.contentWidth) / 2 + before.advanceWidth
+                       : (c.horizontalAlignment === Text.AlignLeft ? 0
+                          : c.horizontalAlignment === Text.AlignRight ? c.width - c.contentWidth
+                          : (c.width - c.contentWidth) / 2) + before.advanceWidth
                          + (through.advanceWidth - before.advanceWidth) * (pos - ci)
                 Text {
                     width: c.width
@@ -141,13 +147,13 @@ Item {
         }
         Text {
             id: n
-            visible: stage.showSides
+            visible: stage.showSides && stage.cfg.sideSize > 0
             width: parent.width
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: stage.textAlign
             elide: Text.ElideRight
             color: stage.cfg.dimColor
             font.family: stage.cfg.fontFamily
-            font.pixelSize: stage.cfg.sideSize
+            font.pixelSize: Math.max(1, stage.cfg.sideSize)
         }
     }
 

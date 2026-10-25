@@ -5,6 +5,7 @@ import org.kde.kcmutils as KCM
 import QtQuick.Layouts
 
 KCM.SimpleKCM {
+    property alias cfg_showLyrics: showLyrics.checked
     property alias cfg_fontFamily: fontField.value
     property int cfg_mainSize
     property int cfg_sideSize
@@ -27,6 +28,7 @@ KCM.SimpleKCM {
     property alias cfg_showSyncControls: showSync.checked
 
     // Plasma looks for the *Default twins too
+    property bool cfg_showLyricsDefault
     property string cfg_fontFamilyDefault
     property int cfg_mainSizeDefault
     property int cfg_sideSizeDefault
@@ -49,19 +51,22 @@ KCM.SimpleKCM {
     property bool cfg_showSyncControlsDefault
 
     Kirigami.FormLayout {
+        QQC2.CheckBox {
+            id: showLyrics
+            Kirigami.FormData.label: i18n("Lyrics:")
+            text: i18n("Show lyrics (off: no lookups at all, e.g. for a visualizer-only widget)")
+        }
+
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text") }
         FontField { id: fontField; Kirigami.FormData.label: i18n("Font:") }
-        QQC2.SpinBox {
-            Kirigami.FormData.label: i18n("Current line size:")
-            from: 12; to: 120
-            value: cfg_mainSize
-            onValueModified: cfg_mainSize = value
-        }
-        QQC2.SpinBox {
-            Kirigami.FormData.label: i18n("Neighbour line size:")
-            from: 8; to: 80
-            value: cfg_sideSize
-            onValueModified: cfg_sideSize = value
+        RowLayout {
+            Kirigami.FormData.label: i18n("Size (px):")
+            enabled: showLyrics.checked
+            QQC2.SpinBox { from: 0; to: 300; value: cfg_mainSize; onValueModified: cfg_mainSize = value }
+            QQC2.Label { text: i18n("current") }
+            QQC2.SpinBox { from: 0; to: 300; value: cfg_sideSize; onValueModified: cfg_sideSize = value }
+            QQC2.Label { text: i18n("others") }
+            Kirigami.ContextualHelpButton { toolTipText: i18n("0 hides that text.") }
         }
         QQC2.CheckBox { id: boldCurrent; Kirigami.FormData.label: i18n("Style:"); text: i18n("Bold current line") }
 

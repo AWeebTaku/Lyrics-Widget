@@ -180,6 +180,26 @@ void LyricsController::setSuspended(bool on)
     onTrackChanged();
 }
 
+void LyricsController::setLyricsEnabled(bool on)
+{
+    if (on == m_lyricsEnabled)
+        return;
+    m_lyricsEnabled = on;
+    emit lyricsEnabledChanged();
+    if (!on) {
+        m_requestId = 0;
+        m_preQueue.clear();
+        m_preId = 0;
+        m_preTimer.stop();
+        m_preWatch.stop();
+        clearLyrics();
+        setStatus(QString());
+        return;
+    }
+    m_key.clear(); // look at what is playing now
+    onTrackChanged();
+}
+
 void LyricsController::setPrefetchCount(int n)
 {
     n = std::clamp(n, 0, 5); // the safe range: more than 5 just trips provider rate limits
@@ -193,7 +213,7 @@ void LyricsController::setPrefetchCount(int n)
 // Called once the current song has its lyrics: look ahead in the Spotify queue, a little later.
 void LyricsController::schedulePrefetch()
 {
-    if (m_suspended)
+    if (m_suspended || !m_lyricsEnabled)
         return;
     m_spotify.reload(); // the settings window may have just connected the account
     if (m_prefetchCount > 0 && (m_spotify.canFetch() || m_browser.enabled()))
@@ -338,6 +358,11 @@ void LyricsController::onTrackChanged()
     m_artist = cands.isEmpty() ? t.artist : cands.first().artist;
     emit trackInfoChanged();
     clearLyrics();
+    if (!m_lyricsEnabled) {
+        m_requestId = 0;
+        setStatus(QString());
+        return;
+    }
 
     if (Text::notASong(t, p->url())) {
         m_requestId = 0;

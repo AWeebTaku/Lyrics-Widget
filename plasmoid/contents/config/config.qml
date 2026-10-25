@@ -8,14 +8,9 @@ ConfigModel {
         source: "configLyrics.qml"
     }
     ConfigCategory {
-        name: i18n("Widget")
+        name: i18n("Layout")
         icon: "preferences-desktop-theme-global"
-        source: "configWidget.qml"
-    }
-    ConfigCategory {
-        name: i18n("Visualizer")
-        icon: "waveform-symbolic"
-        source: "configViz.qml"
+        source: "configLayout.qml"
     }
     ConfigCategory {
         name: i18n("Visualizer style")
@@ -30,7 +25,7 @@ ConfigModel {
         visible: Plasmoid.configuration.showVisualizer
     }
     ConfigCategory {
-        name: i18n("Accounts")
+        name: i18n("Sources")
         icon: "preferences-system-users"
         source: "configAccounts.qml"
     }

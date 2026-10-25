@@ -24,6 +24,8 @@ class LyricsController : public QObject
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(bool idle READ idle NOTIFY idleChanged)
+    // false = lyrics switched off: no lookups, no look-ahead, nothing shown (the player is still followed)
+    Q_PROPERTY(bool lyricsEnabled READ lyricsEnabled WRITE setLyricsEnabled NOTIFY lyricsEnabledChanged)
     Q_PROPERTY(QString title READ title NOTIFY trackInfoChanged)
     Q_PROPERTY(QString artist READ artist NOTIFY trackInfoChanged)
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
@@ -69,6 +71,8 @@ class LyricsController : public QObject
 public:
     explicit LyricsController(QObject *parent = nullptr);
     bool idle() const { return m_idle; }
+    bool lyricsEnabled() const { return m_lyricsEnabled; }
+    void setLyricsEnabled(bool on);
 
     QString title() const { return m_title; }
     QString artist() const { return m_artist; }
@@ -125,6 +129,7 @@ signals:
     void playingChanged();
     void suspendedChanged();
     void accentChanged();
+    void lyricsEnabledChanged();
     void audioChanged();
     void bpmChanged();
     void beat();
@@ -160,6 +165,7 @@ private:
     LyricsStore m_store;
     LyricsFetcher m_fetcher;
     bool m_idle = true;
+    bool m_lyricsEnabled = true;
 
     QString m_title, m_artist, m_status, m_key;
     QStringList m_lines, m_roman;

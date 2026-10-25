@@ -12,12 +12,13 @@ PlasmoidItem {
     preferredRepresentation: fullRepresentation
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground   // we draw our own panel
     // Size: 0 = free, 1 = fixed width/height from settings, 2 = full screen width (+ height)
-    readonly property real wantW: cfg.sizeMode === 2 ? Screen.width : (cfg.sizeMode === 1 ? cfg.widthPx : 0)
-    readonly property real wantH: cfg.sizeMode === 0 ? 0 : cfg.heightPx
-    Layout.minimumWidth: wantW > 0 ? wantW : 320
+    // (a fixed size of 0 means "as small as possible": 1 px; a free widget can be dragged down to 1 px)
+    readonly property real wantW: cfg.sizeMode === 2 ? Screen.width : (cfg.sizeMode === 1 ? Math.max(1, cfg.widthPx) : 0)
+    readonly property real wantH: cfg.sizeMode === 0 ? 0 : Math.max(1, cfg.heightPx)
+    Layout.minimumWidth: wantW > 0 ? wantW : 1
     Layout.preferredWidth: wantW > 0 ? wantW : 760
     Layout.maximumWidth: wantW > 0 ? wantW : Number.POSITIVE_INFINITY
-    Layout.minimumHeight: wantH > 0 ? wantH : 120
+    Layout.minimumHeight: wantH > 0 ? wantH : 1
     Layout.preferredHeight: wantH > 0 ? wantH : 220
     Layout.maximumHeight: wantH > 0 ? wantH : Number.POSITIVE_INFINITY
 
@@ -49,6 +50,7 @@ PlasmoidItem {
     LyricsController {
         id: lyrics
         suspended: root.suspended
+        lyricsEnabled: root.cfg.showLyrics
         offsetMs: root.cfg.offsetMs
         audioListen: root.cfg.audioListen
         audioSync: root.cfg.audioSync
@@ -93,8 +95,13 @@ PlasmoidItem {
             source: "AudioViz.qml"
             onLoaded: item.tint = Qt.binding(() => root.cfg.tintFromArt && root.cfg.tintVisualizer && lyrics.accent.valid
                                                     ? lyrics.accent.toString() : "")
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            // size as a share of the widget, placed on a 3x3 grid plus a pixel offset
+            width: parent.width * root.cfg.vizWidthPct / 100
             height: parent.height * root.cfg.vizHeightPct / 100
+            x: (root.cfg.vizHAlign === 0 ? 0 : root.cfg.vizHAlign === 2 ? parent.width - width : (parent.width - width) / 2)
+               + root.cfg.vizOffsetX
+            y: (root.cfg.vizVAlign === 0 ? 0 : root.cfg.vizVAlign === 2 ? parent.height - height : (parent.height - height) / 2)
+               + root.cfg.vizOffsetY
         }
 
         // artist — title
@@ -116,16 +123,25 @@ PlasmoidItem {
 
         // "Loading…", "No lyrics found", … when there are no lines
         Text {
-            anchors.centerIn: parent
+            x: 20 + root.cfg.lyricsOffsetX
+            y: root.cfg.lyricsOffsetY
             width: parent.width - 40
-            visible: lyrics.lines.length === 0
-            horizontalAlignment: Text.AlignHCenter
+            height: parent.height
+            visible: root.cfg.showLyrics && lyrics.lines.length === 0 && root.cfg.sideSize > 0
+            horizontalAlignment: view.hAlign
+            verticalAlignment: view.vAlign
             wrapMode: Text.WordWrap
             text: lyrics.status
             color: root.cfg.dimColor
             font.family: root.cfg.fontFamily
-            font.pixelSize: root.cfg.sideSize
+            font.pixelSize: Math.max(1, root.cfg.sideSize)
         }
+
+        // where the lyrics sit in the panel: 3x3 grid (+ offsets); the same for all lyric text
+        readonly property int hAlign: root.cfg.lyricsHAlign === 0 ? Text.AlignLeft
+                                      : root.cfg.lyricsHAlign === 2 ? Text.AlignRight : Text.AlignHCenter
+        readonly property int vAlign: root.cfg.lyricsVAlign === 0 ? Text.AlignTop
+                                      : root.cfg.lyricsVAlign === 2 ? Text.AlignBottom : Text.AlignVCenter
 
         // word highlight: follows the player position frame by frame, only while a timed line plays
         property real kfrac: -1
@@ -154,8 +170,13 @@ PlasmoidItem {
 
         // synced: previous / current / next, with the line transition
         LyricStage {
-            anchors { fill: parent; leftMargin: 20; rightMargin: 20 }
-            visible: lyrics.synced
+            x: 20 + root.cfg.lyricsOffsetX
+            y: root.cfg.lyricsOffsetY
+            width: parent.width - 40
+            height: parent.height
+            hAlign: root.cfg.lyricsHAlign
+            vAlign: root.cfg.lyricsVAlign
+            visible: root.cfg.showLyrics && lyrics.synced
             cfg: root.cfg
             index: lyrics.currentIndex
             gapMs: lyrics.lineGapMs
@@ -173,15 +194,19 @@ PlasmoidItem {
 
         // unsynced fallback: static block
         Text {
-            anchors { fill: parent; margins: 30 }
-            visible: lyrics.lines.length > 0 && !lyrics.synced
-            horizontalAlignment: Text.AlignHCenter
+            x: 30 + root.cfg.lyricsOffsetX
+            y: 30 + root.cfg.lyricsOffsetY
+            width: parent.width - 60
+            height: parent.height - 60
+            visible: root.cfg.showLyrics && lyrics.lines.length > 0 && !lyrics.synced && root.cfg.sideSize > 0
+            horizontalAlignment: view.hAlign
+            verticalAlignment: view.vAlign
             elide: Text.ElideRight
             clip: true
             text: lyrics.lines.map((l, i) => (root.cfg.showRoman && lyrics.roman[i]) || l).join("\n")
             color: root.cfg.textColor
             font.family: root.cfg.fontFamily
-            font.pixelSize: root.cfg.sideSize
+            font.pixelSize: Math.max(1, root.cfg.sideSize)
         }
 
         // Hover to nudge this song's timing (remembered per song): + = lyrics earlier, - = later.
