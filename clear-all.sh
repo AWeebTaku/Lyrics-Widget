@@ -27,7 +27,7 @@ run() { echo "+ $*"; [ "$DRY" = 1 ] || "$@"; }
 echo "This will remove the Lyric Widget from your system:"
 echo "  - the widget on your desktop and its settings"
 echo "  - /usr/lib/qt6/qml/org/lyricwidget, /usr/share/plasma/plasmoids/org.lyricwidget, /usr/share/lyric-widget"
-echo "  - ~/.local/share/plasmashell/lyrics.db (cache AND your per-song sync adjustments), spotify.json"
+echo "  - ~/.local/share/plasmashell/lyrics.db (cache AND your per-song sync adjustments), an old spotify.json"
 echo "  - ~/.cache/lyric-widget and plasmashell's QML cache"
 echo "  - ./build"
 if [ "$YES" = 0 ] && [ "$DRY" = 0 ]; then

@@ -16,7 +16,7 @@
 #include "ReadingFetcher.h"
 #include "AudioListener.h"
 #include "BrowserQueue.h"
-#include "SpotifyAccount.h"
+#include "SpotifyApp.h"
 
 // Glue between the player, the lyrics providers and the QML UI.
 class LyricsController : public QObject
@@ -204,8 +204,8 @@ private:
     QProcess m_kakasi;
     quint64 m_applyGen = 0;
     int m_retries = 0;
-    // prefetch of upcoming queue tracks (Spotify account)
-    SpotifyAccount m_spotify;
+    // prefetch of upcoming queue tracks (Spotify app, YouTube Music extension)
+    SpotifyApp m_spotify;
     BrowserQueue m_browser;
     bool m_browserOn = false;
     int m_browserPort = 8899;

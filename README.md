@@ -148,14 +148,13 @@ been tested against a live YouTube Music tab yet.
   length), the song title to UtaTen for Japanese readings, and the album-art image request to the player's own
   CDN. No account, identifier or telemetry. Kugou is queried over plain HTTP (its certificate does not validate).
 - **Local listeners, `127.0.0.1` only:** `8899` (extension receiver, off unless enabled; accepts `POST /queue`
-  only from a browser-extension origin with the widget's marker header) and `8898` (only while connecting a
-  Spotify account, about 3 minutes).
+  only from a browser-extension origin with the widget's marker header).
 - **Spotify app route:** connects to the app's existing local debug port and runs read-only queries (queue,
   lyrics). A DevTools port is powerful for any local program; keeping it open is your choice.
 - **Audio listening:** reads the output monitor (never the microphone) through `parec`, only while playing
   and visible; only loudness numbers are kept, nothing is recorded or sent. It hears everything that plays.
-- **Files:** `~/.local/share/plasmashell/lyrics.db` (cache and offsets), `spotify.json` (mode 0600, only if you
-  connect an account), `~/.local/share/lyric-widget/venv` (romanization helper).
+- **Files:** `~/.local/share/plasmashell/lyrics.db` (cache and offsets), `~/.local/share/lyric-widget/venv`
+  (romanization helper).
 - Lyrics belong to their owners and come from third-party services under their own terms.
 
 ## Troubleshooting
@@ -173,7 +172,6 @@ been tested against a live YouTube Music tab yet.
 - Some songs have no synced lyrics anywhere; unsynced text is shown as a static block.
 - Karaoke needs NetEase word timing; many songs have none.
 - Automatic timing correction from the audio is experimental and conservative.
-- The Spotify Web API (account) route has not been tested against a real account.
 - Provider APIs are unofficial and can change or rate-limit without notice.
 
 ## Project layout
@@ -181,7 +179,7 @@ been tested against a live YouTube Music tab yet.
 ```
 CMakeLists.txt  rebuild.sh  clear-all.sh  setup-romaji.sh
 src/        C++ plugin (QML module org.lyricwidget): PlayerWatcher, LyricsController, LyricsFetcher, Text.h
-            (matching), LyricsStore, ReadingFetcher, AudioListener, SpotifyAccount, BrowserQueue, Process, ...
+            (matching), LyricsStore, ReadingFetcher, AudioListener, SpotifyApp, BrowserQueue, Process, ...
 plasmoid/   the widget: metadata.json, contents/ui (main.qml, LyricStage.qml, settings pages, audioviz/),
             contents/config (main.xml settings schema, config.qml pages)
 romaji/     romaji.py: MeCab + UniDic helper run in the private Python environment

@@ -25,7 +25,7 @@ qt_add_qml_module(lyricbackend
     src/PlayerWatcher.h    src/PlayerWatcher.cpp
     src/LyricsStore.h      src/LyricsStore.cpp
     src/LyricsFetcher.h    src/LyricsFetcher.cpp
-    src/SpotifyAccount.h   src/SpotifyAccount.cpp
+    src/SpotifyApp.h       src/SpotifyApp.cpp
     src/Process.h          src/Process.cpp
     src/AudioListener.h    src/AudioListener.cpp
     src/BrowserSetup.h     src/BrowserSetup.cpp

@@ -215,8 +215,7 @@ void LyricsController::schedulePrefetch()
 {
     if (m_suspended || !m_lyricsEnabled)
         return;
-    m_spotify.reload(); // the settings window may have just connected the account
-    if (m_prefetchCount > 0 && (m_spotify.canFetch() || m_browser.enabled()))
+    if (m_prefetchCount > 0 && (m_spotify.appQueue() || m_browser.enabled()))
         m_preTimer.start(5000);
 }
 
@@ -238,7 +237,7 @@ void LyricsController::prefetchNext()
         const Track cur = m_preQueueCur;
         const QString key = m_preKey;
         m_preId = quint64(-1);
-        m_spotify.fetchLyrics(cur.id, [this, cur, key](bool ok, const SpotifyAccount::AppLyrics &l) {
+        m_spotify.fetchLyrics(cur.id, [this, cur, key](bool ok, const SpotifyApp::AppLyrics &l) {
             if (key != m_preKey || m_preId != quint64(-1))
                 return; // the user moved on
             if (ok && !l.synced.isEmpty()) {
@@ -382,7 +381,7 @@ void LyricsController::onTrackChanged()
     if (p->service().contains(QLatin1String("spotify")) && m_spotify.appQueue() && !t.id.isEmpty()) {
         const QString k = m_key;
         m_requestId = 0;
-        m_spotify.fetchLyrics(t.id, [this, k](bool ok, const SpotifyAccount::AppLyrics &l) {
+        m_spotify.fetchLyrics(t.id, [this, k](bool ok, const SpotifyApp::AppLyrics &l) {
             if (k != m_key)
                 return; // skipped to another song meanwhile
             if (!ok || l.synced.isEmpty()) {

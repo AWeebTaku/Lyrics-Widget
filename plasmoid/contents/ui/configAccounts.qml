@@ -17,16 +17,16 @@ KCM.SimpleKCM {
     property int cfg_browserQueuePortDefault
     property int cfg_spotifyDebugPortDefault
 
-    // Own instance: login happens here; the widget re-reads the saved tokens when it needs them.
-    SpotifyAccount { id: spotify }
+    // Own instance, only used for the Test button
+    SpotifyApp { id: spotify }
     BrowserSetup { id: setup }
 
     Kirigami.FormLayout {
-        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Spotify app (no account needed)") }
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Spotify app") }
         QQC2.CheckBox {
             id: appQueue
             Kirigami.FormData.label: i18n("Queue:")
-            text: i18n("Read the queue from the running Spotify app")
+            text: i18n("Use the running Spotify app for lyrics and the queue")
         }
         RowLayout {
             Kirigami.FormData.label: i18n("Debug port:")
@@ -46,35 +46,12 @@ KCM.SimpleKCM {
             Layout.maximumWidth: Kirigami.Units.gridUnit * 26
             wrapMode: Text.WordWrap
             opacity: 0.7
-            text: i18n("Reads the upcoming songs, including shuffle order, straight from the Spotify app on this computer through its local developer port (the one Spicetify enables, 8088 by default). Nothing leaves your machine except the lyric lookups, and nothing is changed in Spotify.")
+            text: i18n("Reads the lyrics Spotify shows and the upcoming songs (shuffle order included) straight from the Spotify app on this computer, through its local developer port (the one Spicetify enables, 8088 by default). Nothing is changed in Spotify.")
         }
 
-        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Spotify account (alternative)") }
-        QQC2.TextField {
-            id: clientId
-            Kirigami.FormData.label: i18n("Client ID:")
-            Layout.preferredWidth: Kirigami.Units.gridUnit * 20
-            text: spotify.clientId
-            enabled: !spotify.connected
-            placeholderText: i18n("from developer.spotify.com/dashboard")
-        }
-        RowLayout {
-            Kirigami.FormData.label: i18n("Account:")
-            QQC2.Button {
-                text: spotify.connected ? i18n("Disconnect") : i18n("Connect…")
-                onClicked: spotify.connected ? spotify.logout() : spotify.login(clientId.text)
-            }
-            QQC2.Label { text: spotify.status; opacity: 0.8 }
-        }
-        QQC2.Label {
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 26
-            wrapMode: Text.WordWrap
-            opacity: 0.7
-            text: i18n("Only needed if you do not use the app option above. One-time setup: create a free app at developer.spotify.com/dashboard, add the redirect URI http://127.0.0.1:8898/callback, and paste its Client ID here. Only the read-playback-state permission is requested; tokens are stored in a file only you can read.")
-        }
         QQC2.SpinBox {
             Kirigami.FormData.label: i18n("Look ahead:")
-            enabled: spotify.connected || appQueue.checked || ytm.checked
+            enabled: appQueue.checked || ytm.checked
             from: 0; to: 5
             value: cfg_prefetchCount
             textFromValue: v => v === 0 ? i18n("Off") : i18np("%1 song", "%1 songs", v)
