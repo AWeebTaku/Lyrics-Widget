@@ -850,7 +850,7 @@ void LyricsController::maybeFetchReading(const StoredLyrics &s)
         return;
     m_readingKey = m_key;
     const QString key = m_key;
-    m_readingFetcher.fetch(m_title, m_srcText, [this, key](const QStringList &r) {
+    m_readingFetcher.fetch(m_title, m_artist, m_srcText, [this, key](const QStringList &r) {
         if (key != m_key || r.isEmpty())
             return;
         m_readingLines = r;

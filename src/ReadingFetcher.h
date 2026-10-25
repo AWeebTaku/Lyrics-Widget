@@ -14,7 +14,7 @@ class ReadingFetcher : public QObject
 public:
     explicit ReadingFetcher(QObject *parent = nullptr);
     using Cb = std::function<void(const QStringList &readings)>; // empty list = nothing found
-    void fetch(const QString &title, const QStringList &lines, Cb cb);
+    void fetch(const QString &title, const QString &artist, const QStringList &lines, Cb cb);
 
     // exposed for the test: furigana HTML -> "漢字(かんじ)" text lines
     static QStringList parsePage(const QString &html);

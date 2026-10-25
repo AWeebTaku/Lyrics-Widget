@@ -7,6 +7,7 @@
 #include <QRegularExpression>
 #include <QUrl>
 #include <QUrlQuery>
+#include <algorithm>
 #include <memory>
 
 struct ReadingFetcher::State {
@@ -110,7 +111,7 @@ QStringList ReadingFetcher::align(const QStringList &lines, const QStringList &r
     return out;
 }
 
-void ReadingFetcher::fetch(const QString &title, const QStringList &lines, Cb cb)
+void ReadingFetcher::fetch(const QString &title, const QString &artist, const QStringList &lines, Cb cb)
 {
     auto st = std::make_shared<State>();
     st->title = title;
@@ -122,15 +123,30 @@ void ReadingFetcher::fetch(const QString &title, const QStringList &lines, Cb cb
     q.addQueryItem(QStringLiteral("title"), title);
     u.setQuery(q);
     QNetworkReply *r = m_nam.get(request(u));
-    connect(r, &QNetworkReply::finished, this, [this, r, st] {
+    connect(r, &QNetworkReply::finished, this, [this, r, st, title, artist] {
         r->deleteLater();
-        static const QRegularExpression link(QStringLiteral(R"re(href="(/lyric/[^"]+)")re"));
+        // result rows: title link, then the artist's name. Generic titles ("Trigger") have dozens of songs,
+        // so keep the rows whose title is ours, the likeliest artists first; the page content decides.
+        static const QRegularExpression row(
+            QStringLiteral(R"re(searchResult__title">\s*<a href="(/lyric/[^"]+)"[^>]*>\s*(.*?)\s*</a>.*?searchResult__artist">\s*<p>\s*<a href="/artist/[^"]*"[^>]*>\s*(.*?)\s*</a>)re"),
+            QRegularExpression::DotMatchesEverythingOption);
         const QString html = QString::fromUtf8(r->readAll());
-        for (auto it = link.globalMatch(html); it.hasNext() && st->links.size() < 4;) {
-            const QString l = it.next().captured(1);
-            if (!st->links.contains(l))
-                st->links << l;
+        struct Hit { QString link; double artistSim; };
+        QList<Hit> hits;
+        for (auto it = row.globalMatch(html); it.hasNext();) {
+            const auto m = it.next();
+            if (Text::similarityRaw(title, unescape(m.captured(2))) < 0.9)
+                continue;
+            bool dup = false;
+            for (const Hit &h : std::as_const(hits))
+                dup |= h.link == m.captured(1);
+            if (!dup)
+                hits.append({m.captured(1), artist.isEmpty() ? 0.0 : Text::similarity(artist, unescape(m.captured(3)))});
         }
+        std::stable_sort(hits.begin(), hits.end(), [](const Hit &a, const Hit &b) { return a.artistSim > b.artistSim; });
+        for (const Hit &h : std::as_const(hits))
+            if (st->links.size() < 6)
+                st->links << h.link;
         tryNext(st);
     });
 }
