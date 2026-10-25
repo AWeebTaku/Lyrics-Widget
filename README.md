@@ -45,7 +45,7 @@ sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-webs
 ## Install
 
 ```
-git clone <this repository> lyrics-widget && cd lyrics-widget
+git clone https://github.com/AWeebTaku/lyric-widget lyrics-widget && cd lyrics-widget
 ./rebuild.sh
 ```
 
