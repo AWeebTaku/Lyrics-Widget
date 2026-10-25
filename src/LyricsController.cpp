@@ -113,6 +113,28 @@ LyricsController::LyricsController(QObject *parent) : QObject(parent), m_watcher
         QTimer::singleShot(5000, this, [this] { prefetchNext(); }); // gentle: one song per 5 s
     });
     connect(&m_fetcher, &LyricsFetcher::result, this, &LyricsController::onResult);
+    connect(&m_extras, &LyricsFetcher::result, this, [this](quint64 id, const LyricsResult &r, bool final) {
+        if (id != m_extrasId || !final)
+            return;
+        m_extrasId = 0;
+        auto cur = m_store.get(m_extrasKey);
+        if (!cur || m_extrasKey != m_key)
+            return;
+        // "[]" = asked, NetEase had nothing: do not ask again for this song
+        cur->words = r.words.isEmpty() ? QStringLiteral("[]") : r.words;
+        if (cur->roman.isEmpty() && !r.roman.isEmpty()) {
+            // NetEase's romanization is only used when it lines up with the lyrics being shown
+            const auto shown = Lrc::parse(cur->synced);
+            int hit = 0, total = 0;
+            RomanAlign::align(shown, Lrc::parse(r.roman), &hit);
+            for (const LyricLine &l : shown)
+                total += !l.text.isEmpty();
+            if (total > 0 && hit >= 0.85 * total)
+                cur->roman = r.roman;
+        }
+        m_store.put(m_extrasKey, *cur);
+        apply(*cur);
+    });
 
     // start discovery once the event loop is running (QML object fully constructed)
     QTimer::singleShot(0, this, [this] { m_watcher.start(); });
@@ -486,6 +508,7 @@ void LyricsController::apply(const StoredLyrics &s)
     resync();
     romanizeKanji();
     maybeFetchReading(s);
+    maybeFetchExtras(s);
 }
 
 // Builds what is shown from the per-line source data, handling layered lyrics:
@@ -875,4 +898,45 @@ void LyricsController::persistRoman()
     }
     cur->roman = lrc;
     m_store.put(m_key, *cur);
+}
+
+// A line that only says the song's title (or "artist - title"), in any script: a banner, not a lyric.
+bool LyricsController::isBannerLine(const QString &line) const
+{
+    const QString t = line.trimmed();
+    if (Text::norm(t).isEmpty())
+        return false;
+    static const QRegularExpression sep(QStringLiteral(R"(\s+[-–—－:：|｜]\s+)"));
+    const QStringList parts = t.split(sep, Qt::SkipEmptyParts);
+    auto isTitle = [this](const QString &p) {
+        return Text::similarity(p, m_title) >= 0.85 || Text::similarity(p, m_track.title) >= 0.85;
+    };
+    auto isArtist = [this](const QString &p) {
+        return !m_artist.isEmpty() && (Text::similarity(p, m_artist) >= 0.6 || Text::similarity(p, m_track.artist) >= 0.6);
+    };
+    if (parts.size() == 1) {
+        // alone on a line it must be the title itself (a lyric that merely contains the title is a lyric)
+        static const QRegularExpression extra(QStringLiteral(R"(\s*[\(（\[].*[\)）\]]\s*)"));
+        QString bare = parts[0];
+        bare.remove(extra);
+        const QString n = Text::norm(bare);
+        return !n.isEmpty() && (n == Text::norm(m_title) || n == Text::norm(m_track.title)
+                                || (!m_artist.isEmpty() && n == Text::norm(m_artist)));
+    }
+    bool title = false, artist = false;
+    for (const QString &p : parts) {
+        title |= isTitle(p);
+        artist |= isArtist(p);
+    }
+    return title && artist;
+}
+
+// Lyrics from the Spotify app have no word timing (karaoke) and no romanization. Ask NetEase for those
+// in the background, once per song.
+void LyricsController::maybeFetchExtras(const StoredLyrics &s)
+{
+    if (!m_synced || s.provider != QLatin1String("spotify") || !s.words.isEmpty() || m_extrasKey == m_key)
+        return;
+    m_extrasKey = m_key;
+    m_extrasId = m_extras.lookupExtras(m_track);
 }

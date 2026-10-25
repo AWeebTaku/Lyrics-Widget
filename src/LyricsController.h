@@ -144,6 +144,8 @@ private:
     void romanizeKanji();
     void updateArt(const QString &url);
     void startLookup();
+    void maybeFetchExtras(const StoredLyrics &s);
+    bool isBannerLine(const QString &line) const;
     void maybeFetchReading(const StoredLyrics &s);
     void persistRoman();
     void updateAudio();
@@ -169,6 +171,9 @@ private:
     int m_filled = 0;
     QString m_provider;
     ReadingFetcher m_readingFetcher;
+    LyricsFetcher m_extras;  // separate from m_fetcher: a new lookup there would cancel this
+    quint64 m_extrasId = 0;
+    QString m_extrasKey;
     QStringList m_readingLines; // UtaTen readings per source line ("漢字(かな)"), empty = none
     QString m_readingKey;       // song the reading was requested for
     AudioListener m_audio;

@@ -39,6 +39,8 @@ public:
 
     // Cancels any lookup in flight. Results arrive via result().
     quint64 lookup(const Track &t);
+    // NetEase only: word timing and romanization for lyrics that came from another source
+    quint64 lookupExtras(const Track &t);
 
 signals:
     void result(quint64 id, const LyricsResult &r, bool final);

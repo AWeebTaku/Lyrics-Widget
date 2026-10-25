@@ -414,6 +414,34 @@ void LyricsFetcher::neteaseLyric(const JobPtr &job, qint64 songId, double conf, 
 
 // ---------------------------------------------------------------- QQ Music
 
+// Word timing and romanization only: asks NetEase alone, for songs whose lyrics came from elsewhere
+// (the Spotify app). The result carries NetEase's own lyrics too; the caller only takes what matches.
+quint64 LyricsFetcher::lookupExtras(const Track &t)
+{
+    m_current = ++m_nextId;
+    auto job = std::make_shared<Job>();
+    job->id = m_current;
+    job->track = t;
+    job->cands = Text::candidates(t);
+    job->lrcDone = job->qqDone = job->kgDone = true;
+    if (job->cands.isEmpty()) {
+        job->neDone = true;
+        publish(job);
+        return job->id;
+    }
+    netease(job);
+    QTimer::singleShot(7000, this, [this, job] {
+        if (job->finalSent)
+            return;
+        if (!job->neDone) {
+            job->neDone = true;
+            job->ne.networkError = true;
+        }
+        publish(job);
+    });
+    return job->id;
+}
+
 void LyricsFetcher::qq(const JobPtr &job)
 {
     searchAll(

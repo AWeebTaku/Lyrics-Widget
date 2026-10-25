@@ -18,7 +18,8 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
   romanization, human-made furigana from UtaTen, or a local MeCab/UniDic converter.
 - **Songs vs. videos:** podcasts, episodes and long videos get no lookup; sped-up/slowed uploads have their
   timestamps stretched; incomplete synced lyrics are replaced by a complete copy or filled in from plain text.
-- **Karaoke:** word-by-word highlight when NetEase supplies word timing.
+- **Karaoke:** word-by-word highlight when NetEase supplies word timing (asked for in the background, also for
+  Spotify songs).
 - **Audio visualizer:** a 1:1 embed of *Plasma Audio Visualizer* by Luis Bocanegra with all its settings.
 - **Look-ahead:** lyrics of the next songs in the (shuffled) queue are fetched in advance (Spotify app,
   YouTube Music through a small Chrome extension).
