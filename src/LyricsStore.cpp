@@ -1,0 +1,184 @@
+#include "LyricsStore.h"
+
+#include "Text.h"
+
+#include <QDateTime>
+#include <algorithm>
+#include <QDir>
+#include <QSqlQuery>
+#include <QStandardPaths>
+
+namespace {
+constexpr qint64 kNegativeTtlSecs = 24 * 3600; // retry "not found" after a day (catalogues grow)
+}
+
+LyricsStore::LyricsStore()
+{
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dir);
+
+    m_conn = QStringLiteral("lyrics-cache-%1").arg(quintptr(this));
+    m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), m_conn);
+    m_db.setDatabaseName(dir + QStringLiteral("/lyrics.db"));
+    if (!m_db.open())
+        return;
+
+    QSqlQuery q(m_db);
+    q.exec(QStringLiteral("PRAGMA journal_mode=WAL"));
+    q.exec(QStringLiteral("PRAGMA synchronous=NORMAL"));
+    q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS lyrics_v5("
+                          "key TEXT PRIMARY KEY, found INTEGER, instrumental INTEGER,"
+                          "synced TEXT, plain TEXT, roman TEXT, srcdur REAL, fetched INTEGER, provider TEXT, words TEXT)"));
+    q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS offsets(key TEXT PRIMARY KEY, ms INTEGER)"));
+    q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS nudges(key TEXT PRIMARY KEY, provider TEXT, ms INTEGER)"));
+    q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS wins(artist TEXT, provider TEXT, n INTEGER, PRIMARY KEY(artist, provider))"));
+}
+
+LyricsStore::~LyricsStore()
+{
+    m_db.close();
+    m_db = QSqlDatabase();
+    QSqlDatabase::removeDatabase(m_conn);
+}
+
+std::optional<StoredLyrics> LyricsStore::get(const QString &key)
+{
+    if (!m_db.isOpen())
+        return std::nullopt;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral(
+        "SELECT found, instrumental, synced, plain, roman, srcdur, fetched, provider, words FROM lyrics_v5 WHERE key=?"));
+    q.addBindValue(key);
+    if (!q.exec() || !q.next())
+        return std::nullopt;
+
+    StoredLyrics s;
+    s.found = q.value(0).toBool();
+    s.instrumental = q.value(1).toBool();
+    s.synced = q.value(2).toString();
+    s.plain = q.value(3).toString();
+    s.roman = q.value(4).toString();
+    s.srcDur = q.value(5).toDouble();
+    s.provider = q.value(7).toString();
+    s.words = q.value(8).toString();
+    const qint64 age = QDateTime::currentSecsSinceEpoch() - q.value(6).toLongLong();
+    // "not found" and unsynced-only answers may improve later (catalogues grow, providers flake)
+    if ((!s.found || (s.synced.isEmpty() && !s.instrumental)) && age > kNegativeTtlSecs)
+        return std::nullopt;
+    // a CJK song saved without any provider romanization: look again after an hour, it is
+    // usually a provider that was having a bad moment
+    if (!s.synced.isEmpty() && s.roman.isEmpty() && Text::isCjk(s.synced) && s.provider != QLatin1String("netease")
+        && age > 3600)
+        return std::nullopt;
+    return s;
+}
+
+void LyricsStore::put(const QString &key, const StoredLyrics &v)
+{
+    if (!m_db.isOpen())
+        return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO lyrics_v5"
+                             "(key, found, instrumental, synced, plain, roman, srcdur, fetched, provider, words)"
+                             " VALUES(?,?,?,?,?,?,?,?,?,?)"));
+    q.addBindValue(key);
+    q.addBindValue(v.found ? 1 : 0);
+    q.addBindValue(v.instrumental ? 1 : 0);
+    q.addBindValue(v.synced);
+    q.addBindValue(v.plain);
+    q.addBindValue(v.roman);
+    q.addBindValue(v.srcDur);
+    q.addBindValue(QDateTime::currentSecsSinceEpoch());
+    q.addBindValue(v.provider);
+    q.addBindValue(v.words);
+    q.exec();
+}
+
+int LyricsStore::offset(const QString &key)
+{
+    if (!m_db.isOpen())
+        return 0;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT ms FROM offsets WHERE key=?"));
+    q.addBindValue(key);
+    return (q.exec() && q.next()) ? q.value(0).toInt() : 0;
+}
+
+bool LyricsStore::hasOffset(const QString &key)
+{
+    if (!m_db.isOpen())
+        return false;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT 1 FROM offsets WHERE key=?"));
+    q.addBindValue(key);
+    return q.exec() && q.next();
+}
+
+void LyricsStore::setOffset(const QString &key, int ms, const QString &provider)
+{
+    if (!m_db.isOpen())
+        return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO offsets(key, ms) VALUES(?,?)"));
+    q.addBindValue(key);
+    q.addBindValue(ms);
+    q.exec();
+    if (provider.isEmpty())
+        return;
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO nudges(key, provider, ms) VALUES(?,?,?)"));
+    q.addBindValue(key);
+    q.addBindValue(provider);
+    q.addBindValue(ms);
+    q.exec();
+}
+
+int LyricsStore::learnedOffset(const QString &provider)
+{
+    if (!m_db.isOpen() || provider.isEmpty())
+        return 0;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT ms FROM nudges WHERE provider=? AND ms<>0 ORDER BY ms"));
+    q.addBindValue(provider);
+    QList<int> v;
+    if (q.exec())
+        while (q.next())
+            v << q.value(0).toInt();
+    if (v.size() < 5)
+        return 0;
+    const int neg = int(std::count_if(v.cbegin(), v.cend(), [](int x) { return x < 0; }));
+    const int agree = std::max<int>(neg, int(v.size()) - neg);
+    if (agree < 0.8 * v.size())
+        return 0; // nudges go both ways: no systematic delay to correct
+    const int med = v[v.size() / 2];
+    return std::abs(med) >= 100 ? med : 0;
+}
+
+void LyricsStore::addWin(const QString &artist, const QString &provider)
+{
+    if (!m_db.isOpen() || artist.isEmpty() || provider.isEmpty())
+        return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("INSERT INTO wins(artist, provider, n) VALUES(?,?,1) "
+                             "ON CONFLICT(artist, provider) DO UPDATE SET n=n+1"));
+    q.addBindValue(artist);
+    q.addBindValue(provider);
+    q.exec();
+}
+
+QString LyricsStore::favourite(const QString &artist)
+{
+    if (!m_db.isOpen() || artist.isEmpty())
+        return {};
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT provider, n FROM wins WHERE artist=? ORDER BY n DESC"));
+    q.addBindValue(artist);
+    if (!q.exec())
+        return {};
+    int top = 0, total = 0;
+    QString who;
+    while (q.next()) {
+        if (!top) { top = q.value(1).toInt(); who = q.value(0).toString(); }
+        total += q.value(1).toInt();
+    }
+    return (top >= 3 && top >= 0.7 * total) ? who : QString();
+}

@@ -1,0 +1,75 @@
+#pragma once
+#include <QElapsedTimer>
+#include <QHash>
+#include <QObject>
+#include <QPointer>
+#include <QString>
+#include <QVariantMap>
+
+// One MPRIS player on the session bus. Tracks metadata + play state and
+// interpolates the playback position locally (no polling).
+class MprisPlayer : public QObject
+{
+    Q_OBJECT
+public:
+    MprisPlayer(const QString &service, QObject *parent);
+
+    const QString &service() const { return m_service; }
+    const QString &title() const { return m_title; }
+    const QString &artist() const { return m_artist; }
+    const QString &album() const { return m_album; }
+    const QString &url() const { return m_url; }
+    const QString &artUrl() const { return m_artUrl; }
+    qint64 lengthUs() const { return m_lengthUs; }
+    bool playing() const { return m_playing; }
+    qint64 positionUs() const;
+
+signals:
+    void metadataChanged();
+    void stateChanged();
+    void positionChanged(); // position re-synced from the player (seek / refetch)
+
+private slots:
+    void onPropertiesChanged(const QString &iface, const QVariantMap &changed,
+                             const QStringList &invalidated);
+    void onSeeked(qlonglong positionUs);
+
+private:
+    void refresh();
+    void fetchPosition();
+    void applyProps(const QVariantMap &props);
+
+    QString m_service, m_title, m_artist, m_album, m_url, m_artUrl;
+    qint64 m_lengthUs = 0;
+    bool m_playing = false;
+    qint64 m_basePosUs = 0;
+    QElapsedTimer m_clock;
+};
+
+// Discovers Spotify / Chrome MPRIS players and elects the "active" one.
+class PlayerWatcher : public QObject
+{
+    Q_OBJECT
+public:
+    explicit PlayerWatcher(QObject *parent = nullptr);
+    void start();
+    MprisPlayer *active() const { return m_active; }
+
+signals:
+    void trackChanged();  // active player switched, or its track changed
+    void timingChanged(); // play/pause/seek on the active player
+
+private slots:
+    void onOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
+
+private:
+    static bool isPlayerService(const QString &name);
+    bool eligible(const MprisPlayer *p) const;
+    void add(const QString &name);
+    void remove(const QString &name);
+    void elect();
+
+    QHash<QString, MprisPlayer *> m_players;
+    QPointer<MprisPlayer> m_active;
+    QPointer<MprisPlayer> m_lastStarted;
+};

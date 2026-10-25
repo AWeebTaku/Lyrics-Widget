@@ -1,0 +1,18 @@
+{
+    "KPlugin": {
+        "Id": "org.lyricwidget",
+        "Name": "Lyric Widget",
+        "Description": "Synced lyrics for Spotify and Chrome, right on your desktop",
+        "Category": "Multimedia",
+        "Icon": "view-media-lyrics",
+        "Authors": [
+            {
+                "Name": "Adu"
+            }
+        ],
+        "License": "GPL-3.0",
+        "Version": "2.0.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

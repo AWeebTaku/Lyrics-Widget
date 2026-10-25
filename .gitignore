@@ -1,0 +1,20 @@
+# build output
+build/
+*.o
+*.so
+compile_commands.json
+
+# local data and tool state
+.claude/
+.claude_session
+*.db
+*.db-wal
+*.db-shm
+spotify.json
+
+# editors / python
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+*.swp

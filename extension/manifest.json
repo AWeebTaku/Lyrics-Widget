@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Lyric Widget queue bridge",
+  "version": "0.1.0",
+  "description": "Sends the YouTube Music 'Up next' list to the Lyric Widget on this computer (127.0.0.1 only) so lyrics can be fetched ahead of time.",
+  "host_permissions": ["http://127.0.0.1/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["https://music.youtube.com/*"], "js": ["page.js"], "world": "MAIN", "run_at": "document_idle" },
+    { "matches": ["https://music.youtube.com/*"], "js": ["relay.js"], "run_at": "document_idle" }
+  ]
+}

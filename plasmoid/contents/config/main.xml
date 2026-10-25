@@ -1,0 +1,276 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name="" />
+  <group name="General">
+    <entry name="fontFamily" type="String">
+      <default />
+    </entry>
+    <entry name="mainSize" type="Int">
+      <default>34</default>
+    </entry>
+    <entry name="sideSize" type="Int">
+      <default>20</default>
+    </entry>
+    <entry name="textColor" type="String">
+      <default>#ffffff</default>
+    </entry>
+    <entry name="dimColor" type="String">
+      <default>#a0ffffff</default>
+    </entry>
+    <entry name="panelColor" type="String">
+      <default>#a0101018</default>
+    </entry>
+    <entry name="panelRadius" type="Int">
+      <default>20</default>
+    </entry>
+    <entry name="showPanel" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showHeader" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showRoman" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="boldCurrent" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="hideWhenNothingPlaying" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="offsetMs" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="sizeMode" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="widthPx" type="Int">
+      <default>760</default>
+    </entry>
+    <entry name="heightPx" type="Int">
+      <default>220</default>
+    </entry>
+    <entry name="showVisualizer" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="vizHeightPct" type="Int">
+      <default>60</default>
+    </entry>
+    <entry name="prefetchCount" type="Int">
+      <default>3</default>
+    </entry>
+    <entry name="framerate" type="Int">
+      <default>60</default>
+    </entry>
+    <entry name="barCount" type="Int">
+      <default>25</default>
+    </entry>
+    <entry name="noiseReduction" type="Int">
+      <default>77</default>
+    </entry>
+    <entry name="monstercat" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="waves" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="autoSensitivity" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="sensitivityEnabled" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="sensitivity" type="Int">
+      <default>100</default>
+    </entry>
+    <entry name="lowerCutoffFreq" type="Int">
+      <default>50</default>
+    </entry>
+    <entry name="higherCutoffFreq" type="Int">
+      <default>10000</default>
+    </entry>
+    <entry name="inputMethod" type="String">
+      <default />
+    </entry>
+    <entry name="inputSource" type="String">
+      <default />
+    </entry>
+    <entry name="sampleRate" type="Int">
+      <default>44100</default>
+    </entry>
+    <entry name="sampleBits" type="Int">
+      <default>16</default>
+    </entry>
+    <entry name="inputChannels" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="autoconnect" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="active" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="remix" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="virtual" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="outputChannels" type="String">
+      <default>mono</default>
+    </entry>
+    <entry name="monoOption" type="String">
+      <default>average</default>
+    </entry>
+    <entry name="reverse" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="eqEnabled" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="eq" type="StringList">
+      <default>1.0,1.0,1.0,1.0,1.0</default>
+    </entry>
+    <entry name="waveform" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="debugMode" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="idleTimer" type="Int">
+      <default>5</default>
+    </entry>
+    <entry name="cavaSleepTimer" type="Int">
+      <default>5</default>
+    </entry>
+    <entry name="visualizerStyle" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="circleMode" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="circleModeSize" type="Double">
+      <default>0.5</default>
+    </entry>
+    <entry name="circleModeFill" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="fillWave" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="barWidth" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="blockHeight" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="blockSpacing" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="barGap" type="Int">
+      <default>5</default>
+    </entry>
+    <entry name="barColors" type="String">
+      <default>{}</default>
+    </entry>
+    <entry name="waveFillColors" type="String">
+      <default>{}</default>
+    </entry>
+    <entry name="inactiveBlockColors" type="String">
+      <default>{}</default>
+    </entry>
+    <entry name="drawInactiveBlocks" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="centeredBars" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="waveMode" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="roundedBars" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="orientation" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="_stopCava" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="pauseOnFullScreenWindow" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="pauseOnMaximizedWindow" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="waveSimulateWaveform" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="pinnedDownSides" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="fillPanel" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="expanding" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="length" type="Int">
+      <default>200</default>
+    </entry>
+    <entry name="minimumLength" type="Int">
+      <default>50</default>
+    </entry>
+    <entry name="hideWhenIdle" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="spotifyAppQueue" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="spotifyDebugPort" type="Int">
+      <default>8088</default>
+    </entry>
+    <entry name="browserQueue" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="browserQueuePort" type="Int">
+      <default>8899</default>
+    </entry>
+    <entry name="showNeighbours" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showSyncControls" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="animateLines" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="audioListen" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="audioSync" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="audioTempo" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="beatPulse" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="karaoke" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="tintFromArt" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="tintVisualizer" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="autoCompact" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="fadeWhenPausedMin" type="Int">
+      <default>0</default>
+    </entry>
+  </group>
+</kcfg>
