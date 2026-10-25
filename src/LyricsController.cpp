@@ -448,6 +448,10 @@ void LyricsController::apply(const StoredLyrics &s)
         m_srcLrc.erase(std::remove_if(m_srcLrc.begin(), m_srcLrc.end(),
                                       [](const LyricLine &l) { return isCredit(l.text); }),
                        m_srcLrc.end());
+        // "Artist - Title" banners some providers put first, at 0:00: not part of the song
+        for (int i = 0; i < 3 && !m_srcLrc.isEmpty() && m_srcLrc.first().timeMs <= 2500
+                        && isBannerLine(m_srcLrc.first().text); ++i)
+            m_srcLrc.removeFirst();
         if (Text::incompleteLrc(s.synced))
             m_filled = GapFill::fill(m_srcLrc, s.plain);
         for (const LyricLine &l : std::as_const(m_srcLrc))
@@ -457,6 +461,8 @@ void LyricsController::apply(const StoredLyrics &s)
     if (!m_synced && !s.instrumental && !s.plain.isEmpty()) {
         m_srcLrc.clear();
         m_srcText = s.plain.split(QLatin1Char('\n'));
+        for (int i = 0; i < 3 && !m_srcText.isEmpty() && isBannerLine(m_srcText.first()); ++i)
+            m_srcText.removeFirst();
         setStatus(QStringLiteral("Unsynced lyrics"));
     } else if (m_synced) {
         setStatus(QString());
