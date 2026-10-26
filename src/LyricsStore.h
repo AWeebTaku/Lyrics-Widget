@@ -53,7 +53,6 @@ public:
     qint64 libraryStamp(const QString &key); // 0 when there is no entry
     void putLibrary(const LibraryEntry &e);
     void removeLibrary(const QString &key);
-    QList<LibraryEntry> libraryList(int limit = 200);
 
 private:
     QString m_conn;

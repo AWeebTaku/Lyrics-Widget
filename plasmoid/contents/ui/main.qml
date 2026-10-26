@@ -198,7 +198,7 @@ PlasmoidItem {
             curColor: root.curColor
             sideColor: root.sideColor
             hidden: lyrics.lineHidden
-            showSides: root.cfg.showNeighbours && (!root.cfg.autoCompact || view.height >= 150)
+            showSides: root.cfg.showNeighbours && view.height >= 150   // no room for them in a small widget
             karaokeFrac: view.kfrac
             id: stage
             prev: root.lineAt(lyrics.currentIndex - 1).replace(/\n/g, "  ·  ")

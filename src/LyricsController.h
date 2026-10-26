@@ -31,7 +31,6 @@ class LyricsController : public QObject
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
     Q_PROPERTY(QStringList lines READ lines NOTIFY linesChanged)
     Q_PROPERTY(QStringList roman READ roman NOTIFY linesChanged) // parallel to lines, "" = none
-    Q_PROPERTY(bool hasRoman READ hasRoman NOTIFY linesChanged)
     Q_PROPERTY(bool synced READ synced NOTIFY linesChanged)
     Q_PROPERTY(int currentIndex READ currentIndex NOTIFY currentIndexChanged)
     // ms the current line stays on screen (min of the gaps before and after it). The line animation
@@ -43,8 +42,6 @@ class LyricsController : public QObject
     Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
     // true = a full screen window covers the widget: do no work at all (timers, lookups, prefetch)
     Q_PROPERTY(bool suspended READ suspended WRITE setSuspended NOTIFY suspendedChanged)
-    // Show each line this many ms before its timestamp (so a fade-in finishes when it is sung)
-    Q_PROPERTY(int leadMs READ leadMs WRITE setLeadMs NOTIFY offsetMsChanged)
     // How many upcoming Spotify queue tracks to fetch lyrics for ahead of time (0 = off, max 5)
     Q_PROPERTY(int prefetchCount READ prefetchCount WRITE setPrefetchCount NOTIFY prefetchCountChanged)
     Q_PROPERTY(bool spotifyAppQueue READ spotifyAppQueue WRITE setSpotifyAppQueue NOTIFY prefetchCountChanged)
@@ -76,7 +73,6 @@ public:
     QString status() const { return m_status; }
     QStringList lines() const { return m_lines; }
     QStringList roman() const { return m_roman; }
-    bool hasRoman() const { return m_hasRoman; }
     bool synced() const { return m_synced; }
     int currentIndex() const { return m_index; }
     int lineGapMs() const { return m_lineGapMs; }
@@ -85,8 +81,6 @@ public:
     void setOffsetMs(int ms);
     bool suspended() const { return m_suspended; }
     void setSuspended(bool on);
-    int leadMs() const { return m_leadMs; }
-    void setLeadMs(int ms) { if (ms != m_leadMs) { m_leadMs = ms; emit offsetMsChanged(); resync(); } }
     bool playing() const { const auto *p = m_watcher.active(); return p && p->playing(); }
     int prefetchCount() const { return m_prefetchCount; }
     void setPrefetchCount(int n);
@@ -183,12 +177,10 @@ private:
     QList<QColor> m_palette;
     double m_timeScale = 1; // playing length / matched length, only for sped-up / slowed uploads
     bool m_synced = false;
-    bool m_hasRoman = false;
     int m_index = -1;
     int m_lineGapMs = 2000;
     bool m_lineHidden = false;
     int m_offsetMs = 0;
-    int m_leadMs = 0;
     bool m_suspended = false;
     quint64 m_requestId = 0;
     QTimer m_timer;

@@ -194,9 +194,6 @@
     <entry name="orientation" type="Int">
       <default>1</default>
     </entry>
-    <entry name="_stopCava" type="Bool">
-      <default>false</default>
-    </entry>
     <entry name="pauseOnFullScreenWindow" type="Bool">
       <default>true</default>
     </entry>
@@ -283,9 +280,6 @@
     </entry>
     <entry name="tintFromArt" type="Bool">
       <default>false</default>
-    </entry>
-    <entry name="autoCompact" type="Bool">
-      <default>true</default>
     </entry>
     <entry name="fadeWhenPausedMin" type="Int">
       <default>0</default>

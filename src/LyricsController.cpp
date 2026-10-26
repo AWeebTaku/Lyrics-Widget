@@ -286,7 +286,6 @@ void LyricsController::clearLyrics()
     m_srcLrc.clear();
     m_srcText.clear();
     m_srcRoman.clear();
-    m_hasRoman = false;
     m_synced = false;
     m_index = -1;
     setLineHidden(false);
@@ -612,7 +611,6 @@ void LyricsController::layer()
         for (qsizetype i = 0; i < m_lrc.size(); ++i)
             m_lrc[i].text = m_lines[i];
     }
-    m_hasRoman = std::any_of(m_roman.cbegin(), m_roman.cend(), [](const QString &r) { return !r.isEmpty(); });
 }
 
 // Kanji lines have no local rule-based romanization. If `kakasi` is installed, convert them in
@@ -806,7 +804,7 @@ void LyricsController::updateArt(const QString &url)
 
 qint64 LyricsController::positionMs(const MprisPlayer *p) const
 {
-    return qint64(p->positionUs() / 1000 / m_timeScale) + m_offsetMs + m_trackOffsetMs + m_leadMs;
+    return qint64(p->positionUs() / 1000 / m_timeScale) + m_offsetMs + m_trackOffsetMs;
 }
 
 // Milliseconds into the current line (for the word highlight).

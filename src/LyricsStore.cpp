@@ -29,6 +29,11 @@ LyricsStore::LyricsStore()
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS lyrics_v5("
                           "key TEXT PRIMARY KEY, found INTEGER, instrumental INTEGER,"
                           "synced TEXT, plain TEXT, roman TEXT, srcdur REAL, fetched INTEGER, provider TEXT, words TEXT)"));
+    // the cache is only a convenience: forget what has not been fetched for 90 days (the library and the
+    // offsets are the user's own and are never pruned)
+    q.prepare(QStringLiteral("DELETE FROM lyrics_v5 WHERE fetched < ?"));
+    q.addBindValue(QDateTime::currentSecsSinceEpoch() - 90 * 24 * 3600);
+    q.exec();
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS offsets(key TEXT PRIMARY KEY, ms INTEGER)"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS nudges(key TEXT PRIMARY KEY, provider TEXT, ms INTEGER)"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS library(key TEXT PRIMARY KEY, title TEXT, artist TEXT, album TEXT,"
@@ -255,18 +260,4 @@ void LyricsStore::removeLibrary(const QString &key)
     q.prepare(QStringLiteral("DELETE FROM library WHERE key=?"));
     q.addBindValue(key);
     q.exec();
-}
-
-QList<LibraryEntry> LyricsStore::libraryList(int limit)
-{
-    QList<LibraryEntry> out;
-    if (!m_db.isOpen())
-        return out;
-    QSqlQuery q(m_db);
-    q.prepare(QStringLiteral("SELECT %1 FROM library ORDER BY updated DESC LIMIT ?").arg(QLatin1String(kLibraryCols)));
-    q.addBindValue(limit);
-    if (q.exec())
-        while (q.next())
-            out << readEntry(q);
-    return out;
 }

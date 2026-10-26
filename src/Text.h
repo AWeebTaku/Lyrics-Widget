@@ -137,8 +137,8 @@ inline QVector<Candidate> candidates(const Track &t)
     // when it is in another script. Inserted right after the candidate they came from.
     static const QRegularExpression paren(QStringLiteral(R"(\s*[\(（]([^\)）]*)[\)）])"));
     for (qsizetype i = 0; i < out.size() && out.size() < 6; i += 1) {
-        const auto m = paren.match(out[i].title);
-        if (!m.hasMatch() || out[i].artist.isEmpty())
+        const auto pm = paren.match(out[i].title);
+        if (!pm.hasMatch() || out[i].artist.isEmpty())
             continue;
         QString plain = out[i].title;
         plain.remove(paren);
@@ -146,7 +146,7 @@ inline QVector<Candidate> candidates(const Track &t)
         qsizetype at = i + 1;
         if (!plain.simplified().isEmpty() && !out.contains({base.artist, plain.simplified()}))
             out.insert(at++, {base.artist, plain.simplified()});
-        const QString inner = m.captured(1).simplified();
+        const QString inner = pm.captured(1).simplified();
         if (hasNonLatin(inner) && !out.contains({base.artist, inner}))
             out.insert(at, {base.artist, inner});
         i = at; // skip the variants just added

@@ -10,14 +10,15 @@ class BrowserSetup : public QObject
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QVariantList browsers READ browsers CONSTANT)  // [{name, exec, scheme}]
-    Q_PROPERTY(QString extensionPath READ extensionPath CONSTANT)
 
 public:
     explicit BrowserSetup(QObject *parent = nullptr) : QObject(parent) {}
     QVariantList browsers() const;
-    QString extensionPath() const;
 
     Q_INVOKABLE void openExtensions(const QString &exec, const QString &scheme) const;
     Q_INVOKABLE void openFolder() const;
     Q_INVOKABLE void copyPath() const;
+
+private:
+    QString extensionPath() const; // where the extension is installed
 };
