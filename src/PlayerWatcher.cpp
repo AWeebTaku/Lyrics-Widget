@@ -52,6 +52,8 @@ MprisPlayer::MprisPlayer(const QString &service, QObject *parent)
     : QObject(parent), m_service(service)
 {
     m_clock.start();
+    m_posCheck.setInterval(500);
+    connect(&m_posCheck, &QTimer::timeout, this, &MprisPlayer::checkPosition);
     auto bus = QDBusConnection::sessionBus();
     bus.connect(service, kPath, kPropsIface, QStringLiteral("PropertiesChanged"), this,
                 SLOT(onPropertiesChanged(QString, QVariantMap, QStringList)));
@@ -91,6 +93,40 @@ void MprisPlayer::fetchPosition()
         m_basePosUs = reply.value().variant().toLongLong();
         m_clock.restart();
         emit positionChanged();
+    });
+}
+
+void MprisPlayer::setWatchPosition(bool on)
+{
+    m_watch = on;
+    updateWatch();
+}
+
+void MprisPlayer::updateWatch()
+{
+    if (m_watch && m_playing)
+        m_posCheck.start();
+    else
+        m_posCheck.stop();
+}
+
+// Asks the player where it really is; a difference of more than 0.3 s means a seek we were not told about.
+void MprisPlayer::checkPosition()
+{
+    auto msg = QDBusMessage::createMethodCall(m_service, kPath, kPropsIface, QStringLiteral("Get"));
+    msg << kPlayerIface << QStringLiteral("Position");
+    auto *w = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(msg), this);
+    connect(w, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
+        watcher->deleteLater();
+        QDBusPendingReply<QDBusVariant> reply = *watcher;
+        if (reply.isError() || !m_playing)
+            return;
+        const qint64 real = reply.value().variant().toLongLong();
+        if (std::abs(real - positionUs()) > 300000) {
+            m_basePosUs = real;
+            m_clock.restart();
+            emit positionChanged();
+        }
     });
 }
 
@@ -137,6 +173,7 @@ void MprisPlayer::applyProps(const QVariantMap &p)
             m_clock.restart();
             m_playing = nowPlaying;
             stateFlipped = true;
+            updateWatch();
         }
     }
 
@@ -226,6 +263,7 @@ void PlayerWatcher::add(const QString &name)
     if (m_players.contains(name))
         return;
     auto *p = new MprisPlayer(name, this);
+    p->setWatchPosition(m_watchPosition);
     m_players.insert(name, p);
 
     connect(p, &MprisPlayer::metadataChanged, this, [this, p] {
@@ -248,6 +286,15 @@ void PlayerWatcher::add(const QString &name)
         if (m_active == p)
             emit timingChanged();
     });
+}
+
+void PlayerWatcher::setWatchPosition(bool on)
+{
+    if (on == m_watchPosition)
+        return;
+    m_watchPosition = on;
+    for (MprisPlayer *p : std::as_const(m_players))
+        p->setWatchPosition(on);
 }
 
 void PlayerWatcher::remove(const QString &name)

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QTimer>
 #include <QVariantMap>
 
 // One MPRIS player on the session bus. Tracks metadata + play state and
@@ -23,6 +24,9 @@ public:
     qint64 lengthUs() const { return m_lengthUs; }
     bool playing() const { return m_playing; }
     qint64 positionUs() const;
+    // While on (and playing), the real position is compared with the interpolated one twice a second: some
+    // players (Spotify's own slider) do not announce every seek, which would leave the lyrics behind.
+    void setWatchPosition(bool on);
 
 signals:
     void metadataChanged();
@@ -37,6 +41,8 @@ private slots:
 private:
     void refresh();
     void fetchPosition();
+    void checkPosition();
+    void updateWatch();
     void applyProps(const QVariantMap &props);
 
     QString m_service, m_title, m_artist, m_album, m_url, m_artUrl;
@@ -44,6 +50,8 @@ private:
     bool m_playing = false;
     qint64 m_basePosUs = 0;
     QElapsedTimer m_clock;
+    QTimer m_posCheck;
+    bool m_watch = false;
 };
 
 // Discovers Spotify / Chrome MPRIS players and elects the "active" one.
@@ -54,6 +62,7 @@ public:
     explicit PlayerWatcher(QObject *parent = nullptr);
     void start();
     MprisPlayer *active() const { return m_active; }
+    void setWatchPosition(bool on); // see MprisPlayer::setWatchPosition
 
 signals:
     void trackChanged();  // active player switched, or its track changed
@@ -72,4 +81,5 @@ private:
     QHash<QString, MprisPlayer *> m_players;
     QPointer<MprisPlayer> m_active;
     QPointer<MprisPlayer> m_lastStarted;
+    bool m_watchPosition = false;
 };

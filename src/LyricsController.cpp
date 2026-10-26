@@ -685,6 +685,8 @@ void LyricsController::romanizeKanji()
 void LyricsController::resync()
 {
     m_timer.stop();
+    // while synced lyrics are on screen, keep an eye on the real position (seeks the player does not announce)
+    m_watcher.setWatchPosition(m_synced && !m_suspended && m_lyricsEnabled);
     if (m_suspended)
         return;
     if (!m_synced || m_lrc.isEmpty())
