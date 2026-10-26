@@ -36,7 +36,7 @@ KCM.SimpleKCM {
             }
             QQC2.Button {
                 text: i18n("Test")
-                onClicked: { spotify.setDebugPort(cfg_spotifyDebugPort); spotify.probe() }
+                onClicked: { spotify.debugPort = cfg_spotifyDebugPort; spotify.probe() }
             }
             QQC2.Label { text: spotify.appStatus; opacity: 0.8; wrapMode: Text.WordWrap; Layout.maximumWidth: Kirigami.Units.gridUnit * 18 }
         }

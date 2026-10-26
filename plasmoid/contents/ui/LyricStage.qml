@@ -20,8 +20,12 @@ Item {
     property color curColor: cfg.textColor
     property color sideColor: cfg.dimColor
     property bool hidden: false        // the line is sung and a long break follows: fade everything out
-    opacity: hidden ? 0 : 1
-    Behavior on opacity { NumberAnimation { duration: stage.hidden ? 450 : 100 } }  // quick back in
+    // slow out, quick back in (the next line must not wait for the fade)
+    states: State { name: "hidden"; when: stage.hidden; PropertyChanges { stage.opacity: 0 } }
+    transitions: [
+        Transition { to: "hidden"; NumberAnimation { property: "opacity"; duration: 450 } },
+        Transition { from: "hidden"; NumberAnimation { property: "opacity"; duration: 100 } }
+    ]
     property real karaokeFrac: -1      // 0..1 of the current line sung, -1 = no word timing
 
     property int active: 0             // slot holding the current line

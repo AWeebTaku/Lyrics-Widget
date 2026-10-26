@@ -199,7 +199,7 @@ Kirigami.FormLayout {
         id: animationCheckbox
 
         Kirigami.FormData.label: i18n("Animation:")
-        checked: root.config.animation.enabled
+        checked: root.config.animation?.enabled ?? false
         onCheckedChanged: {
             root.config.animation.enabled = checked;
             root.updateConfig();
@@ -218,7 +218,7 @@ Kirigami.FormLayout {
         from: 0
         to: 30000
         stepSize: 100
-        value: root.config.animation.interval
+        value: root.config.animation?.interval ?? 0
         onValueModified: {
             root.config.animation.interval = value;
             root.updateConfig();
@@ -234,7 +234,7 @@ Kirigami.FormLayout {
         from: 0
         to: animationInterval.value
         stepSize: 100
-        value: root.config.animation.smoothing
+        value: root.config.animation?.smoothing ?? 0
         onValueModified: {
             root.config.animation.smoothing = value;
             root.updateConfig();
@@ -690,7 +690,7 @@ Kirigami.FormLayout {
 
     RowLayout {
         Kirigami.FormData.label: i18n("Alpha:")
-        visible: colorModeGroup.checkedButton.index !== 6
+        visible: (colorModeGroup.checkedButton?.index ?? 0) !== 6
 
         DoubleSpinBoxCompat {
             id: alphaSpinbox
@@ -708,12 +708,12 @@ Kirigami.FormLayout {
         Kirigami.FormData.isSection: false
         Kirigami.FormData.label: i18n("Contrast Correction")
         Layout.fillWidth: true
-        visible: colorModeGroup.checkedButton.index !== 6
+        visible: (colorModeGroup.checkedButton?.index ?? 0) !== 6
     }
 
     RowLayout {
         Kirigami.FormData.label: i18n("Saturation:")
-        visible: colorModeGroup.checkedButton.index !== 6
+        visible: (colorModeGroup.checkedButton?.index ?? 0) !== 6
 
         CheckBox {
             id: saturationEnabled
@@ -739,7 +739,7 @@ Kirigami.FormLayout {
 
     RowLayout {
         Kirigami.FormData.label: i18n("Lightness:")
-        visible: colorModeGroup.checkedButton.index !== 6
+        visible: (colorModeGroup.checkedButton?.index ?? 0) !== 6
 
         CheckBox {
             id: lightnessEnabled

@@ -8,6 +8,7 @@ import org.kde.plasma.plasmoid
 import "components" as Components
 import "code/enum.js" as Enum
 import "code/utils.js" as Utils
+import "code/globals.js" as Globals
 
 KCM.SimpleKCM {
     id: root
@@ -26,9 +27,9 @@ KCM.SimpleKCM {
     property alias cfg_circleMode: circleMode.checked
     property alias cfg_circleModeFill: circleModeFill.checked
     property real cfg_circleModeSize
-    property string cfg_barColors
-    property string cfg_waveFillColors
-    property string cfg_inactiveBlockColors
+    property string cfg_barColors: "{}"
+    property string cfg_waveFillColors: "{}"
+    property string cfg_inactiveBlockColors: "{}"
     property alias cfg_drawInactiveBlocks: drawInactiveBlocks.checked
     property alias cfg_fillWave: fillWaveCheckbox.checked
     // take all the available space in the panel
@@ -41,6 +42,14 @@ KCM.SimpleKCM {
     property bool cfg_tintFromArtDefault
     property int cfg_tintMode
     property int cfg_tintModeDefault
+
+    // The colour forms need every key to exist: complete what is stored with the defaults (what the
+    // widget itself does), so the page also opens cleanly before the widget has saved its colours.
+    function withDefaults(raw, base) {
+        let stored = {}
+        try { stored = JSON.parse(raw) } catch (e) { }
+        return JSON.stringify(Utils.mergeConfigs(base, stored))
+    }
 
     readonly property bool vertical: {
         if (Plasmoid.formFactor == PlasmaCore.Types.Vertical) {
@@ -293,7 +302,7 @@ KCM.SimpleKCM {
         }
 
         Components.FormColors {
-            configString: root.cfg_barColors
+            configString: root.withDefaults(root.cfg_barColors, Globals.baseBarColors)
             handleString: true
             onUpdateConfigString: (newString, newConfig) => {
                 root.cfg_barColors = JSON.stringify(newConfig);
@@ -303,7 +312,7 @@ KCM.SimpleKCM {
         }
 
         Components.FormColors {
-            configString: root.cfg_inactiveBlockColors
+            configString: root.withDefaults(root.cfg_inactiveBlockColors, Globals.baseInactiveBlockColors)
             handleString: true
             onUpdateConfigString: (newString, newConfig) => {
                 root.cfg_inactiveBlockColors = JSON.stringify(newConfig);
@@ -314,7 +323,7 @@ KCM.SimpleKCM {
         }
 
         Components.FormColors {
-            configString: root.cfg_waveFillColors
+            configString: root.withDefaults(root.cfg_waveFillColors, Globals.baseWaveFillColors)
             handleString: true
             onUpdateConfigString: (newString, newConfig) => {
                 root.cfg_waveFillColors = JSON.stringify(newConfig);
