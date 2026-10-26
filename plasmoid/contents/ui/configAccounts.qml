@@ -17,19 +17,17 @@ KCM.SimpleKCM {
     property int cfg_browserQueuePortDefault
     property int cfg_spotifyDebugPortDefault
 
-    // Own instance, only used for the Test button
-    SpotifyApp { id: spotify }
+    SpotifyApp { id: spotify }   // only for the Test button
     BrowserSetup { id: setup }
 
     Kirigami.FormLayout {
-        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Spotify app") }
-        QQC2.CheckBox {
-            id: appQueue
-            Kirigami.FormData.label: i18n("Queue:")
-            text: i18n("Use the running Spotify app for lyrics and the queue")
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Spotify") }
+        RowLayout {
+            QQC2.CheckBox { id: appQueue; text: i18n("Get lyrics and the queue from the Spotify app") }
+            Kirigami.ContextualHelpButton { toolTipText: i18n("Needs Spotify started with a debug port (Spicetify does this). It only reads; nothing in Spotify is changed.") }
         }
         RowLayout {
-            Kirigami.FormData.label: i18n("Debug port:")
+            Kirigami.FormData.label: i18n("Port:")
             enabled: appQueue.checked
             QQC2.SpinBox {
                 from: 1024; to: 65535; editable: true
@@ -42,33 +40,21 @@ KCM.SimpleKCM {
             }
             QQC2.Label { text: spotify.appStatus; opacity: 0.8; wrapMode: Text.WordWrap; Layout.maximumWidth: Kirigami.Units.gridUnit * 18 }
         }
-        QQC2.Label {
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 26
-            wrapMode: Text.WordWrap
-            opacity: 0.7
-            text: i18n("Reads the lyrics Spotify shows and the upcoming songs (shuffle order included) straight from the Spotify app on this computer, through its local developer port (the one Spicetify enables, 8088 by default). Nothing is changed in Spotify.")
-        }
 
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Next songs") }
         QQC2.SpinBox {
-            Kirigami.FormData.label: i18n("Look ahead:")
+            Kirigami.FormData.label: i18n("Prepare lyrics for:")
             enabled: appQueue.checked || ytm.checked
             from: 0; to: 5
             value: cfg_prefetchCount
             textFromValue: v => v === 0 ? i18n("Off") : i18np("%1 song", "%1 songs", v)
             onValueModified: cfg_prefetchCount = value
         }
-        QQC2.Label {
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 26
-            wrapMode: Text.WordWrap
-            opacity: 0.7
-            text: i18n("Limited to 5, one song at a time, to stay under the lyric providers' rate limits.")
-        }
 
-        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("YouTube Music (Chrome extension)") }
-        QQC2.CheckBox {
-            id: ytm
-            Kirigami.FormData.label: i18n("Queue:")
-            text: i18n("Receive the YouTube Music queue from the Chrome extension")
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("YouTube Music") }
+        RowLayout {
+            QQC2.CheckBox { id: ytm; text: i18n("Get the queue from YouTube Music") }
+            Kirigami.ContextualHelpButton { toolTipText: i18n("A small browser extension sends the queue to this widget. It only talks to this computer.") }
         }
         QQC2.SpinBox {
             Kirigami.FormData.label: i18n("Port:")
@@ -77,44 +63,22 @@ KCM.SimpleKCM {
             value: cfg_browserQueuePort
             onValueModified: cfg_browserQueuePort = value
         }
-        QQC2.Label {
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 26
-            wrapMode: Text.WordWrap
-            text: i18n("Browsers do not let apps read their queue, so a tiny extension passes the YouTube Music 'Up next' list to this widget. Install it once in the browser you use for YouTube Music:")
-        }
         Repeater {
             model: setup.browsers
             QQC2.Button {
                 required property var modelData
-                Kirigami.FormData.label: index === 0 ? i18n("Step 1:") : ""
+                required property int index
+                Kirigami.FormData.label: index === 0 ? i18n("Install extension:") : ""
                 icon.name: "internet-web-browser"
-                text: i18n("Open %1's extensions page", modelData.name)
+                text: i18n("Open %1 extensions", modelData.name)
                 onClicked: setup.openExtensions(modelData.exec, modelData.scheme)
             }
         }
-        QQC2.Label {
-            visible: setup.browsers.length === 0
-            Kirigami.FormData.label: i18n("Step 1:")
-            text: i18n("No Chromium browser found. Open your browser's extensions page yourself.")
-        }
-        QQC2.Label {
-            Kirigami.FormData.label: i18n("Step 2:")
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 26
-            wrapMode: Text.WordWrap
-            text: i18n("Turn on \"Developer mode\" (top right of that page).")
-        }
         RowLayout {
-            Kirigami.FormData.label: i18n("Step 3:")
-            QQC2.Label { text: i18n("Click \"Load unpacked\" and pick:") }
-            QQC2.Button { text: i18n("Copy folder path"); icon.name: "edit-copy"; onClicked: setup.copyPath() }
+            Kirigami.FormData.label: i18n("Then choose this folder:")
+            QQC2.Button { text: i18n("Copy path"); icon.name: "edit-copy"; onClicked: setup.copyPath() }
             QQC2.Button { text: i18n("Show folder"); icon.name: "folder-open"; onClicked: setup.openFolder() }
+            Kirigami.ContextualHelpButton { toolTipText: i18n("In the extensions page: turn on Developer mode, click Load unpacked, press Ctrl+L and paste the path.") }
         }
-        QQC2.Label {
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 26
-            wrapMode: Text.WordWrap
-            opacity: 0.7
-            text: setup.extensionPath + "\n" + i18n("In the file dialog press Ctrl+L and paste the path. The widget only listens on this computer and only accepts the extension. If you change the port above, change PORT in the extension's background.js to match.")
-        }
-
     }
 }

@@ -1,5 +1,6 @@
 import QtQuick
 import org.kde.plasma.configuration
+import org.kde.plasma.plasmoid
 
 ConfigModel {
     ConfigCategory {
@@ -19,14 +20,9 @@ ConfigModel {
         visible: Plasmoid.configuration.showVisualizer
     }
     ConfigCategory {
-        name: i18n("Audio input (CAVA)")
+        name: i18n("Audio input")
         icon: "audio-input-microphone"
         source: "audioviz/configCava.qml"
         visible: Plasmoid.configuration.showVisualizer
-    }
-    ConfigCategory {
-        name: i18n("Sources")
-        icon: "preferences-system-users"
-        source: "configAccounts.qml"
     }
 }

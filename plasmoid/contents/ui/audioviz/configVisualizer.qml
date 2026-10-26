@@ -65,6 +65,11 @@ KCM.SimpleKCM {
             id: parentLayout
             Layout.fillWidth: true
 
+            Kirigami.Separator {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: i18n("Style")
+            }
+
             ComboBox {
                 id: visualizerStyleCombobox
                 Kirigami.FormData.label: i18n("Style:")
@@ -138,6 +143,11 @@ KCM.SimpleKCM {
                 enabled: root.cfg_visualizerStyle === Enum.VisualizerStyles.Blocks
             }
 
+            Kirigami.Separator {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: i18n("Circle")
+            }
+
             CheckBox {
                 id: circleMode
                 Kirigami.FormData.label: i18n("Circle mode:")
@@ -159,6 +169,11 @@ KCM.SimpleKCM {
                 id: circleModeFill
                 Kirigami.FormData.label: i18n("Fill circle:")
                 enabled: root.cfg_circleMode && root.cfg_visualizerStyle === Enum.VisualizerStyles.Wave && root.cfg_fillWave
+            }
+
+            Kirigami.Separator {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: i18n("Bars")
             }
 
             ComboBox {

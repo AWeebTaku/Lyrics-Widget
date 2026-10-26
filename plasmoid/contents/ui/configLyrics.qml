@@ -15,9 +15,7 @@ KCM.SimpleKCM {
     property alias cfg_tintFromArt: tint.checked
     property int cfg_tintMode
     property alias cfg_showRoman: showRoman.checked
-    property alias cfg_showHeader: showHeader.checked
     property alias cfg_showNeighbours: showNeighbours.checked
-    property alias cfg_animateLines: animate.checked
     property alias cfg_karaoke: karaoke.checked
     property alias cfg_showHeader: showHeader.checked
     property alias cfg_animateLines: animate.checked
@@ -35,9 +33,7 @@ KCM.SimpleKCM {
     property bool cfg_tintFromArtDefault
     property int cfg_tintModeDefault
     property bool cfg_showRomanDefault
-    property bool cfg_showHeaderDefault
     property bool cfg_showNeighboursDefault
-    property bool cfg_animateLinesDefault
     property bool cfg_karaokeDefault
     property bool cfg_showHeaderDefault
     property bool cfg_animateLinesDefault
@@ -45,24 +41,24 @@ KCM.SimpleKCM {
     property bool cfg_showSyncControlsDefault
 
     Kirigami.FormLayout {
-        QQC2.CheckBox {
-            id: showLyrics
-            Kirigami.FormData.label: i18n("Lyrics:")
-            text: i18n("Show lyrics (off: no lookups at all, e.g. for a visualizer-only widget)")
-        }
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Lyrics") }
+        QQC2.CheckBox { id: showLyrics; text: i18n("Show lyrics") }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text") }
         FontField { id: fontField; Kirigami.FormData.label: i18n("Font:") }
-        RowLayout {
-            Kirigami.FormData.label: i18n("Size (px):")
-            enabled: showLyrics.checked
-            QQC2.SpinBox { from: 0; to: 300; value: cfg_mainSize; onValueModified: cfg_mainSize = value }
-            QQC2.Label { text: i18n("current") }
-            QQC2.SpinBox { from: 0; to: 300; value: cfg_sideSize; onValueModified: cfg_sideSize = value }
-            QQC2.Label { text: i18n("others") }
-            Kirigami.ContextualHelpButton { toolTipText: i18n("0 hides that text.") }
+        QQC2.SpinBox {
+            Kirigami.FormData.label: i18n("Current line size:")
+            from: 0; to: 300
+            value: cfg_mainSize
+            onValueModified: cfg_mainSize = value
         }
-        QQC2.CheckBox { id: boldCurrent; Kirigami.FormData.label: i18n("Style:"); text: i18n("Bold current line") }
+        QQC2.SpinBox {
+            Kirigami.FormData.label: i18n("Other lines size:")
+            from: 0; to: 300
+            value: cfg_sideSize
+            onValueModified: cfg_sideSize = value
+        }
+        QQC2.CheckBox { id: boldCurrent; text: i18n("Bold current line") }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Colors") }
         ColorField { id: textColor; Kirigami.FormData.label: i18n("Current line:") }
@@ -76,13 +72,12 @@ KCM.SimpleKCM {
             onActivated: cfg_tintMode = currentIndex
         }
 
-        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Content") }
-        QQC2.CheckBox { id: showRoman; Kirigami.FormData.label: i18n("Romanization:"); text: i18n("Replace the original with romanization when available") }
-        QQC2.CheckBox { id: showNeighbours; Kirigami.FormData.label: i18n("Lines:"); text: i18n("Show the previous and next lines") }
-        QQC2.CheckBox { id: animate; Kirigami.FormData.label: i18n("Animation:"); text: i18n("Swipe up and fade in on each new line") }
-        QQC2.CheckBox { id: karaoke; Kirigami.FormData.label: i18n("Karaoke:"); text: i18n("Highlight each word as it is sung (when the lyrics have word timing)") }
-        QQC2.CheckBox { id: compact; Kirigami.FormData.label: i18n("Small widget:"); text: i18n("Hide the previous/next lines automatically when there is no room") }
-        QQC2.CheckBox { id: showHeader; Kirigami.FormData.label: i18n("Header:"); text: i18n("Show artist — title") }
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Show") }
+        QQC2.CheckBox { id: showRoman; text: i18n("Romanized text (Japanese, Korean, Chinese)") }
+        QQC2.CheckBox { id: showNeighbours; text: i18n("Previous and next lines") }
+        QQC2.CheckBox { id: karaoke; text: i18n("Word-by-word highlight") }
+        QQC2.CheckBox { id: showHeader; text: i18n("Artist and title") }
+        QQC2.CheckBox { id: animate; text: i18n("Animate line changes") }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Timing") }
         RowLayout {
