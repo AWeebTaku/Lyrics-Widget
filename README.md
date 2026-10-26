@@ -12,7 +12,7 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
 - **Timed lyrics** for the song playing, switching line by line from the player's position (one precise
   timer per line; while synced lyrics play the real position is checked twice a second, so seeks are never missed), with a
   smooth swipe-and-fade between lines scaled to the song's pace.
-- **Many sources, matched carefully.** Spotify songs are first asked of the Spotify app itself (exact, by
+- **Many sources, matched carefully.** (YouTube Music's own plain text is the last resort.) Spotify songs are first asked of the Spotify app itself (exact, by
   track id). Otherwise LRCLIB, NetEase, QQ Music and Kugou are searched in parallel and scored on title,
   artist, length and album, with cross-script matching (`ヨルシカ` = `Yorushika`). No accounts or keys.
 - **Romanization replaces the original line** (Japanese, Korean, Chinese) when available: provider
@@ -92,11 +92,12 @@ It keeps this source folder. Remove the Chrome extension yourself at `chrome://e
 
 ## Settings
 
-Right-click the widget, **Configure**. Five pages; each splits lyric and visualizer settings:
+Right-click the widget, **Configure**. Six pages; where a page has both, a **Lyrics | Visualizer** tab splits the two:
 
-- **Appearance**: lyric font, sizes, weights, effects (shadow, outline, highlight), colours and cover colours; the visualizer's style.
-- **Layout**: widget size and background, lyric position, visualizer size and position, when the widget hides or pauses.
-- **Content and timing**: what to show, shift in time, sync and hover buttons; the visualizer's audio input.
+- **General**: show lyrics and the visualizer (side by side), widget size and background, when the widget hides or pauses.
+- **Appearance**: lyric font, sizes, weights, effects (shadow, outline, highlight), colors, cover colors and how they flow (left/right, top/bottom, from or to the center, fill) for lyrics and visualizer; the visualizer's style.
+- **Layout**: lyric position and offset; visualizer size, position, hide when silent.
+- **Behavior**: which lines to show, shift in time, hover buttons; the visualizer's audio input.
 - **Sources**: next songs, Spotify app, YouTube Music (browser menu + extension), other players (any MPRIS player, allowed websites such as Apple Music's web player).
 - **Lyrics library**: get (press again for the next result), edit, retime and save lyrics.
 
@@ -147,7 +148,7 @@ been tested against a live YouTube Music tab yet.
 ## Privacy and security
 
 - **Leaves your computer:** lyric searches to LRCLIB, NetEase, QQ Music and Kugou (song title, artist, album,
-  length), the song title to UtaTen for Japanese readings, the YouTube video id to YouTube (for the video's title), and the album-art image request to the player's own
+  length), the video id to YouTube Music (its own lyrics, only when no timed lyrics exist), the song title to UtaTen for Japanese readings, the YouTube video id to YouTube (for the video's title), and the album-art image request to the player's own
   CDN. No account, identifier or telemetry. Kugou is queried over plain HTTP (its certificate does not validate).
 - **Local listeners, `127.0.0.1` only:** `8899` (extension receiver, off unless enabled; accepts `POST /queue`
   only from a browser-extension origin with the widget's marker header).
@@ -164,7 +165,7 @@ been tested against a live YouTube Music tab yet.
 | No lyrics for a song | `touch ~/.cache/lyric-widget/debug`, restart plasmashell, replay; then `journalctl --user -u plasma-plasmashell -n 300 \| grep -E "netease\|kugou\|publish"` shows each provider's pick |
 | Chrome shows `Song \| YouTube Music` with no artist | install/enable **Plasma Browser Integration** |
 | Wrong Japanese readings | make sure `./setup-romaji.sh` finished (`romanization: ready`); readings come from UtaTen when it has the song |
-| Visualizer blank | check `cava` is installed and audio plays; Settings, Audio input |
+| Visualizer blank | check `cava` is installed and audio plays; Settings, Behavior, Visualizer tab |
 | See errors | `journalctl --user -b \| grep -i -E "lyric\|org.lyricwidget"` |
 
 ## Known limits
@@ -189,4 +190,4 @@ extension/  Chrome extension (Manifest V3) for the YouTube Music queue
 GPL-3.0 (see `LICENSE`). The visualizer files under `plasmoid/contents/ui/audioviz/` are copied from
 [Plasma Audio Visualizer](https://github.com/luisbocanegra/plasma-audio-visualizer) by Luis Bocanegra
 (GPL-3.0), which is why this project is GPL-3.0 too; see `NOTICE`. Lyric data: LRCLIB, NetEase Cloud Music,
-QQ Music, Kugou, Spotify (Musixmatch), UtaTen (readings). Romanization: MeCab, UniDic, fugashi, cutlet, ICU.
+QQ Music, Kugou, YouTube Music, Spotify (Musixmatch), UtaTen (readings). Romanization: MeCab, UniDic, fugashi, cutlet, ICU.

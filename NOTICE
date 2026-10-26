@@ -3,8 +3,8 @@ Lyric Widget is licensed under the GNU General Public License v3.0 (see LICENSE)
 It includes work from "Plasma Audio Visualizer" by Luis Bocanegra
 (https://github.com/luisbocanegra/plasma-audio-visualizer, GPL-3.0): the files under
 plasmoid/contents/ui/audioviz/ come from that project (settings pages, renderer, colour pickers,
-cava configuration; its General page's controls now live on this project's Visualizer page), with these changes: the process backend is replaced by this project's
+cava configuration; its General page's controls now live on this project's General and Layout pages), with these changes: the process backend is replaced by this project's
 src/Process.cpp, the panel-only settings and the Python fallback are removed, and the import paths
-and settings schema are adapted, and the style page shows a note while the album-cover colours are in use. Small robustness changes: the colour forms tolerate settings that are
+and settings schema are adapted, and the style page shows a note while the album-cover colours are in use, the style and cava pages are embeddable items (ConfigVisualizer.qml, ConfigCava.qml) inside this project's Appearance and Behavior pages, and the colour gradient accepts more directions (right to left, top to bottom, from or to the center, fill). Small robustness changes: the colour forms tolerate settings that are
 not there yet, and the "Stop CAVA" button and an unused colour-picker file were removed. components/DoubleSpinBoxCompat.qml is by Wolthera van Hovell tot
 Westerflier (GPL-2.0-or-later).

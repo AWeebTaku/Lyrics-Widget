@@ -206,7 +206,7 @@ PlasmoidItem {
         }
 
         // Hover to nudge this song's timing (remembered per song): + = lyrics earlier, - = later.
-        // Off by default; Settings -> Lyrics -> Timing.
+        // Off by default; Settings -> Behavior -> Lyrics tab.
         HoverHandler { id: hover }
         // Hover buttons, top right: look for other lyrics (saved to the library) and open the library
         Column {

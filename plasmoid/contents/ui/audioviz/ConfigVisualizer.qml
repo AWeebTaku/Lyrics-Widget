@@ -69,8 +69,8 @@ Item {
             visible: root.cfg_tintFromArt
             type: Kirigami.MessageType.Information
             text: root.cfg_tintMode === 1
-                  ? i18n("Using one color from the album cover. The bar and wave colors below are not used while this is on (Lyrics page).")
-                  : i18n("Using the colors of the album cover. The bar and wave colors below are not used while this is on (Lyrics page).")
+                  ? i18n("Using one color from the album cover. The bar and wave colors below are not used while this is on (Appearance page, Lyrics tab).")
+                  : i18n("Using the colors of the album cover. The bar and wave colors below are not used while this is on (Appearance page, Lyrics tab).")
         }
 
         Kirigami.FormLayout {
