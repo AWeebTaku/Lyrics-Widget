@@ -392,6 +392,19 @@ void LyricsController::onTrackChanged()
         });
         return;
     }
+    // The player's text can hide which language version this is ("0 (zero)" for the English single).
+    // The title in the track itself says, and so does YouTube's own title for the video.
+    m_track.lang = Text::languageHint(t.title);
+    if (m_track.lang.isEmpty() && QUrl(p->url()).host().contains(QLatin1String("youtube")) && !t.id.isEmpty()) {
+        const QString k = m_key;
+        fetchVideoTitle(t.id, [this, k](const QString &videoTitle) {
+            if (k != m_key)
+                return;
+            m_track.lang = Text::languageHint(videoTitle);
+            startLookup();
+        });
+        return;
+    }
     startLookup();
 }
 
@@ -930,3 +943,30 @@ void LyricsController::maybeFetchExtras(const StoredLyrics &s)
     m_extrasKey = m_key;
     m_extrasId = m_extras.lookupExtras(m_track);
 }
+
+// YouTube's title for a video (public oEmbed, nothing but the id is sent), cached for the session.
+void LyricsController::fetchVideoTitle(const QString &videoId, std::function<void(const QString &)> done)
+{
+    if (m_videoTitles.contains(videoId)) {
+        done(m_videoTitles.value(videoId));
+        return;
+    }
+    QUrl u(QStringLiteral("https://www.youtube.com/oembed"));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("url"), QStringLiteral("https://www.youtube.com/watch?v=") + videoId);
+    q.addQueryItem(QStringLiteral("format"), QStringLiteral("json"));
+    u.setQuery(q);
+    QNetworkRequest req(u);
+    req.setTransferTimeout(3000);
+    QNetworkReply *rep = m_artNam.get(req);
+    connect(rep, &QNetworkReply::finished, this, [this, rep, videoId, done] {
+        rep->deleteLater();
+        const QString title = rep->error() == QNetworkReply::NoError
+                                  ? QJsonDocument::fromJson(rep->readAll()).object().value(QStringLiteral("title")).toString()
+                                  : QString();
+        if (!title.isEmpty())
+            m_videoTitles.insert(videoId, title);
+        done(title); // empty on failure: the lookup goes ahead without it
+    });
+}
+

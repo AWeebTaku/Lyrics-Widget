@@ -201,6 +201,8 @@ void LyricsFetcher::lrclib(const JobPtr &job)
                     if (s < 0)
                         continue;
                     const QString synced = o.value(QStringLiteral("syncedLyrics")).toString();
+                    if (Text::langMismatch(synced.isEmpty() ? o.value(QStringLiteral("plainLyrics")).toString() : synced, job->track.lang))
+                        continue; // another language's version of the same title
                     // the fullest plain text among the good matches: uploads often skip verses
                     const QString plain = o.value(QStringLiteral("plainLyrics")).toString();
                     if (s >= kMinScore && plain.size() > g.plain.size())
@@ -269,6 +271,8 @@ void LyricsFetcher::lrclib(const JobPtr &job)
             LyricsResult r = fromLrclib(QJsonDocument::fromJson(body).object());
             r.conf = 2; // exact title + artist + album + duration
             r.srcDur = job->track.durationSec;
+            if (r.found && Text::langMismatch(r.synced.isEmpty() ? r.plain : r.synced, job->track.lang))
+                r = LyricsResult(); // wrong language version: let the search find the right one
             if (r.found) {
                 // CJK song whose exact hit is Latin-only: likely a user-made romaji copy. Keep it
                 // as the fallback and let the search look for the real script version.
@@ -654,6 +658,10 @@ QHash<QString, qint64> &LyricsFetcher::nextSlot()
 
 void LyricsFetcher::publish(const JobPtr &job)
 {
+    // whichever provider it came from, lyrics in the wrong language for this version are not an answer
+    for (LyricsResult *r : {&job->lrc, &job->ne, &job->qq, &job->kg})
+        if (r->found && Text::langMismatch(r->synced.isEmpty() ? r->plain : r->synced, job->track.lang))
+            *r = LyricsResult();
     const LyricsResult &l = job->lrc, &n = job->ne, &q = job->qq, &k = job->kg;
     const bool allDone = job->lrcDone && job->neDone && job->qqDone && job->kgDone;
     // Latin lyrics from LRCLIB need nothing from the others: don't wait for them...

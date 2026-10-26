@@ -12,6 +12,7 @@
 struct Track {
     QString title, artist, album, id; // id: YouTube video id / Spotify track id (may be empty)
     int durationSec = 0;
+    QString lang;   // "en" / "ja" / "ko" / "zh" when the title says which language version this is, else empty
     QString prefer; // provider that usually has this artist's lyrics ("lrclib"/"netease"/"qq"), may be empty
 };
 
@@ -285,6 +286,54 @@ inline int tempoVariant(const QString &title)
     return fast.match(title).hasMatch() ? 1 : slow.match(title).hasMatch() ? -1 : 0;
 }
 
+// "... -English version-", "(Japanese ver.)", "日本語版": which language version of a song this is. Songs
+// released in several languages share a title; the lyrics' language has to agree with this.
+inline QString languageHint(const QString &title)
+{
+    static const QRegularExpression re(
+        QStringLiteral(R"((english|japanese|korean|chinese|mandarin)\s*(ver\.?|version)|\b(eng|jp|kr)\s*ver\b|(日本語|英語|韓国語|中国語)\s*(版|ver)|\((english|japanese|korean|chinese)\))"),
+        QRegularExpression::CaseInsensitiveOption);
+    const auto m = re.match(title);
+    if (!m.hasMatch())
+        return {};
+    const QString t = m.captured().toLower();
+    if (t.contains(QLatin1String("english")) || t.contains(QLatin1String("eng")) || t.contains(QStringLiteral("英語")))
+        return QStringLiteral("en");
+    if (t.contains(QLatin1String("japanese")) || t.contains(QLatin1String("jp")) || t.contains(QStringLiteral("日本語")))
+        return QStringLiteral("ja");
+    if (t.contains(QLatin1String("korean")) || t.contains(QLatin1String("kr")) || t.contains(QStringLiteral("韓国語")))
+        return QStringLiteral("ko");
+    return QStringLiteral("zh");
+}
+
+// Does this lyric text contradict the language version asked for? A Japanese song often has English
+// lines mixed in, so "ja" only needs some kana; "en" allows only a few CJK characters (names, a quote).
+inline bool langMismatch(const QString &text, const QString &lang)
+{
+    if (lang.isEmpty() || text.isEmpty())
+        return false;
+    double kana = 0, hangul = 0, han = 0, letters = 0;
+    for (const QChar c : text) {
+        if (!c.isLetter())
+            continue;
+        ++letters;
+        const ushort u = c.unicode();
+        kana += (u >= 0x3040 && u <= 0x30FF);
+        hangul += (u >= 0xAC00 && u <= 0xD7A3);
+        han += ((u >= 0x4E00 && u <= 0x9FFF) || (u >= 0x3400 && u <= 0x4DBF));
+    }
+    if (letters < 20)
+        return false;
+    if (lang == QLatin1String("en"))
+        return (kana + hangul + han) / letters > 0.08;
+    if (lang == QLatin1String("ja"))
+        return kana / letters < 0.05;
+    if (lang == QLatin1String("ko"))
+        return hangul / letters < 0.05;
+    return han / letters < 0.2 || kana / letters > 0.05; // zh
+}
+
+// "Alright by Kendrick Lamar, but it will change your life": the song and artist named in an edit's title.
 // Longest stretch (s) between two stamps. Community-uploaded copies sometimes lack a whole verse,
 // leaving the last line stuck on screen; real instrumental breaks are rarely over ~45 s.
 inline double maxStampGap(const QString &lrc)

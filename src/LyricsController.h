@@ -137,6 +137,7 @@ private:
     void romanizeKanji();
     void updateArt(const QString &url);
     void startLookup();
+    void fetchVideoTitle(const QString &videoId, std::function<void(const QString &)> done);
     void maybeFetchExtras(const StoredLyrics &s);
     bool isBannerLine(const QString &line) const;
     void maybeFetchReading(const StoredLyrics &s);
@@ -172,7 +173,7 @@ private:
     QVector<QVariantList> m_srcWords; // per source line, word timing curve
     QNetworkAccessManager m_artNam;
     QString m_artUrl;
-    QColor m_accent;
+    QHash<QString, QString> m_videoTitles; // YouTube video id -> its title
     QList<QColor> m_palette;
     double m_timeScale = 1; // playing length / matched length, only for sped-up / slowed uploads
     bool m_synced = false;
