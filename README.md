@@ -4,28 +4,39 @@ Synced lyrics on your desktop for **Spotify** and **YouTube / YouTube Music in C
 romanization, karaoke highlighting, an embedded audio visualizer and look-ahead for shuffled queues.
 A native Plasma widget: QML for the interface, a C++ plugin for everything else.
 
-> Status: personal project, developed and tested on Arch Linux with Plasma 6 and Qt 6.12. There is no
-> automated test suite; features were checked by hand against real songs. Issues and patches welcome.
+> Status: personal project, developed and tested on Arch Linux with Plasma 6 and Qt 6.12. The repository has no
+> test suite; features were checked against real songs and with throw-away test programs. Issues and patches welcome.
 
 ## Features
 
 - **Timed lyrics** for the song playing, switching line by line from the player's position (one precise
-  timer per line, nothing polling), with a smooth swipe-and-fade between lines scaled to the song's pace.
+  timer per line; while synced lyrics play the real position is checked twice a second, so seeks are never missed), with a
+  smooth swipe-and-fade between lines scaled to the song's pace.
 - **Many sources, matched carefully.** Spotify songs are first asked of the Spotify app itself (exact, by
   track id). Otherwise LRCLIB, NetEase, QQ Music and Kugou are searched in parallel and scored on title,
   artist, length and album, with cross-script matching (`ヨルシカ` = `Yorushika`). No accounts or keys.
 - **Romanization replaces the original line** (Japanese, Korean, Chinese) when available: provider
   romanization, human-made furigana from UtaTen, or a local MeCab/UniDic converter.
+- **Lyrics library:** a settings page to fetch the lyrics of the playing song, edit them, stretch or thin out the timing
+  (percent, shift, or "first line at / last line at") and save them. Saved lyrics win over every provider and
+  survive rebuilds. Searching from the page understands edits: "Alright by Kendrick Lamar, but ..." finds the original
+  song and stretches its timing to the length of the song that is playing (then fine-tune with Fit). The table keeps
+  title, artist, length, language and source, so a shared catalogue could be added later.
+- **Quiet when there is nothing to show:** "No lyrics found" and similar messages fade away after a few seconds.
+- **Language versions:** when a song exists in several languages under one title (English and Japanese singles), the
+  language named in the track or in YouTube's own video title ("-English version-") picks the matching lyrics; a
+  Japanese version may contain English lines.
 - **Songs vs. videos:** podcasts, episodes and long videos get no lookup; sped-up/slowed uploads have their
   timestamps stretched; incomplete synced lyrics are replaced by a complete copy or filled in from plain text.
+- **Instrumental breaks:** a line fades out once it has been sung when a long break follows, and returns with the next one.
 - **Karaoke:** word-by-word highlight when NetEase supplies word timing (asked for in the background, also for
   Spotify songs).
 - **Audio visualizer:** a 1:1 embed of *Plasma Audio Visualizer* by Luis Bocanegra with all its settings.
 - **Look-ahead:** lyrics of the next songs in the (shuffled) queue are fetched in advance (Spotify app,
   YouTube Music through a small Chrome extension).
-- **Optional audio listening** (off by default): tempo-matched animation, beat pulse, timing check.
-- **Dynamic:** colours from the album art, hides or compacts itself when there is no room or nothing plays,
-  pauses all work when a window is full screen or maximized.
+- **Dynamic:** up to four colours from the album cover, exactly as they are (current line, other lines, and a gradient in
+  the visualizer; black, white and grey covers give those greys), one colour or several; hides the neighbouring lines
+  when the widget is small, fades out when nothing plays, and pauses all work when a window is full screen or maximized.
 - Per-song sync offsets, layered/overlapping lyrics, size modes (free, fixed, full screen width).
 
 ## Requirements
@@ -36,11 +47,10 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
 | Chrome / YouTube | the **Plasma Browser Integration** extension in your browser (for clean title and artist) |
 | Accurate Japanese romanization | `python` (the setup script does the rest) |
 | Visualizer (optional) | `cava` |
-| Audio listening (optional) | `libpulse` (provides `parec`) |
 | Spotify lyrics and look-ahead (optional) | Spotify started with a DevTools port (Spicetify enables **8088**) |
 
 ```
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava libpulse
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
 ```
 
 ## Install
@@ -82,20 +92,19 @@ It keeps this source folder. Remove the Chrome extension yourself at `chrome://e
 
 ## Settings
 
-Right-click the widget, **Configure**. Three pages (two more appear while the visualizer is on):
+Right-click the widget, **Configure**. Four simple pages, then two for the visualizer (shown while it is on), all built the same way (headed sections, label on the left, setting on the right):
 
-- **Lyrics**: show or hide the lyrics entirely (off = no lookups at all, handy for a visualizer-only widget);
-  font, sizes (0 hides that text), bold, colours; romanization; previous/next lines (hidden automatically when
-  the widget is small); line animation; karaoke; colours from the album art; header; global and per-song sync;
-  **Listen to the audio** (off): tempo-matched animation, beat pulse, experimental timing check.
-- **Layout**: widget size (free / fixed pixels, 0 = as small as possible / full screen width) and background panel;
-  **where the lyrics sit** (3x3 position grid plus pixel shift); the **visualizer** switch, size (% wide and high),
-  position (3x3 grid plus shift), auto-hide when silent; hide when idle, fade out when paused, pause everything
-  while a window is full screen or maximized.
-- **Sources**: look-ahead count (0-5), the Spotify app route (on by default; **Test** button), the YouTube Music
-  receiver with one-click help for installing the extension.
-- **Visualizer style** and **Audio input (CAVA)**: the original Plasma Audio Visualizer pages (styles, colours,
-  gradients, wave and circle modes, cava input, smoothing, equalizer, frame rate).
+- **Lyrics**: show lyrics on or off; font, the two text sizes (0 hides that text), bold, colours, colours from the
+  album cover (one color or several); what to show (romanized text, previous/next lines, word-by-word highlight, artist and title,
+  animation); shift all lyrics in time and optional sync buttons on hover.
+- **Layout**: widget size (free, fixed or full screen width; 0 = as small as possible), background, where the lyrics
+  sit (3x3 position picker and a pixel shift), the visualizer (on/off, size, position, hide when silent), and when
+  the widget hides or stops working (nothing playing, paused, a window full screen or maximized).
+- **Lyrics library**: get the lyrics of the playing song from the web, edit the text, stretch or thin out the
+  timing, save it (see above).
+- **Sources**: use the Spotify app for lyrics and the queue (port + Test), how many next songs to prepare, and
+  the YouTube Music queue with one-click help for installing the browser extension.
+- **Visualizer style** and **Audio input**: the original Plasma Audio Visualizer pages (style, colours, cava input), laid out like the rest.
 
 ## How it works
 
@@ -109,7 +118,6 @@ Right-click the widget, **Configure**. Three pages (two more appear while the vi
    (exact lyrics)        |
                          +---- LyricsFetcher: LRCLIB | NetEase | QQ | Kugou  (parallel, scored, merged)
                          +---- ReadingFetcher: UtaTen furigana -> romaji helper (MeCab + UniDic)
-                         +---- AudioListener: parec -> loudness curve, beats, tempo (optional)
  QML: LyricStage (transition), AudioViz (cava + canvas), settings pages
 ```
 
@@ -145,15 +153,13 @@ been tested against a live YouTube Music tab yet.
 ## Privacy and security
 
 - **Leaves your computer:** lyric searches to LRCLIB, NetEase, QQ Music and Kugou (song title, artist, album,
-  length), the song title to UtaTen for Japanese readings, and the album-art image request to the player's own
+  length), the song title to UtaTen for Japanese readings, the YouTube video id to YouTube (for the video's title), and the album-art image request to the player's own
   CDN. No account, identifier or telemetry. Kugou is queried over plain HTTP (its certificate does not validate).
 - **Local listeners, `127.0.0.1` only:** `8899` (extension receiver, off unless enabled; accepts `POST /queue`
   only from a browser-extension origin with the widget's marker header).
 - **Spotify app route:** connects to the app's existing local debug port and runs read-only queries (queue,
   lyrics). A DevTools port is powerful for any local program; keeping it open is your choice.
-- **Audio listening:** reads the output monitor (never the microphone) through `parec`, only while playing
-  and visible; only loudness numbers are kept, nothing is recorded or sent. It hears everything that plays.
-- **Files:** `~/.local/share/plasmashell/lyrics.db` (cache and offsets), `~/.local/share/lyric-widget/venv`
+- **Files:** `~/.local/share/plasmashell/lyrics.db` (cache, offsets and your lyrics library), `~/.local/share/lyric-widget/venv`
   (romanization helper).
 - Lyrics belong to their owners and come from third-party services under their own terms.
 
@@ -164,14 +170,13 @@ been tested against a live YouTube Music tab yet.
 | No lyrics for a song | `touch ~/.cache/lyric-widget/debug`, restart plasmashell, replay; then `journalctl --user -u plasma-plasmashell -n 300 \| grep -E "netease\|kugou\|publish"` shows each provider's pick |
 | Chrome shows `Song \| YouTube Music` with no artist | install/enable **Plasma Browser Integration** |
 | Wrong Japanese readings | make sure `./setup-romaji.sh` finished (`romanization: ready`); readings come from UtaTen when it has the song |
-| Visualizer blank | check `cava` is installed and audio plays; Settings, Audio input (CAVA) |
+| Visualizer blank | check `cava` is installed and audio plays; Settings, Audio input |
 | See errors | `journalctl --user -b \| grep -i -E "lyric\|org.lyricwidget"` |
 
 ## Known limits
 
 - Some songs have no synced lyrics anywhere; unsynced text is shown as a static block.
 - Karaoke needs NetEase word timing; many songs have none.
-- Automatic timing correction from the audio is experimental and conservative.
 - Provider APIs are unofficial and can change or rate-limit without notice.
 
 ## Project layout
@@ -179,7 +184,7 @@ been tested against a live YouTube Music tab yet.
 ```
 CMakeLists.txt  rebuild.sh  clear-all.sh  setup-romaji.sh
 src/        C++ plugin (QML module org.lyricwidget): PlayerWatcher, LyricsController, LyricsFetcher, Text.h
-            (matching), LyricsStore, ReadingFetcher, AudioListener, SpotifyApp, BrowserQueue, Process, ...
+            (matching), LyricsStore, ReadingFetcher, SpotifyApp, BrowserQueue, Process, ...
 plasmoid/   the widget: metadata.json, contents/ui (main.qml, LyricStage.qml, settings pages, audioviz/),
             contents/config (main.xml settings schema, config.qml pages)
 romaji/     romaji.py: MeCab + UniDic helper run in the private Python environment
