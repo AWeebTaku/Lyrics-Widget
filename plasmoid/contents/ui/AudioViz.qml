@@ -102,11 +102,16 @@ Item {
     property var waveFillColorsStored: mergedColors(Plasmoid.configuration.waveFillColors, Globals.baseWaveFillColors)
     property var inactiveBlockColorsCfg: mergedColors(Plasmoid.configuration.inactiveBlockColors, Globals.baseInactiveBlockColors)
 
-    // "Color from the cover" (lyric widget addition): one custom colour replaces the configured
-    // bar/wave colours while a cover colour is set; the stored settings are left alone.
-    property string tint: ""
+    // "Use colors from the album cover" (lyric widget addition): the cover colours replace the configured
+    // bar/wave colours while there are some; the stored settings are left alone.
+    property var tintColors: []
     function tinted(cfg) {
-        return tint === "" ? cfg : Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.Custom, custom: tint})
+        if (tintColors.length === 0)
+            return cfg
+        // one cover colour: a plain colour; several: a gradient through all of them
+        return tintColors.length === 1
+            ? Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.Custom, custom: tintColors[0]})
+            : Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.List, list: tintColors})
     }
     property var barColorsCfg: tinted(barColorsStored)
     property var waveFillColorsCfg: tinted(waveFillColorsStored)

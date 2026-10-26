@@ -36,6 +36,11 @@ KCM.SimpleKCM {
     property alias cfg_length: lengthSpinbox.value
     property alias cfg_minimumLength: minimumLengthSpinbox.value
     property int cfg_orientation
+    // read only: lets the page say when the cover's colours are being used instead of the ones below
+    property bool cfg_tintFromArt
+    property bool cfg_tintFromArtDefault
+    property int cfg_tintMode
+    property int cfg_tintModeDefault
 
     readonly property bool vertical: {
         if (Plasmoid.formFactor == PlasmaCore.Types.Vertical) {
@@ -46,6 +51,15 @@ KCM.SimpleKCM {
     readonly property string dimensionStr: vertical ? i18n("height") : i18n("width")
 
     ColumnLayout {
+
+        Kirigami.InlineMessage {
+            Layout.fillWidth: true
+            visible: root.cfg_tintFromArt
+            type: Kirigami.MessageType.Information
+            text: root.cfg_tintMode === 1
+                  ? i18n("Using one color from the album cover. The bar and wave colors below are not used while this is on (Lyrics page).")
+                  : i18n("Using the colors of the album cover. The bar and wave colors below are not used while this is on (Lyrics page).")
+        }
 
         Kirigami.FormLayout {
             id: parentLayout

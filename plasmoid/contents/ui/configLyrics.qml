@@ -12,14 +12,15 @@ KCM.SimpleKCM {
     property alias cfg_boldCurrent: boldCurrent.checked
     property alias cfg_textColor: textColor.value
     property alias cfg_dimColor: dimColor.value
+    property alias cfg_tintFromArt: tint.checked
+    property int cfg_tintMode
     property alias cfg_showRoman: showRoman.checked
     property alias cfg_showHeader: showHeader.checked
     property alias cfg_showNeighbours: showNeighbours.checked
     property alias cfg_animateLines: animate.checked
     property alias cfg_karaoke: karaoke.checked
-    property alias cfg_tintFromArt: tint.checked
-    property alias cfg_tintVisualizer: tintViz.checked
-    property alias cfg_autoCompact: compact.checked
+    property alias cfg_showHeader: showHeader.checked
+    property alias cfg_animateLines: animate.checked
     property int cfg_offsetMs
     property alias cfg_showSyncControls: showSync.checked
 
@@ -31,14 +32,15 @@ KCM.SimpleKCM {
     property bool cfg_boldCurrentDefault
     property string cfg_textColorDefault
     property string cfg_dimColorDefault
+    property bool cfg_tintFromArtDefault
+    property int cfg_tintModeDefault
     property bool cfg_showRomanDefault
     property bool cfg_showHeaderDefault
     property bool cfg_showNeighboursDefault
     property bool cfg_animateLinesDefault
     property bool cfg_karaokeDefault
-    property bool cfg_tintFromArtDefault
-    property bool cfg_tintVisualizerDefault
-    property bool cfg_autoCompactDefault
+    property bool cfg_showHeaderDefault
+    property bool cfg_animateLinesDefault
     property int cfg_offsetMsDefault
     property bool cfg_showSyncControlsDefault
 
@@ -65,8 +67,14 @@ KCM.SimpleKCM {
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Colors") }
         ColorField { id: textColor; Kirigami.FormData.label: i18n("Current line:") }
         ColorField { id: dimColor; Kirigami.FormData.label: i18n("Other lines:") }
-        QQC2.CheckBox { id: tint; Kirigami.FormData.label: i18n("Album art:"); text: i18n("Color the current line from the cover") }
-        QQC2.CheckBox { id: tintViz; text: i18n("Color the visualizer from the cover too"); enabled: tint.checked }
+        QQC2.CheckBox { id: tint; text: i18n("Use colors from the album cover") }
+        QQC2.ComboBox {
+            Kirigami.FormData.label: i18n("Cover colors:")
+            enabled: tint.checked
+            model: [i18n("Multiple colors"), i18n("One color")]
+            currentIndex: cfg_tintMode
+            onActivated: cfg_tintMode = currentIndex
+        }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Content") }
         QQC2.CheckBox { id: showRoman; Kirigami.FormData.label: i18n("Romanization:"); text: i18n("Replace the original with romanization when available") }

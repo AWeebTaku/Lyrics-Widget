@@ -18,6 +18,7 @@ Item {
     property int vAlign: 1             // 0 top, 1 middle, 2 bottom
     readonly property int textAlign: hAlign === 0 ? Text.AlignLeft : hAlign === 2 ? Text.AlignRight : Text.AlignHCenter
     property color curColor: cfg.textColor
+    property color sideColor: cfg.dimColor
     property bool hidden: false        // the line is sung and a long break follows: fade everything out
     opacity: hidden ? 0 : 1
     Behavior on opacity { NumberAnimation { duration: stage.hidden ? 450 : 100 } }  // quick back in
@@ -76,7 +77,7 @@ Item {
             width: parent.width
             horizontalAlignment: stage.textAlign
             elide: Text.ElideRight
-            color: stage.cfg.dimColor
+            color: stage.sideColor
             font.family: stage.cfg.fontFamily
             font.pixelSize: Math.max(1, stage.cfg.sideSize)
         }
@@ -92,7 +93,7 @@ Item {
             fontSizeMode: Text.Fit
             minimumPixelSize: Math.min(12, Math.max(1, stage.cfg.mainSize))
             elide: Text.ElideRight
-            color: col.isActive && stage.karaokeFrac >= 0 ? stage.cfg.dimColor : stage.curColor
+            color: col.isActive && stage.karaokeFrac >= 0 ? stage.sideColor : stage.curColor
             font.family: stage.cfg.fontFamily
             font.pixelSize: Math.max(1, stage.cfg.mainSize)
             font.bold: stage.cfg.boldCurrent
@@ -143,7 +144,7 @@ Item {
             width: parent.width
             horizontalAlignment: stage.textAlign
             elide: Text.ElideRight
-            color: stage.cfg.dimColor
+            color: stage.sideColor
             font.family: stage.cfg.fontFamily
             font.pixelSize: Math.max(1, stage.cfg.sideSize)
         }

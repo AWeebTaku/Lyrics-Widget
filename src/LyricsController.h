@@ -53,10 +53,12 @@ class LyricsController : public QObject
     Q_PROPERTY(int trackOffsetMs READ trackOffsetMs NOTIFY offsetMsChanged) // this song's nudge
     // Matched version is this many seconds shorter(-)/longer(+) than the playing one; 0 = same
     // the synced lyrics skip a long stretch (missing verse): lines can't follow the song there
-    // dominant colour of the album art, light enough to read on a dark background; invalid when unknown
+    // colours of the album art, light enough to read on a dark background; accent = the main one
+    // (invalid when unknown), palette = up to four distinct ones
     // word timing of the current line: [[msIntoLine, fractionSung], ...] or empty
     Q_PROPERTY(QVariantList karaoke READ karaoke NOTIFY currentIndexChanged)
     Q_PROPERTY(QColor accent READ accent NOTIFY accentChanged)
+    Q_PROPERTY(QVariantList palette READ palette NOTIFY accentChanged)
     Q_PROPERTY(bool incomplete READ incomplete NOTIFY linesChanged)
     // lines put back from the plain text with estimated times (a verse the synced copy skipped)
     Q_PROPERTY(int estimatedLines READ estimatedLines NOTIFY linesChanged)
@@ -99,7 +101,8 @@ public:
     bool incomplete() const { return m_synced && m_filled == 0 && Text::incompleteLrc(m_syncedRaw); }
     QVariantList karaoke() const;
     Q_INVOKABLE int linePosMs() const;
-    QColor accent() const { return m_accent; }
+    QColor accent() const { return m_palette.isEmpty() ? QColor() : m_palette.first(); }
+    QVariantList palette() const { QVariantList l; for (const QColor &c : m_palette) l << c; return l; }
     int estimatedLines() const { return m_filled; }
     int gapSec() const { return m_gapSec; }
     Q_INVOKABLE void nudge(int deltaMs); // saved per track; 0 resets
@@ -170,6 +173,7 @@ private:
     QNetworkAccessManager m_artNam;
     QString m_artUrl;
     QColor m_accent;
+    QList<QColor> m_palette;
     double m_timeScale = 1; // playing length / matched length, only for sped-up / slowed uploads
     bool m_synced = false;
     bool m_hasRoman = false;

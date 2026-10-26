@@ -36,7 +36,13 @@ PlasmoidItem {
         function onPlayingChanged() { if (lyrics.playing) root.faded = false }
         function onIdleChanged() { if (!lyrics.idle) root.faded = false }
     }
-    readonly property color curColor: cfg.tintFromArt && lyrics.accent.valid ? lyrics.accent : cfg.textColor
+    // Colours of the album cover (when switched on): the main one for the current line, the second for the
+    // other lines, all of them as a gradient in the visualizer
+    readonly property bool tinted: cfg.tintFromArt && lyrics.palette.length > 0
+    readonly property color curColor: tinted ? lyrics.palette[0] : cfg.textColor
+    // "One color" uses only the cover's main colour (current line and visualizer); the other lines keep their own
+    readonly property bool multiColor: tinted && cfg.tintMode === 0 && lyrics.palette.length > 1
+    readonly property color sideColor: multiColor ? Qt.alpha(lyrics.palette[1], 0.8) : cfg.dimColor
 
     // Windows on this screen: a full screen / maximized one suspends the whole widget
     TasksModel {
@@ -89,8 +95,7 @@ PlasmoidItem {
             id: vizLoader
             active: root.cfg.showVisualizer && !lyrics.idle && lyrics.playing && !root.suspended
             source: "AudioViz.qml"
-            onLoaded: item.tint = Qt.binding(() => root.cfg.tintFromArt && root.cfg.tintVisualizer && lyrics.accent.valid
-                                                    ? lyrics.accent.toString() : "")
+            onLoaded: item.tintColors = Qt.binding(() => !root.tinted ? [] : (root.multiColor ? lyrics.palette.map(c => c.toString()) : [lyrics.palette[0].toString()]))
             // size as a share of the widget, placed on a 3x3 grid plus a pixel offset
             width: parent.width * root.cfg.vizWidthPct / 100
             height: parent.height * root.cfg.vizHeightPct / 100
@@ -111,7 +116,7 @@ PlasmoidItem {
                   + (lyrics.incomplete ? "   ⚠ lyrics incomplete" : "")
                   + (lyrics.estimatedLines > 0 ? "   ≈ " + lyrics.estimatedLines + " lines timed by estimate" : "")
                   + (root.cfg.showSyncControls && lyrics.gapSec !== 0 ? "   ⚠ version differs by " + (lyrics.gapSec > 0 ? "+" : "") + lyrics.gapSec + "s: use ± to sync" : "")
-            color: root.cfg.dimColor
+            color: root.sideColor
             font.family: root.cfg.fontFamily
             font.pixelSize: 13
         }
@@ -127,7 +132,7 @@ PlasmoidItem {
             verticalAlignment: view.vAlign
             wrapMode: Text.WordWrap
             text: lyrics.status
-            color: root.cfg.dimColor
+            color: root.sideColor
             font.family: root.cfg.fontFamily
             font.pixelSize: Math.max(1, root.cfg.sideSize)
         }
@@ -175,6 +180,7 @@ PlasmoidItem {
             gapMs: lyrics.lineGapMs
             animate: root.cfg.animateLines
             curColor: root.curColor
+            sideColor: root.sideColor
             hidden: lyrics.lineHidden
             showSides: root.cfg.showNeighbours && (!root.cfg.autoCompact || view.height >= 150)
             karaokeFrac: view.kfrac
@@ -218,7 +224,7 @@ PlasmoidItem {
                 Text {
                     required property var modelData
                     text: modelData.ms === 0 ? "sync " + (lyrics.trackOffsetMs / 1000).toFixed(1) + "s ⟲" : modelData.label
-                    color: root.cfg.dimColor
+                    color: root.sideColor
                     font.pixelSize: 13
                     MouseArea {
                         anchors { fill: parent; margins: -6 }

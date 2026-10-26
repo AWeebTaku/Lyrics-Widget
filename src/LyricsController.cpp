@@ -1,6 +1,7 @@
 #include "LyricsController.h"
 
 #include "GapFill.h"
+#include "Palette.h"
 #include "RomanAlign.h"
 #include "Romanizer.h"
 #include "Text.h"
@@ -747,41 +748,14 @@ void LyricsController::noteWin(const Track &t, const LyricsResult &r)
         m_store.addWin(Text::norm(cands.first().artist), r.provider);
 }
 
-// Dominant colour of the cover: 24x24 thumbnail, hue buckets weighted by saturation, the winner's
-// average brightened to a readable tone. Grey covers (no clear hue) give no accent.
-static QColor dominant(const QImage &src)
-{
-    const QImage img = src.scaled(24, 24, Qt::IgnoreAspectRatio, Qt::SmoothTransformation).convertToFormat(QImage::Format_RGB32);
-    double w[12] = {}, r[12] = {}, g[12] = {}, b[12] = {};
-    for (int y = 0; y < img.height(); ++y)
-        for (int x = 0; x < img.width(); ++x) {
-            const QColor c = img.pixelColor(x, y);
-            const double wt = c.hsvSaturationF() * c.valueF();
-            if (wt < 0.05 || c.hsvHue() < 0)
-                continue;
-            const int k = c.hsvHue() / 30 % 12;
-            w[k] += wt; r[k] += wt * c.redF(); g[k] += wt * c.greenF(); b[k] += wt * c.blueF();
-        }
-    int best = 0;
-    for (int k = 1; k < 12; ++k)
-        if (w[k] > w[best])
-            best = k;
-    if (w[best] < 1.5)
-        return {};
-    QColor c = QColor::fromRgbF(r[best] / w[best], g[best] / w[best], b[best] / w[best]);
-    float h, s, l;
-    c.getHslF(&h, &s, &l);
-    return QColor::fromHslF(h, std::max(s, 0.45f), std::clamp(l, 0.62f, 0.8f));
-}
-
 void LyricsController::updateArt(const QString &url)
 {
     if (url == m_artUrl)
         return;
     m_artUrl = url;
-    auto set = [this](const QColor &c) {
-        if (c != m_accent) {
-            m_accent = c;
+    auto set = [this](const QList<QColor> &p) {
+        if (p != m_palette) {
+            m_palette = p;
             emit accentChanged();
         }
     };
@@ -790,7 +764,7 @@ void LyricsController::updateArt(const QString &url)
         return;
     }
     if (url.startsWith(QLatin1String("file:"))) {
-        set(dominant(QImage(QUrl(url).toLocalFile())));
+        set(Palette::of(QImage(QUrl(url).toLocalFile())));
         return;
     }
     QNetworkReply *rep = m_artNam.get(QNetworkRequest(QUrl(url)));
@@ -802,7 +776,7 @@ void LyricsController::updateArt(const QString &url)
         QImage img;
         if (rep->error() == QNetworkReply::NoError)
             img.loadFromData(rep->readAll());
-        set(img.isNull() ? QColor() : dominant(img));
+        set(img.isNull() ? QList<QColor>() : Palette::of(img));
     });
 }
 
