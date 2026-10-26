@@ -35,6 +35,7 @@ public:
 
     Q_INVOKABLE QString load();                                           // the saved lyrics, else the cached ones
     Q_INVOKABLE void search(const QString &title, const QString &artist); // answer arrives as found()
+    Q_INVOKABLE void startOver() { m_skip.clear(); m_query.clear(); } // the next search begins with the best result
     Q_INVOKABLE bool save(const QString &text, const QString &title, const QString &artist);
     Q_INVOKABLE void remove();
     // t' = t * percent/100 + shiftMs, for every timestamp of the text
@@ -60,5 +61,7 @@ private:
     QString m_key, m_status;
     bool m_saved = false, m_busy = false;
     quint64 m_searchId = 0;
+    QStringList m_skip; // results of this search already shown: each press of Get lyrics shows the next one
+    QString m_query;
     bool m_stretchToSong = false; // the searched title is an edit: stretch the result to the playing length
 };

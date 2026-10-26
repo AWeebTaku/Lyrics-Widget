@@ -36,6 +36,7 @@ LyricsResult fromLrclib(const QJsonObject &o)
     r.synced = o.value(QStringLiteral("syncedLyrics")).toString();
     r.plain = o.value(QStringLiteral("plainLyrics")).toString();
     r.found = r.instrumental || !r.synced.isEmpty() || !r.plain.isEmpty();
+    r.sourceId = QStringLiteral("lrclib:") + QString::number(o.value(QStringLiteral("id")).toInteger());
     return r;
 }
 
@@ -46,9 +47,9 @@ struct LyricsFetcher::Job {
     quint64 id = 0;
     Track track;
     QVector<Candidate> cands;
-    LyricsResult lrc, ne, qq, kg;
+    LyricsResult lrc, ne, qq, kg, yt;
     LyricsResult lrcFallback, exactPlain; // exact-match hit held back: romaji-only copy of a CJK song
-    bool lrcFailed = false, lrcDone = false, neDone = false, qqDone = false, kgDone = false, published = false, finalSent = false;
+    bool lrcFailed = false, lrcDone = false, neDone = false, qqDone = false, kgDone = false, ytStarted = false, ytDone = false, published = false, finalSent = false;
 };
 
 LyricsFetcher::LyricsFetcher(QObject *parent) : QObject(parent) {}
@@ -220,6 +221,9 @@ void LyricsFetcher::lrclib(const JobPtr &job)
                     if (s < 0)
                         continue;
                     const QString synced = o.value(QStringLiteral("syncedLyrics")).toString();
+                    if (job->track.skip.contains(QStringLiteral("lrclib:") + QString::number(o.value(QStringLiteral("id")).toInteger()))
+                        || (job->track.onlySynced && synced.isEmpty()))
+                        continue; // already shown, or not wanted
                     if (Text::langMismatch(synced.isEmpty() ? o.value(QStringLiteral("plainLyrics")).toString() : synced, job->track.lang))
                         continue; // another language's version of the same title
                     // the fullest plain text among the good matches: uploads often skip verses
@@ -290,6 +294,8 @@ void LyricsFetcher::lrclib(const JobPtr &job)
             LyricsResult r = fromLrclib(QJsonDocument::fromJson(body).object());
             r.conf = 2; // exact title + artist + album + duration
             r.srcDur = job->track.durationSec;
+            if (r.found && (job->track.skip.contains(r.sourceId) || (job->track.onlySynced && r.synced.isEmpty())))
+                r = LyricsResult(); // shown before / not wanted: the search finds the next one
             if (r.found && Text::langMismatch(r.synced.isEmpty() ? r.plain : r.synced, job->track.lang))
                 r = LyricsResult(); // wrong language version: let the search find the right one
             if (r.found) {
@@ -356,6 +362,8 @@ void LyricsFetcher::netease(const JobPtr &job)
                                << "score" << s << "| wanted" << c.title << c.artist << job->track.durationSec
                                << "artist similarity" << Text::similarity(c.artist, artists.join(QLatin1Char(' ')))
                                << "romanized" << Romanizer::line(artists.join(QLatin1Char(' ')));
+                if (job->track.skip.contains(QStringLiteral("netease:") + QString::number(o.value(QStringLiteral("id")).toInteger())))
+                    continue;
                 if (s > g.score) {
                     g.score = s;
                     g.dur = dur;
@@ -377,46 +385,20 @@ void LyricsFetcher::netease(const JobPtr &job)
         });
 }
 
-// NetEase "yrc": [lineStart,lineDur](wordStart,wordDur,0)word ... -> compact JSON of per-word offsets.
-static QString parseYrc(const QString &yrc)
-{
-    static const QRegularExpression head(QStringLiteral(R"(^\[(\d+),(\d+)\])"));
-    static const QRegularExpression word(QStringLiteral(R"(\((\d+),(\d+),\d+\))"));
-    QJsonArray lines;
-    for (const QString &row : yrc.split(QLatin1Char('\n'))) {
-        const auto h = head.match(row);
-        if (!h.hasMatch())
-            continue;
-        const qint64 start = h.captured(1).toLongLong();
-        QJsonArray words;
-        QList<QRegularExpressionMatch> ms;
-        for (auto it = word.globalMatch(row, h.capturedEnd()); it.hasNext();)
-            ms << it.next();
-        for (qsizetype i = 0; i < ms.size(); ++i) {
-            const qsizetype from = ms[i].capturedEnd(), to = i + 1 < ms.size() ? ms[i + 1].capturedStart() : row.size();
-            const QString text = row.mid(from, to - from);
-            if (!text.isEmpty())
-                words.append(QJsonArray{text, qint64(ms[i].captured(1).toLongLong() - start), ms[i].captured(2).toLongLong()});
-        }
-        if (words.size() >= 1)
-            lines.append(QJsonArray{start, words});
-    }
-    return lines.isEmpty() ? QString() : QString::fromUtf8(QJsonDocument(lines).toJson(QJsonDocument::Compact));
-}
-
 void LyricsFetcher::neteaseLyric(const JobPtr &job, qint64 songId, double conf, double dur)
 {
     QUrl url(QStringLiteral("https://music.163.com/api/song/lyric/v1"));
     QUrlQuery q;
     q.addQueryItem(QStringLiteral("id"), QString::number(songId));
-    // -1 on all = "send everything": original, translation, romanization, karaoke, word timing (yrc)
-    for (const char *k : {"lv", "kv", "tv", "rv", "yv"})
+    // -1 on all = "send everything": original, translation, romanization
+    for (const char *k : {"lv", "kv", "tv", "rv"})
         q.addQueryItem(QString::fromLatin1(k), QStringLiteral("-1"));
     url.setQuery(q);
-    get(job, url, [this, job, conf, dur](bool ok, bool, const QByteArray &body) {
+    get(job, url, [this, job, conf, dur, songId](bool ok, bool, const QByteArray &body) {
         LyricsResult r;
         r.conf = conf;
         r.srcDur = dur;
+        r.sourceId = QStringLiteral("netease:") + QString::number(songId);
         const QJsonObject o = QJsonDocument::fromJson(body).object();
         if (!ok || o.value(QStringLiteral("code")).toInt(200) != 200) {
             r.networkError = true;
@@ -429,7 +411,6 @@ void LyricsFetcher::neteaseLyric(const JobPtr &job, qint64 songId, double conf, 
             (looksSynced(lrc) ? r.synced : r.plain) = lrc;
             r.roman = o.value(QStringLiteral("romalrc")).toObject().value(QStringLiteral("lyric")).toString();
             r.found = true;
-            r.words = parseYrc(o.value(QStringLiteral("yrc")).toObject().value(QStringLiteral("lyric")).toString());
         }
         finishNetease(job, r);
     });
@@ -496,6 +477,8 @@ void LyricsFetcher::qq(const JobPtr &job)
                 const double s = Text::score(c, job->track.durationSec, o.value(QStringLiteral("name")).toString(),
                                              artists.join(QLatin1Char(' ')), dur, job->track.album,
                                              o.value(QStringLiteral("album")).toObject().value(QStringLiteral("name")).toString());
+                if (job->track.skip.contains(QStringLiteral("qq:") + o.value(QStringLiteral("mid")).toString()))
+                    continue;
                 if (s > g.score) {
                     g.score = s;
                     g.dur = dur;
@@ -526,10 +509,11 @@ void LyricsFetcher::qqLyric(const JobPtr &job, const QString &mid, double conf, 
     q.addQueryItem(QStringLiteral("nobase64"), QStringLiteral("1"));
     q.addQueryItem(QStringLiteral("g_tk"), QStringLiteral("5381"));
     url.setQuery(q);
-    get(job, url, [this, job, conf, dur](bool ok, bool, const QByteArray &body) {
+    get(job, url, [this, job, conf, dur, mid](bool ok, bool, const QByteArray &body) {
         LyricsResult r;
         r.conf = conf;
         r.srcDur = dur;
+        r.sourceId = QStringLiteral("qq:") + mid;
         const QJsonObject o = QJsonDocument::fromJson(body).object();
         if (!ok || o.value(QStringLiteral("code")).toInt(0) != 0) {
             r.networkError = true;
@@ -589,6 +573,8 @@ void LyricsFetcher::kugou(const JobPtr &job)
                 const double s = Text::score(c, job->track.durationSec, o.value(QStringLiteral("songname")).toString(),
                                              o.value(QStringLiteral("singername")).toString(), dur, job->track.album,
                                              o.value(QStringLiteral("album_name")).toString());
+                if (job->track.skip.contains(QStringLiteral("kugou:") + o.value(QStringLiteral("hash")).toString()))
+                    continue;
                 if (s > g.score) {
                     g.score = s;
                     g.dur = dur;
@@ -612,7 +598,8 @@ void LyricsFetcher::kugou(const JobPtr &job)
                 q.addQueryItem(QStringLiteral("hash"), g.id);
                 u.setQuery(q);
                 const double conf = g.score, dur = g.dur;
-                get(job, u, [this, job, conf, dur](bool ok, bool, const QByteArray &body) {
+                const QString hash = g.id;
+                get(job, u, [this, job, conf, dur, hash](bool ok, bool, const QByteArray &body) {
                     const QJsonArray cands = QJsonDocument::fromJson(body).object().value(QStringLiteral("candidates")).toArray();
                     if (!ok || cands.isEmpty()) {
                         LyricsResult r;
@@ -630,10 +617,11 @@ void LyricsFetcher::kugou(const JobPtr &job)
                     dq.addQueryItem(QStringLiteral("fmt"), QStringLiteral("lrc"));
                     dq.addQueryItem(QStringLiteral("charset"), QStringLiteral("utf8"));
                     d.setQuery(dq);
-                    get(job, d, [this, job, conf, dur](bool ok2, bool, const QByteArray &b2) {
+                    get(job, d, [this, job, conf, dur, hash](bool ok2, bool, const QByteArray &b2) {
                         LyricsResult r;
                         r.conf = conf;
                         r.srcDur = dur;
+                        r.sourceId = QStringLiteral("kugou:") + hash;
                         QString lrc = QString::fromUtf8(QByteArray::fromBase64(
                             QJsonDocument::fromJson(b2).object().value(QStringLiteral("content")).toString().toLatin1()));
                         if (lrc.startsWith(QChar(0xFEFF)))
@@ -675,14 +663,83 @@ QHash<QString, qint64> &LyricsFetcher::nextSlot()
     return hostSlots;
 }
 
+void LyricsFetcher::ytmusic(const JobPtr &job)
+{
+    auto finish = [this, job](const QString &text) {
+        if (job->id != m_current || job->ytDone)
+            return;
+        job->ytDone = true;
+        if (!text.trimmed().isEmpty()) {
+            job->yt.plain = text;
+            job->yt.found = true;
+            job->yt.conf = 1.5; // by video id: no matching involved
+            job->yt.sourceId = QStringLiteral("ytmusic:") + job->track.id;
+        }
+        publish(job);
+    };
+    QTimer::singleShot(6000, this, [finish] { finish(QString()); });
+    const QJsonObject ctx{{QStringLiteral("client"), QJsonObject{{QStringLiteral("clientName"), QStringLiteral("WEB_REMIX")},
+                                                                  {QStringLiteral("clientVersion"), QStringLiteral("1.20240101.01.00")},
+                                                                  {QStringLiteral("hl"), QStringLiteral("en")}}}};
+    auto post = [this](const QString &path, const QJsonObject &body, std::function<void(const QJsonObject &)> cb) {
+        QNetworkRequest req(QUrl(QStringLiteral("https://music.youtube.com/youtubei/v1/%1?prettyPrint=false").arg(path)));
+        req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+        req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Mozilla/5.0 (X11; Linux x86_64) lyric-widget/0.3"));
+        req.setRawHeader("Origin", "https://music.youtube.com");
+        req.setTransferTimeout(5000);
+        QNetworkReply *reply = m_nam.post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+        connect(reply, &QNetworkReply::finished, this, [reply, cb = std::move(cb)] {
+            reply->deleteLater();
+            cb(reply->error() == QNetworkReply::NoError ? QJsonDocument::fromJson(reply->readAll()).object() : QJsonObject());
+        });
+    };
+    // the video's "Lyrics" tab has its own browse id; that page holds the text
+    post(QStringLiteral("next"), {{QStringLiteral("context"), ctx}, {QStringLiteral("videoId"), job->track.id}},
+         [post, ctx, finish](const QJsonObject &o) {
+             QString browseId;
+             const QJsonArray tabs = o.value(QStringLiteral("contents")).toObject()
+                 .value(QStringLiteral("singleColumnMusicWatchNextResultsRenderer")).toObject()
+                 .value(QStringLiteral("tabbedRenderer")).toObject()
+                 .value(QStringLiteral("watchNextTabbedResultsRenderer")).toObject().value(QStringLiteral("tabs")).toArray();
+             for (const QJsonValue &t : tabs) {
+                 const QString id = t.toObject().value(QStringLiteral("tabRenderer")).toObject().value(QStringLiteral("endpoint")).toObject()
+                                        .value(QStringLiteral("browseEndpoint")).toObject().value(QStringLiteral("browseId")).toString();
+                 if (id.startsWith(QLatin1String("MPLYt")))
+                     browseId = id;
+             }
+             if (browseId.isEmpty()) {
+                 finish(QString());
+                 return;
+             }
+             post(QStringLiteral("browse"), {{QStringLiteral("context"), ctx}, {QStringLiteral("browseId"), browseId}},
+                  [finish](const QJsonObject &b) {
+                      const QJsonArray sections = b.value(QStringLiteral("contents")).toObject()
+                          .value(QStringLiteral("sectionListRenderer")).toObject().value(QStringLiteral("contents")).toArray();
+                      QString text;
+                      for (const QJsonValue &s : sections) {
+                          const QJsonArray runs = s.toObject().value(QStringLiteral("musicDescriptionShelfRenderer")).toObject()
+                                                      .value(QStringLiteral("description")).toObject().value(QStringLiteral("runs")).toArray();
+                          for (const QJsonValue &r : runs)
+                              text += r.toObject().value(QStringLiteral("text")).toString();
+                      }
+                      finish(text);
+                  });
+         });
+}
+
 void LyricsFetcher::publish(const JobPtr &job)
 {
     // whichever provider it came from, lyrics in the wrong language for this version are not an answer
-    for (LyricsResult *r : {&job->lrc, &job->ne, &job->qq, &job->kg})
+    if (job->track.onlySynced)
+        for (LyricsResult *r : {&job->lrc, &job->ne, &job->qq, &job->kg})
+            if (r->found && r->synced.isEmpty())
+                *r = LyricsResult();
+    for (LyricsResult *r : {&job->lrc, &job->ne, &job->qq, &job->kg, &job->yt})
         if (r->found && Text::langMismatch(r->synced.isEmpty() ? r->plain : r->synced, job->track.lang))
             *r = LyricsResult();
-    const LyricsResult &l = job->lrc, &n = job->ne, &q = job->qq, &k = job->kg;
-    const bool allDone = job->lrcDone && job->neDone && job->qqDone && job->kgDone;
+    const LyricsResult &l = job->lrc, &n = job->ne, &q = job->qq, &k = job->kg, &y = job->yt;
+    const bool mainDone = job->lrcDone && job->neDone && job->qqDone && job->kgDone;
+    const bool allDone = mainDone && (!job->ytStarted || job->ytDone);
     // Latin lyrics from LRCLIB need nothing from the others: don't wait for them...
     // ...unless the song is CJK: LRCLIB also holds user-made romaji-only copies, which are not
     // the lyrics we want on the main line.
@@ -703,6 +760,12 @@ void LyricsFetcher::publish(const JobPtr &job)
                             || (job->qqDone && !q.synced.isEmpty()) || (job->kgDone && !k.synced.isEmpty());
     if (job->finalSent)
         return; // later finishers are ignored once the final answer is out
+    // Nobody has timed lyrics: YouTube Music's own text for the playing video is the last resort
+    if (mainDone && !haveSynced && !job->ytStarted && !job->track.onlySynced && job->track.id.size() == 11) {
+        job->ytStarted = true;
+        ytmusic(job);
+        return;
+    }
     if (!allDone && !lrcEnough && !favEnough && !haveSynced)
         return;
 
@@ -724,7 +787,7 @@ void LyricsFetcher::publish(const JobPtr &job)
     if (!pick && l.instrumental)
         pick = &l;
     if (!pick)
-        for (const LyricsResult *r : {&l, &n, &q, &k})
+        for (const LyricsResult *r : {&l, &n, &q, &k, &y})
             if (!r->plain.isEmpty() && (!pick || r->conf > pick->conf))
                 pick = r;
     // Lyrics and romanization must come from the same version, or lines pair up wrongly and the
@@ -744,7 +807,7 @@ void LyricsFetcher::publish(const JobPtr &job)
     }
     LyricsResult out = pick ? *pick : n;
     out.provider = pick == &l ? QStringLiteral("lrclib") : pick == &q ? QStringLiteral("qq")
-                   : pick == &k ? QStringLiteral("kugou") : QStringLiteral("netease");
+                   : pick == &k ? QStringLiteral("kugou") : pick == &y ? QStringLiteral("ytmusic") : QStringLiteral("netease");
     // Romanization, best first: NetEase's own, then a human-made romaji copy from LRCLIB; the
     // controller aligns it line by line and fills any gaps locally.
     if (!lrcEnough && !n.roman.isEmpty())
@@ -759,10 +822,6 @@ void LyricsFetcher::publish(const JobPtr &job)
     for (const LyricsResult *r : {&l, &n, &q, &k})
         answered += !r->networkError;
     out.networkError = allDone && !out.found && answered == 0;
-    // Word timing (karaoke) comes from NetEase even when another provider's lyrics are shown; the
-    // controller only uses it on lines that match.
-    if (out.words.isEmpty() && !n.words.isEmpty())
-        out.words = n.words;
     // A CJK song whose NetEase lookup failed has no provider romanization *because of the failure*:
     // not a final answer, so it must not be cached; the controller retries.
     // (also when NetEase answered with no usable song: the same lookup often succeeds a moment later)

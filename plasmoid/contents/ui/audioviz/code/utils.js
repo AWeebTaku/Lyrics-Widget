@@ -80,10 +80,31 @@ function buildCanvasGradient(ctx, smooth, gradientStops, orientation, height, wi
     const centerY = height / 2;
     const radius = Math.min(width, height) / 2;
     gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-  } else if (orientation === 0) {
+  } else if (orientation === 0 || orientation === 4 || orientation === 5 || orientation === 6) {
     gradient = ctx.createLinearGradient(0, 0, width, 0);
+  } else if (orientation === 2) {
+    gradient = ctx.createLinearGradient(width, 0, 0, 0); // right to left
+  } else if (orientation === 3) {
+    gradient = ctx.createLinearGradient(0, 0, 0, height); // top to bottom
   } else {
     gradient = ctx.createLinearGradient(0, height, 0, 0);
+  }
+  // lyric widget: 4 = from the centre outwards (the first colour in the middle), 6 = the reverse, 5 = the first colour only
+  if ((orientation === 4 || orientation === 6) && gradientStops.length > 1) {
+    if (orientation === 6)
+      gradientStops = gradientStops.slice().reverse(); // the first colour at the edges
+    const n = gradientStops.length;
+    for (let i = n - 1; i >= 0; i--)
+      gradient.addColorStop(0.5 - 0.5 * i / (n - 1), gradientStops[i].color ?? gradientStops[i]);
+    for (let i = 1; i < n; i++)
+      gradient.addColorStop(0.5 + 0.5 * i / (n - 1), gradientStops[i].color ?? gradientStops[i]);
+    return gradient;
+  }
+  if (orientation === 5) {
+    const c0 = gradientStops[0].color ?? gradientStops[0];
+    gradient.addColorStop(0, c0);
+    gradient.addColorStop(1, c0);
+    return gradient;
   }
   for (let i = 0; i < gradientStops.length; i++) {
     const stop = gradientStops[i];

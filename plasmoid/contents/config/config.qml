@@ -1,12 +1,16 @@
 import QtQuick
 import org.kde.plasma.configuration
-import org.kde.plasma.plasmoid
 
 ConfigModel {
     ConfigCategory {
-        name: i18n("Lyrics")
+        name: i18n("General")
+        icon: "configure"
+        source: "configGeneral.qml"
+    }
+    ConfigCategory {
+        name: i18n("Appearance")
         icon: "preferences-desktop-font"
-        source: "configLyrics.qml"
+        source: "configAppearance.qml"
     }
     ConfigCategory {
         name: i18n("Layout")
@@ -14,9 +18,9 @@ ConfigModel {
         source: "configLayout.qml"
     }
     ConfigCategory {
-        name: i18n("Lyrics library")
-        icon: "document-edit"
-        source: "configLibrary.qml"
+        name: i18n("Behavior")
+        icon: "preferences-desktop-notification"
+        source: "configContent.qml"
     }
     ConfigCategory {
         name: i18n("Sources")
@@ -24,15 +28,8 @@ ConfigModel {
         source: "configAccounts.qml"
     }
     ConfigCategory {
-        name: i18n("Visualizer style")
-        icon: "preferences-desktop-color"
-        source: "audioviz/configVisualizer.qml"
-        visible: Plasmoid.configuration.showVisualizer
-    }
-    ConfigCategory {
-        name: i18n("Audio input")
-        icon: "audio-input-microphone"
-        source: "audioviz/configCava.qml"
-        visible: Plasmoid.configuration.showVisualizer
+        name: i18n("Lyrics library")
+        icon: "document-edit"
+        source: "configLibrary.qml"
     }
 }

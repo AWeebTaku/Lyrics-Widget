@@ -43,8 +43,11 @@ QString BrowserSetup::extensionPath() const
 
 void BrowserSetup::openExtensions(const QString &exec, const QString &scheme) const
 {
-    // a new tab in the browser's running window, or a new window if it is closed
-    QProcess::startDetached(exec, {scheme + QStringLiteral("://extensions")});
+    // Browsers often ignore a chrome:// address given on the command line and just open: the address is also
+    // put on the clipboard, to paste into the address bar
+    const QString url = scheme + QStringLiteral("://extensions");
+    QGuiApplication::clipboard()->setText(url);
+    QProcess::startDetached(exec, {QStringLiteral("--new-tab"), url});
 }
 
 void BrowserSetup::openFolder() const

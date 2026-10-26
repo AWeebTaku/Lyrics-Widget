@@ -105,13 +105,14 @@ Item {
     // "Use colors from the album cover" (lyric widget addition): the cover colours replace the configured
     // bar/wave colours while there are some; the stored settings are left alone.
     property var tintColors: []
+    property int tintFlow: 0 // see StyledText.flow; 0 = left to right (as the bars are laid out)
     function tinted(cfg) {
         if (tintColors.length === 0)
             return cfg
         // one cover colour: a plain colour; several: a gradient through all of them
         return tintColors.length === 1
             ? Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.Custom, custom: tintColors[0]})
-            : Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.List, list: tintColors})
+            : Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.List, list: tintColors, colorsOrientation: tintFlow})
     }
     property var barColorsCfg: tinted(barColorsStored)
     property var waveFillColorsCfg: tinted(waveFillColorsStored)

@@ -1,7 +1,7 @@
 # Lyric Widget for KDE Plasma 6
 
 Synced lyrics on your desktop for **Spotify** and **YouTube / YouTube Music in Chrome**, with
-romanization, karaoke highlighting, an embedded audio visualizer and look-ahead for shuffled queues.
+romanization, text styles, an embedded audio visualizer and look-ahead for shuffled queues.
 A native Plasma widget: QML for the interface, a C++ plugin for everything else.
 
 > Status: personal project, developed and tested on Arch Linux with Plasma 6 and Qt 6.12. The repository has no
@@ -28,9 +28,9 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
   Japanese version may contain English lines.
 - **Songs vs. videos:** podcasts, episodes and long videos get no lookup; sped-up/slowed uploads have their
   timestamps stretched; incomplete synced lyrics are replaced by a complete copy or filled in from plain text.
-- **Instrumental breaks:** a line fades out once it has been sung when a long break follows, and returns with the next one.
-- **Karaoke:** word-by-word highlight when NetEase supplies word timing (asked for in the background, also for
-  Spotify songs).
+- **Instrumental breaks:** a line fades out a few seconds after it has been sung when a long break follows, and returns with the next one.
+- **Text styles:** weights, italic, underline, letter spacing, caps, shadow, outline and a highlight bar.
+- **Other lyrics:** hover buttons (top right) look for the next-best lyrics, kept in your library, and open the library.
 - **Audio visualizer:** a 1:1 embed of *Plasma Audio Visualizer* by Luis Bocanegra with all its settings.
 - **Look-ahead:** lyrics of the next songs in the (shuffled) queue are fetched in advance (Spotify app,
   YouTube Music through a small Chrome extension).
@@ -92,19 +92,13 @@ It keeps this source folder. Remove the Chrome extension yourself at `chrome://e
 
 ## Settings
 
-Right-click the widget, **Configure**. Four simple pages, then two for the visualizer (shown while it is on), all built the same way (headed sections, label on the left, setting on the right):
+Right-click the widget, **Configure**. Five pages; each splits lyric and visualizer settings:
 
-- **Lyrics**: show lyrics on or off; font, the two text sizes (0 hides that text), bold, colours, colours from the
-  album cover (one color or several); what to show (romanized text, previous/next lines, word-by-word highlight, artist and title,
-  animation); shift all lyrics in time and optional sync buttons on hover.
-- **Layout**: widget size (free, fixed or full screen width; 0 = as small as possible), background, where the lyrics
-  sit (3x3 position picker and a pixel shift), the visualizer (on/off, size, position, hide when silent), and when
-  the widget hides or stops working (nothing playing, paused, a window full screen or maximized).
-- **Lyrics library**: get the lyrics of the playing song from the web, edit the text, stretch or thin out the
-  timing, save it (see above).
-- **Sources**: use the Spotify app for lyrics and the queue (port + Test), how many next songs to prepare, and
-  the YouTube Music queue with one-click help for installing the browser extension.
-- **Visualizer style** and **Audio input**: the original Plasma Audio Visualizer pages (style, colours, cava input), laid out like the rest.
+- **Appearance**: lyric font, sizes, weights, effects (shadow, outline, highlight), colours and cover colours; the visualizer's style.
+- **Layout**: widget size and background, lyric position, visualizer size and position, when the widget hides or pauses.
+- **Content and timing**: what to show, shift in time, sync and hover buttons; the visualizer's audio input.
+- **Sources**: next songs, Spotify app, YouTube Music (browser menu + extension), other players (any MPRIS player, allowed websites such as Apple Music's web player).
+- **Lyrics library**: get (press again for the next result), edit, retime and save lyrics.
 
 ## How it works
 
@@ -176,7 +170,6 @@ been tested against a live YouTube Music tab yet.
 ## Known limits
 
 - Some songs have no synced lyrics anywhere; unsynced text is shown as a static block.
-- Karaoke needs NetEase word timing; many songs have none.
 - Provider APIs are unofficial and can change or rate-limit without notice.
 
 ## Project layout

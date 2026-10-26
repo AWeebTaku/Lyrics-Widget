@@ -8,6 +8,7 @@ import QtQuick.Layouts
 RowLayout {
     id: field
     property string value: "#ffffff"
+    property bool alpha: false // transparency allowed: shadow, highlight and background; text colors are always solid
 
     QQC2.Button {
         implicitWidth: 80
@@ -25,8 +26,8 @@ RowLayout {
         active: false
         sourceComponent: ColorDialog {
             selectedColor: field.value
-            options: ColorDialog.ShowAlphaChannel
-            onAccepted: { field.value = selectedColor.toString(); loader.active = false }
+            options: field.alpha ? ColorDialog.ShowAlphaChannel : 0
+            onAccepted: { field.value = (field.alpha ? selectedColor : Qt.rgba(selectedColor.r, selectedColor.g, selectedColor.b, 1)).toString(); loader.active = false }
             onRejected: loader.active = false
             Component.onCompleted: open()
         }

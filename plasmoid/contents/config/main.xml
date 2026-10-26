@@ -32,8 +32,62 @@
     <entry name="showRoman" type="Bool">
       <default>true</default>
     </entry>
-    <entry name="boldCurrent" type="Bool">
-      <default>true</default>
+    <entry name="currentWeight" type="Int">
+      <default>700</default>
+    </entry>
+    <entry name="sideWeight" type="Int">
+      <default>400</default>
+    </entry>
+    <entry name="fontItalic" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="fontUnderline" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="letterSpacing" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="fontCaps" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="shadowOn" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="shadowColor" type="String">
+      <default>#b0000000</default>
+    </entry>
+    <entry name="shadowX" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="shadowY" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="shadowBlur" type="Int">
+      <default>4</default>
+    </entry>
+    <entry name="outlineOn" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="outlineColor" type="String">
+      <default>#000000</default>
+    </entry>
+    <entry name="outlineWidth" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="highlightOn" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="highlightColor" type="String">
+      <default>#40ffffff</default>
+    </entry>
+    <entry name="highlightPadX" type="Int">
+      <default>16</default>
+    </entry>
+    <entry name="highlightPadY" type="Int">
+      <default>4</default>
+    </entry>
+    <entry name="highlightRadius" type="Int">
+      <default>10</default>
     </entry>
     <entry name="hideWhenNothingPlaying" type="Bool">
       <default>false</default>
@@ -227,6 +281,12 @@
     <entry name="spotifyDebugPort" type="Int">
       <default>8088</default>
     </entry>
+    <entry name="anyPlayer" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="allowedSites" type="String">
+      <default>music.youtube.com,www.youtube.com,youtube.com,open.spotify.com</default>
+    </entry>
     <entry name="browserQueue" type="Bool">
       <default>false</default>
     </entry>
@@ -234,6 +294,15 @@
       <default>8899</default>
     </entry>
     <entry name="showNeighbours" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="lyricColorFlow" type="Int">
+      <default>5</default>
+    </entry>
+    <entry name="vizColorFlow" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="hoverButtons" type="Bool">
       <default>true</default>
     </entry>
     <entry name="showSyncControls" type="Bool">
@@ -271,9 +340,6 @@
     </entry>
     <entry name="vizOffsetY" type="Int">
       <default>0</default>
-    </entry>
-    <entry name="karaoke" type="Bool">
-      <default>true</default>
     </entry>
     <entry name="tintMode" type="Int">
       <default>0</default>

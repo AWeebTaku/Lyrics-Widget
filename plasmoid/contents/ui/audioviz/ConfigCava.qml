@@ -2,12 +2,13 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.kcmutils as KCM
 import org.kde.plasma.plasmoid
 import "./components"
 
-KCM.SimpleKCM {
+Item {
     id: root
+    implicitWidth: content.implicitWidth
+    implicitHeight: content.implicitHeight
     // general
     property alias cfg_barCount: barCountSpinbox.value
     property alias cfg_framerate: framerateSpinbox.value
@@ -46,6 +47,8 @@ KCM.SimpleKCM {
     }
 
     ColumnLayout {
+        id: content
+        width: root.width
         Kirigami.FormLayout {
             id: parentLayout
             Layout.fillWidth: true

@@ -13,6 +13,8 @@ struct Track {
     QString title, artist, album, id; // id: YouTube video id / Spotify track id (may be empty)
     int durationSec = 0;
     QString lang;   // "en" / "ja" / "ko" / "zh" when the title says which language version this is, else empty
+    QStringList skip;      // sources ("lrclib:12", "netease:34"...) not to pick again: lets a lookup return the next-best lyrics
+    bool onlySynced = false; // ignore results without timestamps
     QString prefer; // provider that usually has this artist's lyrics ("lrclib"/"netease"/"qq"), may be empty
 };
 
@@ -24,9 +26,12 @@ struct Candidate {
 namespace Text {
 
 inline bool hasNonLatin(const QString &s);
+inline QString norm(const QString &s);
 
 inline QString cleanTitle(QString t)
 {
+    // Styled text ("𝗪𝗢𝗥𝗞", full-width letters) becomes plain letters, as the lyric databases have it
+    t = t.normalized(QString::NormalizationForm_KC);
     // Chrome's own MPRIS player appends the site name: "Happier | YouTube Music".
     static const QRegularExpression site(QStringLiteral(R"(\s*[|｜-]\s*YouTube( Music)?\s*$)"),
                                          QRegularExpression::CaseInsensitiveOption);
@@ -54,6 +59,34 @@ inline QString cleanTitle(QString t)
 
 inline QString cleanArtist(QString a)
 {
+    a = a.normalized(QString::NormalizationForm_KC);
+    // Some uploads write a name in decorative letters from an unrelated script (Yi syllables standing in for
+    // Latin letters): nobody can search for that, and the real names are usually in the same credit
+    auto plausible = [](const QString &name) {
+        for (const QChar ch : name) {
+            if (!ch.isLetter())
+                continue;
+            switch (ch.script()) {
+            case QChar::Script_Latin: case QChar::Script_Han: case QChar::Script_Hiragana: case QChar::Script_Katakana:
+            case QChar::Script_Hangul: case QChar::Script_Cyrillic: case QChar::Script_Greek: case QChar::Script_Arabic:
+            case QChar::Script_Hebrew: case QChar::Script_Thai: case QChar::Script_Devanagari:
+                break;
+            default:
+                return false;
+            }
+        }
+        return true;
+    };
+    if (a.contains(QLatin1Char(','))) {
+        QStringList keep;
+        for (const QString &part : a.split(QLatin1Char(','))) // ponytail: names containing a comma are not split further
+            if (plausible(part))
+                keep << part.trimmed();
+        if (!keep.isEmpty())
+            a = keep.join(QStringLiteral(", "));
+    } else if (!plausible(a)) {
+        a.clear();
+    }
     static const QRegularExpression suffix(QStringLiteral(R"(\s*(-\s*Topic|VEVO|\s+Official)\s*$)"),
                                            QRegularExpression::CaseInsensitiveOption);
     static const QRegularExpression ft(QStringLiteral(R"(\s+(ft|feat)\.?\s+.*$)"),
@@ -126,7 +159,12 @@ inline QVector<Candidate> candidates(const Track &t)
         add(left, right);
         add(right, left); // "Song - Artist" ordering
     }
+    // "W●R K - WORK" on the album WORK: the part after the dash is the real title, the first part is styling
+    if (split && !t.album.isEmpty() && norm(right) == norm(cleanTitle(t.album)))
+        add(artist, right);
     add(artist, title);
+    if (split)
+        add(artist, right);
     if (split && !videoLike) {
         add(left, right);
         add(right, left);
@@ -157,8 +195,25 @@ inline QVector<Candidate> candidates(const Track &t)
         if (!v.isEmpty() && !out.contains({out[i].artist, v}))
             out.push_back({out[i].artist, v});
     }
-    if (out.size() > 6)
-        out.resize(6);
+    // several artists ("A, B", "A & B", "A feat. B", "A × B"): the databases often list only the first or the
+    // main one, so each of the first two is also tried alone, right after the full credit
+    static const QRegularExpression artistSep(
+        QStringLiteral(R"(\s*(?:,|&|、|／|/|×|;|\s+x\s+|\s+and\s+|\s+with\s+|\s+(?:feat|ft)\.?\s+)\s*)"),
+        QRegularExpression::CaseInsensitiveOption);
+    for (qsizetype i = 0; i < out.size() && out.size() < 8; ++i) {
+        const QStringList parts = out[i].artist.split(artistSep, Qt::SkipEmptyParts);
+        if (parts.size() < 2)
+            continue;
+        qsizetype at = i + 1;
+        for (int k = 0; k < 2; ++k) {
+            const Candidate c{parts[k].simplified(), out[i].title};
+            if (!c.artist.isEmpty() && !out.contains(c))
+                out.insert(at++, c);
+        }
+        i = at - 1;
+    }
+    if (out.size() > 8)
+        out.resize(8);
     return out;
 }
 

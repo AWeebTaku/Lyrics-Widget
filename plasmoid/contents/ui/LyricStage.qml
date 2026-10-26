@@ -19,6 +19,8 @@ Item {
     readonly property int textAlign: hAlign === 0 ? Text.AlignLeft : hAlign === 2 ? Text.AlignRight : Text.AlignHCenter
     property color curColor: cfg.textColor
     property color sideColor: cfg.dimColor
+    property var curColors: []   // several colours for the current line (see StyledText)
+    property int curFlow: 5
     property bool hidden: false        // the line is sung and a long break follows: fade everything out
     // slow out, quick back in (the next line must not wait for the fade)
     states: State { name: "hidden"; when: stage.hidden; PropertyChanges { stage.opacity: 0 } }
@@ -26,7 +28,6 @@ Item {
         Transition { to: "hidden"; NumberAnimation { property: "opacity"; duration: 450 } },
         Transition { from: "hidden"; NumberAnimation { property: "opacity"; duration: 100 } }
     ]
-    property real karaokeFrac: -1      // 0..1 of the current line sung, -1 = no word timing
 
     property int active: 0             // slot holding the current line
     property int shownIndex: -2
@@ -75,18 +76,21 @@ Item {
         property alias nextText: n.text
         function set(pv, cu, nx) { p.text = pv; c.text = cu; n.text = nx }
 
-        Text {
+        StyledText {
             id: p
+            cfg: stage.cfg
             visible: stage.showSides && stage.cfg.sideSize > 0
             width: parent.width
+            height: implicitHeight
+            implicitHeight: Math.ceil(stage.cfg.sideSize * 1.3)
             horizontalAlignment: stage.textAlign
-            elide: Text.ElideRight
             color: stage.sideColor
-            font.family: stage.cfg.fontFamily
-            font.pixelSize: Math.max(1, stage.cfg.sideSize)
+            pixelSize: Math.max(1, stage.cfg.sideSize)
         }
-        Text {
+        StyledText {
             id: c
+            cfg: stage.cfg
+            isCurrent: true
             width: parent.width
             visible: stage.cfg.mainSize > 0
             height: stage.cfg.mainSize * 3.2   // room for layered lines, then shrink to fit
@@ -96,61 +100,21 @@ Item {
             maximumLineCount: 4
             fontSizeMode: Text.Fit
             minimumPixelSize: Math.min(12, Math.max(1, stage.cfg.mainSize))
-            elide: Text.ElideRight
-            color: col.isActive && stage.karaokeFrac >= 0 ? stage.sideColor : stage.curColor
-            font.family: stage.cfg.fontFamily
-            font.pixelSize: Math.max(1, stage.cfg.mainSize)
-            font.bold: stage.cfg.boldCurrent
-
-            // karaoke: the same text in the bright colour, clipped at the word being sung
-            Item {
-                visible: col.isActive && stage.karaokeFrac >= 0 && c.lineCount === 1
-                height: c.height
-                clip: true
-                // x of the word being sung: the width of the text before it, measured in the font the
-                // line is really drawn in (Fit may have shrunk it); Text has no position lookup
-                readonly property real pos: Math.min(1, stage.karaokeFrac) * c.text.length
-                readonly property int ci: Math.max(0, Math.min(Math.floor(pos), c.text.length - 1))
-                TextMetrics {
-                    id: before
-                    font.family: c.font.family; font.pixelSize: c.fontInfo.pixelSize; font.bold: c.font.bold
-                    text: c.text.substring(0, parent.ci)
-                }
-                TextMetrics {
-                    id: through
-                    font.family: c.font.family; font.pixelSize: c.fontInfo.pixelSize; font.bold: c.font.bold
-                    text: c.text.substring(0, parent.ci + 1)
-                }
-                width: c.text.length === 0 ? 0
-                       : (c.horizontalAlignment === Text.AlignLeft ? 0
-                          : c.horizontalAlignment === Text.AlignRight ? c.width - c.contentWidth
-                          : (c.width - c.contentWidth) / 2) + before.advanceWidth
-                         + (through.advanceWidth - before.advanceWidth) * (pos - ci)
-                Text {
-                    width: c.width
-                    height: c.height
-                    horizontalAlignment: c.horizontalAlignment
-                    verticalAlignment: c.verticalAlignment
-                    wrapMode: c.wrapMode
-                    maximumLineCount: c.maximumLineCount
-                    fontSizeMode: c.fontSizeMode
-                    minimumPixelSize: c.minimumPixelSize
-                    elide: c.elide
-                    text: c.text
-                    color: stage.curColor
-                    font: c.font
-                }
-            }
+            color: stage.curColor
+            colors: stage.curColors
+            flow: stage.curFlow
+            pixelSize: Math.max(1, stage.cfg.mainSize)
         }
-        Text {
+        StyledText {
             id: n
+            cfg: stage.cfg
             visible: stage.showSides && stage.cfg.sideSize > 0
             width: parent.width
+            height: implicitHeight
+            implicitHeight: Math.ceil(stage.cfg.sideSize * 1.3)
             horizontalAlignment: stage.textAlign
-            elide: Text.ElideRight
             color: stage.sideColor
-            font.family: stage.cfg.fontFamily
-            font.pixelSize: Math.max(1, stage.cfg.sideSize)
+            pixelSize: Math.max(1, stage.cfg.sideSize)
         }
     }
 

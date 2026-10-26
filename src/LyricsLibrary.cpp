@@ -16,17 +16,23 @@ LyricsLibrary::LyricsLibrary(QObject *parent) : QObject(parent), m_watcher(this)
         m_searchId = 0;
         QString text = !r.synced.isEmpty() ? r.synced : r.plain;
         if (text.isEmpty()) {
-            setStatus(tr("Nothing found for that title and artist."));
+            const bool more = !m_skip.isEmpty(); // that was the last one: the next press starts over
+            m_skip.clear();
+            m_query.clear();
+            setStatus(more ? tr("No more results. Press Get lyrics to start over.") : tr("Nothing found for that title and artist."));
             return;
         }
-        QString note = tr("Found %1 lyrics from %2.").arg(!r.synced.isEmpty() ? tr("timed") : tr("untimed"), r.provider);
+        m_skip << r.sourceId;
+        QString note = tr("Result %1 (%2, %3): %4 lyrics.").arg(m_skip.size()).arg(r.provider)
+                           .arg(r.srcDur > 0 ? QStringLiteral("%1:%2").arg(int(r.srcDur) / 60).arg(int(r.srcDur) % 60, 2, 10, QLatin1Char('0')) : tr("length unknown"))
+                           .arg(!r.synced.isEmpty() ? tr("timed") : tr("untimed"));
         // A remix or edit has the original's lyrics over a different length: spread them over this song's
         const double k = (r.srcDur > 0 && m_track.durationSec > 0) ? m_track.durationSec / r.srcDur : 1;
         if (m_stretchToSong && !r.synced.isEmpty() && k > 0.3 && k < 3.2 && std::abs(k - 1) > 0.03) {
             text = Lrc::mapStamps(text, [k](qint64 ms) { return qint64(ms * k); });
             note += tr(" Stretched by %1% to fit this song's length: use Fit to line them up.").arg(int(k * 100 + 0.5));
         } else {
-            note += tr(" Check them, then save.");
+            note += tr(" Check them, then save, or press Get lyrics for the next result.");
         }
         setStatus(note);
         emit found(text, r.provider);
@@ -95,6 +101,12 @@ void LyricsLibrary::search(const QString &title, const QString &artist)
         setStatus(tr("Enter a title first."));
         return;
     }
+    const QString query = t.title + QLatin1Char('\n') + t.artist;
+    if (query != m_query) { // a new search starts at the best result
+        m_query = query;
+        m_skip.clear();
+    }
+    t.skip = m_skip;
     setStatus(tr("Searching…"), true);
     m_searchId = m_fetcher.lookup(t);
 }

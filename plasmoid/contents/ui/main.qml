@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Window
 import org.kde.plasma.plasmoid
+import QtQuick.Controls as QQC2
+import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.lyricwidget
 import "audioviz"
@@ -61,6 +63,8 @@ PlasmoidItem {
         prefetchCount: root.cfg.prefetchCount
         spotifyAppQueue: root.cfg.spotifyAppQueue
         spotifyDebugPort: root.cfg.spotifyDebugPort
+        anyPlayer: root.cfg.anyPlayer
+        allowedSites: root.cfg.allowedSites
         browserQueue: root.cfg.browserQueue
         browserQueuePort: root.cfg.browserQueuePort
     }
@@ -95,7 +99,7 @@ PlasmoidItem {
             id: vizLoader
             active: root.cfg.showVisualizer && !lyrics.idle && lyrics.playing && !root.suspended
             source: "AudioViz.qml"
-            onLoaded: item.tintColors = Qt.binding(() => !root.tinted ? [] : (root.multiColor ? lyrics.palette.map(c => c.toString()) : [lyrics.palette[0].toString()]))
+            onLoaded: { item.tintFlow = Qt.binding(() => root.cfg.vizColorFlow); item.tintColors = Qt.binding(() => !root.tinted ? [] : (root.multiColor ? lyrics.palette.map(c => c.toString()) : [lyrics.palette[0].toString()])) }
             // size as a share of the widget, placed on a 3x3 grid plus a pixel offset
             width: parent.width * root.cfg.vizWidthPct / 100
             height: parent.height * root.cfg.vizHeightPct / 100
@@ -159,29 +163,6 @@ PlasmoidItem {
         readonly property int vAlign: root.cfg.lyricsVAlign === 0 ? Text.AlignTop
                                       : root.cfg.lyricsVAlign === 2 ? Text.AlignBottom : Text.AlignVCenter
 
-        // word highlight: follows the player position frame by frame, only while a timed line plays
-        property real kfrac: -1
-        function fracAt(pts, t) {
-            if (t <= pts[0][0])
-                return pts[0][1]
-            for (let i = 1; i < pts.length; ++i)
-                if (t <= pts[i][0]) {
-                    const a = pts[i - 1], b = pts[i]
-                    return b[0] === a[0] ? b[1] : a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0])
-                }
-            return 1
-        }
-        readonly property bool hasWords: root.cfg.karaoke && lyrics.karaoke.length > 1
-        onHasWordsChanged: kfrac = hasWords ? 0 : -1
-        FrameAnimation {
-            running: view.hasWords && lyrics.playing && !root.suspended && view.visible
-            onTriggered: view.kfrac = view.fracAt(lyrics.karaoke, lyrics.linePosMs())
-        }
-        Connections {
-            target: lyrics
-            function onCurrentIndexChanged() { view.kfrac = view.hasWords ? 0 : -1 }
-        }
-
         // synced: previous / current / next, with the line transition
         LyricStage {
             x: 20 + root.cfg.lyricsOffsetX
@@ -196,10 +177,11 @@ PlasmoidItem {
             gapMs: lyrics.lineGapMs
             animate: root.cfg.animateLines
             curColor: root.curColor
+            curColors: root.multiColor ? lyrics.palette.slice(0, 4) : []
+            curFlow: root.cfg.lyricColorFlow
             sideColor: root.sideColor
             hidden: lyrics.lineHidden
             showSides: root.cfg.showNeighbours && view.height >= 150   // no room for them in a small widget
-            karaokeFrac: view.kfrac
             id: stage
             prev: root.lineAt(lyrics.currentIndex - 1).replace(/\n/g, "  ·  ")
             cur: root.lineAt(lyrics.currentIndex)
@@ -226,6 +208,44 @@ PlasmoidItem {
         // Hover to nudge this song's timing (remembered per song): + = lyrics earlier, - = later.
         // Off by default; Settings -> Lyrics -> Timing.
         HoverHandler { id: hover }
+        // Hover buttons, top right: look for other lyrics (saved to the library) and open the library
+        Column {
+            visible: root.cfg.hoverButtons && hover.hovered && !lyrics.idle
+            anchors { top: parent.top; right: parent.right; topMargin: 6; rightMargin: 8 }
+            spacing: 4
+            Repeater {
+                model: [
+                    { icon: "view-refresh", tip: "Look for other lyrics", act: 0 },
+                    { icon: "document-edit", tip: "Lyrics library", act: 1 }
+                ]
+                Item {
+                    required property var modelData
+                    width: 26; height: 26
+                    Rectangle { anchors.fill: parent; radius: 13; color: ma.containsMouse ? "#f0303030" : "#c0202020"; border.width: 1; border.color: "#40ffffff" }
+                    Kirigami.Icon {
+                        anchors.centerIn: parent
+                        width: 16; height: 16
+                        source: modelData.icon
+                        color: "white"
+                    }
+                    MouseArea {
+                        id: ma
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: modelData.act === 0 ? lyrics.refreshLyrics() : libraryLoader.active = true
+                        QQC2.ToolTip.visible: containsMouse
+                        QQC2.ToolTip.text: modelData.tip
+                    }
+                }
+            }
+        }
+        Loader {
+            id: libraryLoader
+            active: false
+            source: "LibraryWindow.qml"
+            onLoaded: { item.visible = true; item.closing.connect(() => libraryLoader.active = false) }
+        }
         Row {
             id: nudgeRow
             visible: root.cfg.showSyncControls && hover.hovered && lyrics.synced

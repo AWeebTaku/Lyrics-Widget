@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.kcmutils as KCM
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import "components" as Components
@@ -10,8 +9,10 @@ import "code/enum.js" as Enum
 import "code/utils.js" as Utils
 import "code/globals.js" as Globals
 
-KCM.SimpleKCM {
+Item {
     id: root
+    implicitWidth: content.implicitWidth
+    implicitHeight: content.implicitHeight
     property alias cfg_barGap: barGapSpinbox.value
     property alias cfg_barWidth: barWidthSpinbox.value
     property alias cfg_blockHeight: blockHeightSpinbox.value
@@ -60,6 +61,8 @@ KCM.SimpleKCM {
     readonly property string dimensionStr: vertical ? i18n("height") : i18n("width")
 
     ColumnLayout {
+        id: content
+        width: root.width
 
         Kirigami.InlineMessage {
             Layout.fillWidth: true

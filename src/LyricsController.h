@@ -46,6 +46,8 @@ class LyricsController : public QObject
     Q_PROPERTY(int prefetchCount READ prefetchCount WRITE setPrefetchCount NOTIFY prefetchCountChanged)
     Q_PROPERTY(bool spotifyAppQueue READ spotifyAppQueue WRITE setSpotifyAppQueue NOTIFY prefetchCountChanged)
     Q_PROPERTY(int spotifyDebugPort READ spotifyDebugPort WRITE setSpotifyDebugPort NOTIFY prefetchCountChanged)
+    Q_PROPERTY(bool anyPlayer READ anyPlayer WRITE setAnyPlayer NOTIFY prefetchCountChanged)
+    Q_PROPERTY(QString allowedSites READ allowedSites WRITE setAllowedSites NOTIFY prefetchCountChanged)
     Q_PROPERTY(bool browserQueue READ browserQueue WRITE setBrowserQueue NOTIFY prefetchCountChanged)
     Q_PROPERTY(int browserQueuePort READ browserQueuePort WRITE setBrowserQueuePort NOTIFY prefetchCountChanged)
     Q_PROPERTY(int trackOffsetMs READ trackOffsetMs NOTIFY offsetMsChanged) // this song's nudge
@@ -53,8 +55,6 @@ class LyricsController : public QObject
     // the synced lyrics skip a long stretch (missing verse): lines can't follow the song there
     // colours of the album art, light enough to read on a dark background; accent = the main one
     // (invalid when unknown), palette = up to four distinct ones
-    // word timing of the current line: [[msIntoLine, fractionSung], ...] or empty
-    Q_PROPERTY(QVariantList karaoke READ karaoke NOTIFY currentIndexChanged)
     Q_PROPERTY(QColor accent READ accent NOTIFY accentChanged)
     Q_PROPERTY(QVariantList palette READ palette NOTIFY accentChanged)
     Q_PROPERTY(bool incomplete READ incomplete NOTIFY linesChanged)
@@ -82,6 +82,10 @@ public:
     bool suspended() const { return m_suspended; }
     void setSuspended(bool on);
     bool playing() const { const auto *p = m_watcher.active(); return p && p->playing(); }
+    bool anyPlayer() const { return m_anyPlayer; }
+    void setAnyPlayer(bool on) { m_anyPlayer = on; m_watcher.setAnyPlayer(on); emit prefetchCountChanged(); }
+    QString allowedSites() const { return m_sites; }
+    void setAllowedSites(const QString &s) { m_sites = s; m_watcher.setSites(s.split(QLatin1Char(','), Qt::SkipEmptyParts)); emit prefetchCountChanged(); }
     int prefetchCount() const { return m_prefetchCount; }
     void setPrefetchCount(int n);
     bool spotifyAppQueue() const { return m_spotify.appQueue(); }
@@ -94,13 +98,13 @@ public:
     void setBrowserQueuePort(int p) { m_browserPort = p; m_browser.configure(m_browserOn, p); emit prefetchCountChanged(); }
     int trackOffsetMs() const { return m_trackOffsetMs; }
     bool incomplete() const { return m_synced && m_filled == 0 && Text::incompleteLrc(m_syncedRaw); }
-    QVariantList karaoke() const;
-    Q_INVOKABLE int linePosMs() const;
     QColor accent() const { return m_palette.isEmpty() ? QColor() : m_palette.first(); }
     QVariantList palette() const { QVariantList l; for (const QColor &c : m_palette) l << c; return l; }
     int estimatedLines() const { return m_filled; }
     int gapSec() const { return m_gapSec; }
     Q_INVOKABLE void nudge(int deltaMs); // saved per track; 0 resets
+    // Look for other lyrics for this song: the next best from the services, saved to the library. Wraps around.
+    Q_INVOKABLE void refreshLyrics();
 
 signals:
     void trackInfoChanged();
@@ -139,7 +143,6 @@ private:
     bool isBannerLine(const QString &line) const;
     void maybeFetchReading(const StoredLyrics &s);
     void persistRoman();
-    void parseWords(const QString &json);
     qint64 positionMs(const MprisPlayer *p) const;
     QString favouriteFor(const Track &t);
     void noteWin(const Track &t, const LyricsResult &r);
@@ -147,6 +150,9 @@ private:
 
     PlayerWatcher m_watcher;
     LyricsStore m_store;
+    QStringList m_skip;        // sources already shown for this song (see refreshLyrics)
+    QString m_shown;           // source id of the lyrics on screen
+    bool m_refreshing = false, m_libEdited = false;
     LyricsFetcher m_fetcher;
     bool m_idle = true;
     bool m_lyricsEnabled = true;
@@ -173,7 +179,6 @@ private:
     QStringList m_readingLines; // UtaTen readings per source line ("漢字(かな)"), empty = none
     QString m_readingKey;       // song the reading was requested for
     QVector<int> m_entrySrc;          // shown entry -> source line, -1 when layered
-    QVector<QVariantList> m_srcWords; // per source line, word timing curve
     QNetworkAccessManager m_artNam;
     QString m_artUrl;
     QHash<QString, QString> m_videoTitles; // YouTube video id -> its title
@@ -201,6 +206,8 @@ private:
     Track m_preQueueCur;
     quint64 m_preId = 0;
     QString m_preKey;
+    bool m_anyPlayer = false;
+    QString m_sites;
     int m_prefetchCount = 3;
     int m_trackOffsetMs = 0;
     int m_gapSec = 0;

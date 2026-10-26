@@ -26,12 +26,12 @@ LyricsStore::LyricsStore()
     QSqlQuery q(m_db);
     q.exec(QStringLiteral("PRAGMA journal_mode=WAL"));
     q.exec(QStringLiteral("PRAGMA synchronous=NORMAL"));
-    q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS lyrics_v5("
+    q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS lyrics_v6("
                           "key TEXT PRIMARY KEY, found INTEGER, instrumental INTEGER,"
-                          "synced TEXT, plain TEXT, roman TEXT, srcdur REAL, fetched INTEGER, provider TEXT, words TEXT)"));
+                          "synced TEXT, plain TEXT, roman TEXT, srcdur REAL, fetched INTEGER, provider TEXT, extras INTEGER, source_id TEXT)"));
     // the cache is only a convenience: forget what has not been fetched for 90 days (the library and the
     // offsets are the user's own and are never pruned)
-    q.prepare(QStringLiteral("DELETE FROM lyrics_v5 WHERE fetched < ?"));
+    q.prepare(QStringLiteral("DELETE FROM lyrics_v6 WHERE fetched < ?"));
     q.addBindValue(QDateTime::currentSecsSinceEpoch() - 90 * 24 * 3600);
     q.exec();
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS offsets(key TEXT PRIMARY KEY, ms INTEGER)"));
@@ -54,7 +54,7 @@ std::optional<StoredLyrics> LyricsStore::get(const QString &key)
         return std::nullopt;
     QSqlQuery q(m_db);
     q.prepare(QStringLiteral(
-        "SELECT found, instrumental, synced, plain, roman, srcdur, fetched, provider, words FROM lyrics_v5 WHERE key=?"));
+        "SELECT found, instrumental, synced, plain, roman, srcdur, fetched, provider, extras, source_id FROM lyrics_v6 WHERE key=?"));
     q.addBindValue(key);
     if (!q.exec() || !q.next())
         return std::nullopt;
@@ -67,7 +67,8 @@ std::optional<StoredLyrics> LyricsStore::get(const QString &key)
     s.roman = q.value(4).toString();
     s.srcDur = q.value(5).toDouble();
     s.provider = q.value(7).toString();
-    s.words = q.value(8).toString();
+    s.extras = q.value(8).toBool();
+    s.sourceId = q.value(9).toString();
     const qint64 age = QDateTime::currentSecsSinceEpoch() - q.value(6).toLongLong();
     // "not found" and unsynced-only answers may improve later (catalogues grow, providers flake)
     if ((!s.found || (s.synced.isEmpty() && !s.instrumental)) && age > kNegativeTtlSecs)
@@ -85,9 +86,9 @@ void LyricsStore::put(const QString &key, const StoredLyrics &v)
     if (!m_db.isOpen())
         return;
     QSqlQuery q(m_db);
-    q.prepare(QStringLiteral("INSERT OR REPLACE INTO lyrics_v5"
-                             "(key, found, instrumental, synced, plain, roman, srcdur, fetched, provider, words)"
-                             " VALUES(?,?,?,?,?,?,?,?,?,?)"));
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO lyrics_v6"
+                             "(key, found, instrumental, synced, plain, roman, srcdur, fetched, provider, extras, source_id)"
+                             " VALUES(?,?,?,?,?,?,?,?,?,?,?)"));
     q.addBindValue(key);
     q.addBindValue(v.found ? 1 : 0);
     q.addBindValue(v.instrumental ? 1 : 0);
@@ -97,7 +98,8 @@ void LyricsStore::put(const QString &key, const StoredLyrics &v)
     q.addBindValue(v.srcDur);
     q.addBindValue(QDateTime::currentSecsSinceEpoch());
     q.addBindValue(v.provider);
-    q.addBindValue(v.words);
+    q.addBindValue(v.extras ? 1 : 0);
+    q.addBindValue(v.sourceId);
     q.exec();
 }
 

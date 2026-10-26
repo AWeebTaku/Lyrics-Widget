@@ -12,7 +12,8 @@ struct StoredLyrics {
     QString roman;             // provider romanization (LRC), may be empty
     double srcDur = 0;         // length of the version the lyrics were timed against
     QString provider;          // who supplied it
-    QString words;             // word timing (JSON), may be empty
+    bool extras = false;       // the one-off background NetEase lookup (romanization) has been made
+    QString sourceId;          // which provider result it is ("lrclib:12"), to skip it when asking for other lyrics
 };
 
 // A song in the user's own lyrics library: lyrics they fetched, edited or retimed. These win over the cache

@@ -22,7 +22,7 @@ struct LyricsResult {
     QString plain;
     QString roman;             // LRC from the provider (NetEase romalrc); may be empty
     double srcDur = 0;         // length (s) of the version the lyrics were timed against
-    QString words;             // JSON [[startMs,[[word,offMs,durMs],...]],...] when the provider has word timing
+    QString sourceId;          // "lrclib:123", "netease:456"...: lets a lookup skip results already shown
     QString provider;          // "lrclib" / "netease" / "qq": who the chosen lyrics came from
     double conf = 0;           // how well it matched the track; the best match across providers wins
 };
@@ -79,6 +79,7 @@ private:
     void finishNetease(const JobPtr &job, const LyricsResult &r);
     void finishQq(const JobPtr &job, const LyricsResult &r);
     void publish(const JobPtr &job);
+    void ytmusic(const JobPtr &job); // plain lyrics of the playing YouTube Music video (last resort)
 
     QNetworkAccessManager m_nam;
     static QHash<QString, qint64> &nextSlot();               // host -> earliest next request (ms)

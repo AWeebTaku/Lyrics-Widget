@@ -63,6 +63,10 @@ public:
     void start();
     MprisPlayer *active() const { return m_active; }
     void setWatchPosition(bool on); // see MprisPlayer::setWatchPosition
+    // Off (default): Spotify and Chrome-family browsers, the latter only on the allowed websites.
+    // On: every MPRIS player on the bus counts (VLC, mpv, Strawberry...).
+    void setAnyPlayer(bool on);
+    void setSites(const QStringList &hosts); // websites that count as music in a browser
 
 signals:
     void trackChanged();  // active player switched, or its track changed
@@ -72,7 +76,8 @@ private slots:
     void onOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
 
 private:
-    static bool isPlayerService(const QString &name);
+    bool isPlayerService(const QString &name) const;
+    void rescan();
     bool eligible(const MprisPlayer *p) const;
     void add(const QString &name);
     void remove(const QString &name);
@@ -82,4 +87,6 @@ private:
     QPointer<MprisPlayer> m_active;
     QPointer<MprisPlayer> m_lastStarted;
     bool m_watchPosition = false;
+    bool m_any = false;
+    QStringList m_sites;
 };

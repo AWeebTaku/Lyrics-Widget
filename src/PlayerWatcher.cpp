@@ -19,8 +19,8 @@ const QString kPropsIface = QStringLiteral("org.freedesktop.DBus.Properties");
 // URL. plasma-browser-integration (the extension) reports real metadata plus the page URL, so
 // it is preferred, and Chrome's own player is only used while the extension has nothing.
 // Every tab with media shows up, so only these hosts count as "music".
-// Add your own here (e.g. a self-hosted player).
-const QStringList kAllowedChromeHosts = {
+// The list comes from the settings (Sources, Players).
+const QStringList kDefaultSites = {
     QStringLiteral("music.youtube.com"),
     QStringLiteral("www.youtube.com"),
     QStringLiteral("youtube.com"),
@@ -37,6 +37,12 @@ QStringList toStringList(const QVariant &v)
 bool isBrowserIntegration(const QString &service)
 {
     return service.mid(kPrefix.size()).startsWith(QLatin1String("plasma-browser-integration"));
+}
+
+bool isChromeFamily(const QString &service)
+{
+    const QString rest = service.mid(kPrefix.size());
+    return isBrowserIntegration(service) || rest.startsWith(QLatin1String("chrom")) || rest.startsWith(QLatin1String("google-chrome"));
 }
 
 bool isSpotify(const QString &service)
@@ -206,21 +212,63 @@ void MprisPlayer::onSeeked(qlonglong positionUs)
 
 // -------------------------------------------------------------- PlayerWatcher
 
-PlayerWatcher::PlayerWatcher(QObject *parent) : QObject(parent) {}
+PlayerWatcher::PlayerWatcher(QObject *parent) : QObject(parent), m_sites(kDefaultSites) {}
 
-bool PlayerWatcher::isPlayerService(const QString &name)
+bool PlayerWatcher::isPlayerService(const QString &name) const
 {
     if (!name.startsWith(kPrefix))
         return false;
     const QString rest = name.mid(kPrefix.size());
-    return isSpotify(name) || isBrowserIntegration(name) || rest.startsWith(QLatin1String("chromium"))
+    return m_any || isSpotify(name) || isBrowserIntegration(name) || rest.startsWith(QLatin1String("chromium"))
            || rest.startsWith(QLatin1String("chrome"))
            || rest.startsWith(QLatin1String("google-chrome"));
+}
+
+void PlayerWatcher::setAnyPlayer(bool on)
+{
+    if (on == m_any)
+        return;
+    m_any = on;
+    rescan();
+}
+
+void PlayerWatcher::setSites(const QStringList &hosts)
+{
+    m_sites = hosts;
+    const auto prev = m_active;
+    elect();
+    if (m_active != prev) {
+        emit trackChanged();
+        emit timingChanged();
+    }
+}
+
+// The player kinds that count changed: pick up or drop the services on the bus
+void PlayerWatcher::rescan()
+{
+    auto *iface = QDBusConnection::sessionBus().interface();
+    if (!iface)
+        return;
+    const QStringList names = iface->registeredServiceNames().value();
+    for (const QString &n : names)
+        if (isPlayerService(n))
+            add(n);
+    for (const QString &n : m_players.keys())
+        if (!isPlayerService(n))
+            remove(n);
+    const auto prev = m_active;
+    elect();
+    if (m_active != prev) {
+        emit trackChanged();
+        emit timingChanged();
+    }
 }
 
 bool PlayerWatcher::eligible(const MprisPlayer *p) const
 {
     if (isSpotify(p->service()))
+        return true;
+    if (m_any && !isChromeFamily(p->service()))
         return true;
     if (!isBrowserIntegration(p->service())) {
         for (const MprisPlayer *o : std::as_const(m_players))
@@ -229,7 +277,11 @@ bool PlayerWatcher::eligible(const MprisPlayer *p) const
         if (p->url().isEmpty())
             return true; // Chrome's own player never has a URL
     }
-    return kAllowedChromeHosts.contains(QUrl(p->url()).host());
+    const QString host = QUrl(p->url()).host();
+    for (const QString &s : std::as_const(m_sites))
+        if (host == s || host.endsWith(QLatin1Char('.') + s))
+            return true;
+    return false;
 }
 
 void PlayerWatcher::start()
