@@ -52,10 +52,6 @@ PlasmoidItem {
         suspended: root.suspended
         lyricsEnabled: root.cfg.showLyrics
         offsetMs: root.cfg.offsetMs
-        audioListen: root.cfg.audioListen
-        audioSync: root.cfg.audioSync
-        audioTempo: root.cfg.audioTempo
-        beatPulse: root.cfg.beatPulse
         prefetchCount: root.cfg.prefetchCount
         spotifyAppQueue: root.cfg.spotifyAppQueue
         spotifyDebugPort: root.cfg.spotifyDebugPort
@@ -112,7 +108,6 @@ PlasmoidItem {
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight
             text: (lyrics.artist ? lyrics.artist + " — " + lyrics.title : lyrics.title)
-                  + (lyrics.autoSynced ? "   ♪ timing adjusted by ear (" + (lyrics.trackOffsetMs / 1000).toFixed(1) + "s)" : "")
                   + (lyrics.incomplete ? "   ⚠ lyrics incomplete" : "")
                   + (lyrics.estimatedLines > 0 ? "   ≈ " + lyrics.estimatedLines + " lines timed by estimate" : "")
                   + (root.cfg.showSyncControls && lyrics.gapSec !== 0 ? "   ⚠ version differs by " + (lyrics.gapSec > 0 ? "+" : "") + lyrics.gapSec + "s: use ± to sync" : "")
@@ -166,8 +161,6 @@ PlasmoidItem {
             function onCurrentIndexChanged() { view.kfrac = view.hasWords ? 0 : -1 }
         }
 
-        Connections { target: lyrics; function onBeat() { stage.beat() } }
-
         // synced: previous / current / next, with the line transition
         LyricStage {
             x: 20 + root.cfg.lyricsOffsetX
@@ -185,8 +178,6 @@ PlasmoidItem {
             hidden: lyrics.lineHidden
             showSides: root.cfg.showNeighbours && (!root.cfg.autoCompact || view.height >= 150)
             karaokeFrac: view.kfrac
-            bpm: root.cfg.audioTempo ? lyrics.bpm : 0
-            pulseOn: root.cfg.beatPulse
             id: stage
             prev: root.lineAt(lyrics.currentIndex - 1).replace(/\n/g, "  ·  ")
             cur: root.lineAt(lyrics.currentIndex)

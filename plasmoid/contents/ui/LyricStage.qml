@@ -18,11 +18,6 @@ Item {
     property int vAlign: 1             // 0 top, 1 middle, 2 bottom
     readonly property int textAlign: hAlign === 0 ? Text.AlignLeft : hAlign === 2 ? Text.AlignRight : Text.AlignHCenter
     property color curColor: cfg.textColor
-    property real bpm: 0                // detected tempo, 0 = unknown
-    property bool pulseOn: false
-    property real kick: 0              // 1 right after a beat, fades to 0
-    function beat() { if (pulseOn) { kickAnim.restart() } }
-    NumberAnimation { id: kickAnim; target: stage; property: "kick"; from: 1; to: 0; duration: 260; easing.type: Easing.OutQuad }
     property bool hidden: false        // the line is sung and a long break follows: fade everything out
     opacity: hidden ? 0 : 1
     Behavior on opacity { NumberAnimation { duration: stage.hidden ? 450 : 100 } }  // quick back in
@@ -52,9 +47,7 @@ Item {
         active = 1 - active
         slot(active).set(prev, cur, next)
         // fast songs get a short transition, slow songs a calmer one; never longer than the line itself
-        // ...and with the tempo: about half a beat when it is known
-        const byBeat = bpm > 0 ? 30000 / bpm : 1e9
-        anim.duration = Math.max(90, Math.min(420, gapMs * 0.35, byBeat))
+        anim.duration = Math.max(90, Math.min(420, gapMs * 0.35))
         stage.lift = cfg.mainSize * 0.8 * Math.min(1, anim.duration / 420)
         t = 0
         anim.start()
@@ -70,11 +63,7 @@ Item {
         spacing: 10
         readonly property bool isActive: stage.active === slotIndex
         opacity: isActive ? 0.3 + 0.7 * stage.t : Math.max(0, 1 - stage.t * 1.6)
-        transform: [
-            Translate { y: col.isActive ? (1 - stage.t) * stage.lift : -stage.t * stage.lift * 0.4 },
-            Scale { origin.x: col.width / 2; origin.y: col.height / 2
-                    xScale: col.isActive ? 1 + 0.035 * stage.kick : 1; yScale: xScale }
-        ]
+        transform: Translate { y: col.isActive ? (1 - stage.t) * stage.lift : -stage.t * stage.lift * 0.4 }
 
         property alias prevText: p.text
         property alias curText: c.text

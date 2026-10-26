@@ -14,7 +14,6 @@
 #include "LyricsStore.h"
 #include "PlayerWatcher.h"
 #include "ReadingFetcher.h"
-#include "AudioListener.h"
 #include "BrowserQueue.h"
 #include "SpotifyApp.h"
 
@@ -57,13 +56,6 @@ class LyricsController : public QObject
     // dominant colour of the album art, light enough to read on a dark background; invalid when unknown
     // word timing of the current line: [[msIntoLine, fractionSung], ...] or empty
     Q_PROPERTY(QVariantList karaoke READ karaoke NOTIFY currentIndexChanged)
-    // Listening to the system audio (opt-in): timing check, tempo, beat
-    Q_PROPERTY(bool audioListen READ audioListen WRITE setAudioListen NOTIFY audioChanged)
-    Q_PROPERTY(bool audioSync READ audioSync WRITE setAudioSync NOTIFY audioChanged)
-    Q_PROPERTY(bool audioTempo READ audioTempo WRITE setAudioTempo NOTIFY audioChanged)
-    Q_PROPERTY(bool beatPulse READ beatPulse WRITE setBeatPulse NOTIFY audioChanged)
-    Q_PROPERTY(double bpm READ bpm NOTIFY bpmChanged)
-    Q_PROPERTY(bool autoSynced READ autoSynced NOTIFY offsetMsChanged)
     Q_PROPERTY(QColor accent READ accent NOTIFY accentChanged)
     Q_PROPERTY(bool incomplete READ incomplete NOTIFY linesChanged)
     // lines put back from the plain text with estimated times (a verse the synced copy skipped)
@@ -107,16 +99,6 @@ public:
     bool incomplete() const { return m_synced && m_filled == 0 && Text::incompleteLrc(m_syncedRaw); }
     QVariantList karaoke() const;
     Q_INVOKABLE int linePosMs() const;
-    bool audioListen() const { return m_audioListen; }
-    bool audioSync() const { return m_audioSync; }
-    bool audioTempo() const { return m_audioTempo; }
-    bool beatPulse() const { return m_beatPulse; }
-    void setAudioListen(bool on) { m_audioListen = on; emit audioChanged(); updateAudio(); }
-    void setAudioSync(bool on) { m_audioSync = on; emit audioChanged(); updateAudio(); }
-    void setAudioTempo(bool on) { m_audioTempo = on; emit audioChanged(); updateAudio(); }
-    void setBeatPulse(bool on) { m_beatPulse = on; emit audioChanged(); updateAudio(); }
-    double bpm() const { return m_audio.running() ? m_audio.bpm() : 0; }
-    bool autoSynced() const { return m_autoSynced; }
     QColor accent() const { return m_accent; }
     int estimatedLines() const { return m_filled; }
     int gapSec() const { return m_gapSec; }
@@ -133,9 +115,6 @@ signals:
     void suspendedChanged();
     void accentChanged();
     void lyricsEnabledChanged();
-    void audioChanged();
-    void bpmChanged();
-    void beat();
     void lineHiddenChanged();
     void prefetchCountChanged();
 
@@ -159,8 +138,6 @@ private:
     bool isBannerLine(const QString &line) const;
     void maybeFetchReading(const StoredLyrics &s);
     void persistRoman();
-    void updateAudio();
-    void checkAudioSync();
     void parseWords(const QString &json);
     qint64 positionMs(const MprisPlayer *p) const;
     QString favouriteFor(const Track &t);
@@ -188,10 +165,6 @@ private:
     QString m_extrasKey;
     QStringList m_readingLines; // UtaTen readings per source line ("漢字(かな)"), empty = none
     QString m_readingKey;       // song the reading was requested for
-    AudioListener m_audio;
-    QTimer m_audioSyncTimer;
-    bool m_audioListen = false, m_audioSync = false, m_audioTempo = true, m_beatPulse = false;
-    bool m_autoSynced = false;
     QVector<int> m_entrySrc;          // shown entry -> source line, -1 when layered
     QVector<QVariantList> m_srcWords; // per source line, word timing curve
     QNetworkAccessManager m_artNam;

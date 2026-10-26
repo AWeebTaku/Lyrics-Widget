@@ -57,16 +57,7 @@ LyricsController::LyricsController(QObject *parent) : QObject(parent), m_watcher
     connect(&m_watcher, &PlayerWatcher::trackChanged, this, &LyricsController::onTrackChanged);
     connect(&m_watcher, &PlayerWatcher::timingChanged, this, &LyricsController::resync);
     connect(&m_watcher, &PlayerWatcher::timingChanged, this, &LyricsController::playingChanged);
-    connect(&m_watcher, &PlayerWatcher::timingChanged, this, &LyricsController::updateAudio);
 
-    m_audio.setPositionSource([this]() -> qint64 {
-        const MprisPlayer *p = m_watcher.active();
-        return p ? p->positionUs() / 1000 : 0;
-    });
-    connect(&m_audio, &AudioListener::beat, this, &LyricsController::beat);
-    connect(&m_audio, &AudioListener::tempoChanged, this, &LyricsController::bpmChanged);
-    m_audioSyncTimer.setInterval(8000);
-    connect(&m_audioSyncTimer, &QTimer::timeout, this, &LyricsController::checkAudioSync);
 
     m_preTimer.setSingleShot(true);
     connect(&m_preTimer, &QTimer::timeout, this, [this] {
@@ -165,7 +156,6 @@ void LyricsController::setSuspended(bool on)
         return;
     m_suspended = on;
     emit suspendedChanged();
-    updateAudio();
     if (on) {
         m_timer.stop();
         m_preTimer.stop();
@@ -346,10 +336,8 @@ void LyricsController::onTrackChanged()
     m_preTimer.stop();
     m_key = key;
     m_track = t;
-    m_autoSynced = false;
     m_readingLines.clear();
-    m_audio.reset();
-    m_trackOffsetMs = m_store.offset(key); // an automatic correction may replace this in apply()
+    m_trackOffsetMs = m_store.offset(key); // a learned provider delay may replace this in apply()
     m_gapSec = 0;
     emit offsetMsChanged();
     m_retries = 0;
@@ -879,45 +867,6 @@ QVariantList LyricsController::karaoke() const
         return {};
     const int src = m_entrySrc[m_index];
     return src >= 0 && src < m_srcWords.size() ? m_srcWords[src] : QVariantList();
-}
-
-// The listener runs only when asked for, something is playing and the widget is on screen.
-void LyricsController::updateAudio()
-{
-    const MprisPlayer *p = m_watcher.active();
-    const bool want = m_audioListen && (m_audioSync || m_audioTempo || m_beatPulse) && p && p->playing()
-                      && !m_suspended && !m_idle;
-    if (want)
-        m_audio.start();
-    else
-        m_audio.stop();
-    if (want && m_audioSync)
-        m_audioSyncTimer.start();
-    else
-        m_audioSyncTimer.stop();
-    emit bpmChanged();
-}
-
-// Every few seconds while a song plays: does the voice start where the timestamps say? Only a
-// confident, sizeable disagreement is acted on, and never on a song the user has nudged by hand.
-void LyricsController::checkAudioSync()
-{
-    if (!m_synced || m_autoSynced || m_suspended || m_key.isEmpty() || m_store.hasOffset(m_key))
-        return;
-    QVector<qint64> stamps;
-    for (const LyricLine &l : std::as_const(m_srcLrc))
-        if (!l.text.isEmpty())
-            stamps << qint64(l.timeMs * m_timeScale);
-    const auto e = m_audio.estimateOffset(stamps);
-    if (qEnvironmentVariableIsSet("LYRICS_DEBUG"))
-        qWarning() << "audio sync" << e.ok << e.offsetMs << e.confidence << e.lines;
-    if (!e.ok)
-        return;
-    m_autoSynced = true;
-    m_trackOffsetMs = e.offsetMs;
-    m_store.setOffset(m_key, m_trackOffsetMs, m_provider); // remembered; also teaches the provider bias
-    emit offsetMsChanged();
-    resync();
 }
 
 void LyricsController::startLookup()
