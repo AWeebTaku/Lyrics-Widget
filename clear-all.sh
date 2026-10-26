@@ -31,8 +31,11 @@ echo "  - ~/.local/share/plasmashell/lyrics.db (cache, your per-song sync adjust
 echo "  - ~/.cache/lyric-widget and plasmashell's QML cache"
 echo "  - ./build"
 if [ "$YES" = 0 ] && [ "$DRY" = 0 ]; then
-    read -r -p "Type YES to continue: " answer
-    [ "$answer" = "YES" ] || { echo "Cancelled."; exit 1; }
+    read -r -p "Continue? (Y/N) " answer
+    case "${answer,,}" in
+        y | yes) ;;
+        *) echo "Cancelled."; exit 1 ;;   # n, no, or anything else
+    esac
 fi
 
 echo
