@@ -129,7 +129,7 @@ private:
     void clearLyrics();
     void schedulePrefetch();
     void prefetchNext();
-    void romanizeKanji();
+    void romanizeKanji(bool force = false);
     void updateArt(const QString &url);
     void startLookup();
     void watchDb();
@@ -156,10 +156,13 @@ private:
     QVector<LyricLine> m_lrc;     // timeline actually shown (layered lines merged)
     QVector<LyricLine> m_srcLrc;  // one entry per lyric line as provided
     QStringList m_srcText, m_srcRoman;
+    QString m_romanSig;        // the lines m_romanDone belongs to
+    QStringList m_romanDone;   // the helper's romanization per source line (empty = not done yet)
     QList<bool> m_localRoman; // line i was romanized locally, not by the provider
     QString m_syncedRaw;
     int m_filled = 0;
     QString m_provider;
+    bool m_metaSettled = false; // see onTrackChanged: the short wait for a song's artist is over
     qint64 m_libraryStamp = 0;      // 'updated' of the library entry in use, 0 = none
     QFileSystemWatcher m_dbWatch;   // the settings page edits the library: notice it without a restart
     QTimer m_dbDebounce;

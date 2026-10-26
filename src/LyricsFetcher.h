@@ -64,6 +64,7 @@ private:
     using SearchParse = std::function<void(const QJsonDocument &, const Candidate &, Gather &)>;
     using SearchDone = std::function<void(const Gather &)>;
 
+    void rememberDownload(const QUrl &url, const QByteArray &body);
     void get(const JobPtr &job, const QUrl &url, Reply cb, int attempt = 0);
     void send(const JobPtr &job, const QUrl &url, Reply cb, int attempt);
     void searchAll(const JobPtr &job, int maxCands, SearchUrl url, SearchParse parse, SearchDone done);

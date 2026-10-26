@@ -86,6 +86,25 @@ quint64 LyricsFetcher::lookup(const Track &t)
     return job->id;
 }
 
+// Keeps the memo small: only the newest few downloads are worth remembering for a replay or a retry.
+void LyricsFetcher::rememberDownload(const QUrl &url, const QByteArray &body)
+{
+    constexpr int kMaxMemo = 24;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    m_memo.insert(url, {now, body});
+    if (m_memo.size() <= kMaxMemo)
+        return;
+    for (auto it = m_memo.begin(); it != m_memo.end();)
+        it = now - it->first >= kMemoMs ? m_memo.erase(it) : std::next(it);
+    while (m_memo.size() > kMaxMemo) { // still too many: drop the oldest
+        auto oldest = m_memo.begin();
+        for (auto it = m_memo.begin(); it != m_memo.end(); ++it)
+            if (it->first < oldest->first)
+                oldest = it;
+        m_memo.erase(oldest);
+    }
+}
+
 void LyricsFetcher::get(const JobPtr &job, const QUrl &url, Reply cb, int attempt)
 {
     // Answered recently (retry, replay, same query from another phrasing): no request at all.
@@ -133,7 +152,7 @@ void LyricsFetcher::send(const JobPtr &job, const QUrl &url, Reply cb, int attem
         const QString path = url.path();
         if (err == QNetworkReply::NoError && body.size() > 200
             && (path.contains(QLatin1String("lyric")) || path == QLatin1String("/api/get")))
-            m_memo.insert(url, {QDateTime::currentMSecsSinceEpoch(), body});
+            rememberDownload(url, body);
         if (job->id != m_current)
             return; // superseded by a newer track
         // LRCLIB answers 429/503 now and then for perfectly good queries: back off and retry.
@@ -734,7 +753,12 @@ void LyricsFetcher::publish(const JobPtr &job)
         out.roman = l.roman;
     else if (out.roman.isEmpty() && romajiCopy && Text::isCjk(out.synced))
         out.roman = l.synced; // LRCLIB only had the romaji copy; the script came from NetEase/QQ
-    out.networkError = allDone && !out.found && (l.networkError || n.networkError || q.networkError || k.networkError);
+    // A provider that timed out (QQ often does) must not turn "nobody has this song" into "can't reach the
+    // service": only when no provider gave a definite answer is it a network problem.
+    int answered = 0;
+    for (const LyricsResult *r : {&l, &n, &q, &k})
+        answered += !r->networkError;
+    out.networkError = allDone && !out.found && answered == 0;
     // Word timing (karaoke) comes from NetEase even when another provider's lyrics are shown; the
     // controller only uses it on lines that match.
     if (out.words.isEmpty() && !n.words.isEmpty())
@@ -746,7 +770,7 @@ void LyricsFetcher::publish(const JobPtr &job)
 
     // A provider failed and we only have unsynced text: not an answer, so it must not be
     // cached; the controller shows it and retries.
-    const bool incomplete = allDone && out.synced.isEmpty()
+    const bool incomplete = allDone && out.synced.isEmpty() && answered < 2
                             && (l.networkError || n.networkError || q.networkError || k.networkError);
     const bool final = (allDone || lrcEnough || favEnough) && !incomplete;
     if (kDebug)

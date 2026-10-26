@@ -322,6 +322,16 @@ void LyricsController::onTrackChanged()
     t.id = Keys::trackId(p->url());
     t.durationSec = int(p->lengthUs() / 1'000'000);
 
+    // Browsers announce a song in pieces (title first, artist and address a moment later): a lookup on the
+    // first piece would be thrown away. Give the rest a moment to arrive.
+    if (t.artist.isEmpty() && t.id.isEmpty() && !m_metaSettled && Keys::songKey(t) != m_key) {
+        QTimer::singleShot(150, this, [this] {
+            m_metaSettled = true;
+            onTrackChanged();
+            m_metaSettled = false;
+        });
+        return;
+    }
     const QString key = Keys::songKey(t);
     if (key == m_key)
         return; // same song (e.g. metadata refresh): keep what we have
@@ -524,6 +534,16 @@ void LyricsController::apply(const StoredLyrics &s)
             m_srcRoman[i] = Romanizer::line(m_srcText[i], japaneseSong);
         }
     }
+    // One lookup produces several answers (first one, then better ones). The helper's accurate romanization of
+    // these very lines is kept across them, so the text never flips back to the quick local version.
+    const QString sig = m_srcText.join(QLatin1Char('\n'));
+    if (sig != m_romanSig) {
+        m_romanSig = sig;
+        m_romanDone = QStringList(m_srcText.size());
+    }
+    for (qsizetype i = 0; i < m_srcText.size(); ++i)
+        if (m_localRoman[i] && !m_romanDone[i].isEmpty())
+            m_srcRoman[i] = m_romanDone[i];
 
     // Matched version's length vs the playing one: a gap hints at an intro/outro (music video,
     // remix) that shifts the timing. Small gaps are normal encoder differences.
@@ -616,7 +636,7 @@ void LyricsController::layer()
 // Kanji lines have no local rule-based romanization. If `kakasi` is installed, convert them in
 // one async batch (a few ms) and fill the gaps. Dictionary-based, not context-aware: readings of
 // some words will be off, which is why provider romanization always wins.
-void LyricsController::romanizeKanji()
+void LyricsController::romanizeKanji(bool force)
 {
     const quint64 gen = ++m_applyGen;
     if (m_kakasi.state() != QProcess::NotRunning) {
@@ -644,8 +664,9 @@ void LyricsController::romanizeKanji()
     QList<qsizetype> todo;
     QByteArray input;
     for (qsizetype i = 0; i < m_srcText.size(); ++i) {
-        if (m_srcText[i].isEmpty() || (mecab ? !m_localRoman[i] : !m_srcRoman[i].isEmpty()))
-            continue;
+        if (m_srcText[i].isEmpty() || (mecab ? !m_localRoman[i] : !m_srcRoman[i].isEmpty())
+            || (!force && i < m_romanDone.size() && !m_romanDone[i].isEmpty()))
+            continue; // not ours to romanize, or done already
         todo << i;
         const QString text = (mecab || !m_readingLines.isEmpty()) && i < m_readingLines.size() && !m_readingLines[i].isEmpty()
                                  ? m_readingLines[i] : m_srcText[i];
@@ -663,8 +684,11 @@ void LyricsController::romanizeKanji()
             return;
         for (qsizetype k = 0; k < todo.size(); ++k) {
             const QString r = Romanizer::cleanRoman(out[k]);
-            if (!mecab || !r.isEmpty())
+            if (!mecab || !r.isEmpty()) {
                 m_srcRoman[todo[k]] = r;
+                if (todo[k] < m_romanDone.size())
+                    m_romanDone[todo[k]] = r;
+            }
         }
         if (!m_readingLines.isEmpty())
             persistRoman();
@@ -889,7 +913,7 @@ void LyricsController::maybeFetchReading(const StoredLyrics &s)
         if (key != m_key || r.isEmpty())
             return;
         m_readingLines = r;
-        romanizeKanji();
+        romanizeKanji(true); // the readings change what the helper gives
     });
 }
 
