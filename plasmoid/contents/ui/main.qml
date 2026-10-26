@@ -128,6 +128,9 @@ PlasmoidItem {
             width: parent.width - 40
             height: parent.height
             visible: root.cfg.showLyrics && lyrics.lines.length === 0 && root.cfg.sideSize > 0
+            // "No lyrics found" and the like fade away after a few seconds; "Loading…" stays until it is answered
+            opacity: view.statusShown ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 600 } }
             horizontalAlignment: view.hAlign
             verticalAlignment: view.vAlign
             wrapMode: Text.WordWrap
@@ -136,6 +139,19 @@ PlasmoidItem {
             font.family: root.cfg.fontFamily
             font.pixelSize: Math.max(1, root.cfg.sideSize)
         }
+
+        property bool statusShown: true
+        function updateStatusTimer() {
+            statusShown = true
+            const s = lyrics.status
+            if (s !== "" && !s.startsWith("Loading") && !s.startsWith("Couldn't"))
+                statusTimer.restart()
+            else
+                statusTimer.stop()
+        }
+        Timer { id: statusTimer; interval: 6000; onTriggered: view.statusShown = false }
+        Connections { target: lyrics; function onStatusChanged() { view.updateStatusTimer() } }
+        Component.onCompleted: updateStatusTimer()
 
         // where the lyrics sit in the panel: 3x3 grid (+ offsets); the same for all lyric text
         readonly property int hAlign: root.cfg.lyricsHAlign === 0 ? Text.AlignLeft
