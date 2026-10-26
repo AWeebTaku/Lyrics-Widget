@@ -1,6 +1,7 @@
 #pragma once
 #include <QColor>
 #include <QNetworkAccessManager>
+#include <QFileSystemWatcher>
 #include <QObject>
 #include <QVariantList>
 #include <QProcess>
@@ -137,6 +138,8 @@ private:
     void romanizeKanji();
     void updateArt(const QString &url);
     void startLookup();
+    void watchDb();
+    void checkLibrary();
     void fetchVideoTitle(const QString &videoId, std::function<void(const QString &)> done);
     void maybeFetchExtras(const StoredLyrics &s);
     bool isBannerLine(const QString &line) const;
@@ -163,6 +166,9 @@ private:
     QString m_syncedRaw;
     int m_filled = 0;
     QString m_provider;
+    qint64 m_libraryStamp = 0;      // 'updated' of the library entry in use, 0 = none
+    QFileSystemWatcher m_dbWatch;   // the settings page edits the library: notice it without a restart
+    QTimer m_dbDebounce;
     ReadingFetcher m_readingFetcher;
     LyricsFetcher m_extras;  // separate from m_fetcher: a new lookup there would cancel this
     quint64 m_extrasId = 0;

@@ -1,0 +1,64 @@
+#pragma once
+#include <QObject>
+#include <QVariantMap>
+#include <QtQml/qqmlregistration.h>
+
+#include "LyricsFetcher.h"
+#include "LyricsStore.h"
+#include "PlayerWatcher.h"
+
+// Behind the "Lyrics library" settings page: gets, edits, retimes and saves the lyrics of the song that is
+// playing. A saved song goes into the library table of lyrics.db, which wins over every provider and over
+// the cache, and survives rebuilds. The widget notices the change by itself.
+class LyricsLibrary : public QObject
+{
+    Q_OBJECT
+    QML_ELEMENT
+    Q_PROPERTY(QString title READ title NOTIFY trackChanged)
+    Q_PROPERTY(QString artist READ artist NOTIFY trackChanged)
+    Q_PROPERTY(int durationSec READ durationSec NOTIFY trackChanged)
+    Q_PROPERTY(bool hasSong READ hasSong NOTIFY trackChanged)
+    Q_PROPERTY(bool saved READ saved NOTIFY savedChanged) // the library has this song
+    Q_PROPERTY(QString status READ status NOTIFY statusChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY statusChanged)
+
+public:
+    explicit LyricsLibrary(QObject *parent = nullptr);
+
+    QString title() const { return m_track.title; }
+    QString artist() const { return m_track.artist; }
+    int durationSec() const { return m_track.durationSec; }
+    bool hasSong() const { return !m_track.title.isEmpty(); }
+    bool saved() const { return m_saved; }
+    QString status() const { return m_status; }
+    bool busy() const { return m_busy; }
+
+    Q_INVOKABLE QString load();                                           // the saved lyrics, else the cached ones
+    Q_INVOKABLE void search(const QString &title, const QString &artist); // answer arrives as found()
+    Q_INVOKABLE bool save(const QString &text, const QString &title, const QString &artist);
+    Q_INVOKABLE void remove();
+    // t' = t * percent/100 + shiftMs, for every timestamp of the text
+    Q_INVOKABLE QString retime(const QString &text, double percent, int shiftMs) const;
+    // linear: the first timestamp lands at firstSec, the last at lastSec
+    Q_INVOKABLE QString fit(const QString &text, double firstSec, double lastSec) const;
+    Q_INVOKABLE QVariantMap timing(const QString &text) const; // {first, last, lines} in seconds
+
+signals:
+    void trackChanged();
+    void savedChanged();
+    void statusChanged();
+    void found(const QString &text, const QString &provider);
+
+private:
+    void onTrack();
+    void setStatus(const QString &s, bool busy = false);
+
+    PlayerWatcher m_watcher;
+    LyricsStore m_store;
+    LyricsFetcher m_fetcher;
+    Track m_track;
+    QString m_key, m_status;
+    bool m_saved = false, m_busy = false;
+    quint64 m_searchId = 0;
+    bool m_stretchToSong = false; // the searched title is an edit: stretch the result to the playing length
+};

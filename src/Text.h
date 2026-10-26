@@ -334,6 +334,28 @@ inline bool langMismatch(const QString &text, const QString &lang)
 }
 
 // "Alright by Kendrick Lamar, but it will change your life": the song and artist named in an edit's title.
+inline bool splitBy(const QString &title, QString &song, QString &artist)
+{
+    static const QRegularExpression by(
+        QStringLiteral(R"(^(.+?)\s+by\s+([^,(\[|]{3,}?)\s*(?:[,(\[|]|\s-\s|$))"), QRegularExpression::CaseInsensitiveOption);
+    const auto m = by.match(title.simplified());
+    if (!m.hasMatch() || !m.captured(2).front().isUpper())
+        return false;
+    song = m.captured(1).simplified();
+    artist = m.captured(2).simplified();
+    return true;
+}
+
+// A remix, edit, mashup or fan edit of another song: its length and structure differ from the original.
+inline bool editLike(const QString &title)
+{
+    static const QRegularExpression words(
+        QStringLiteral(R"(\b(remix|re-?edit|mashup|mash-up|edit|bootleg|rework|flip|vip|extended|fan ?(made|edit)|nightcore|sped[ -]?up|slowed)\b)"),
+        QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression byComma(QStringLiteral(R"(\sby\s[^,]+,\s)"), QRegularExpression::CaseInsensitiveOption);
+    return words.match(title).hasMatch() || byComma.match(title).hasMatch();
+}
+
 // Longest stretch (s) between two stamps. Community-uploaded copies sometimes lack a whole verse,
 // leaving the last line stuck on screen; real instrumental breaks are rarely over ~45 s.
 inline double maxStampGap(const QString &lrc)

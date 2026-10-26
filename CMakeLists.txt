@@ -28,6 +28,7 @@ qt_add_qml_module(lyricbackend
     src/SpotifyApp.h       src/SpotifyApp.cpp
     src/Process.h          src/Process.cpp
     src/BrowserSetup.h     src/BrowserSetup.cpp
+    src/LyricsLibrary.h    src/LyricsLibrary.cpp
     src/ReadingFetcher.h   src/ReadingFetcher.cpp
     src/BrowserQueue.h     src/BrowserQueue.cpp
     src/LyricsController.h src/LyricsController.cpp

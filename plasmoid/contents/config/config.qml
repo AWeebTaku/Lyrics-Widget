@@ -14,6 +14,16 @@ ConfigModel {
         source: "configLayout.qml"
     }
     ConfigCategory {
+        name: i18n("Lyrics library")
+        icon: "document-edit"
+        source: "configLibrary.qml"
+    }
+    ConfigCategory {
+        name: i18n("Sources")
+        icon: "preferences-system-users"
+        source: "configAccounts.qml"
+    }
+    ConfigCategory {
         name: i18n("Visualizer style")
         icon: "preferences-desktop-color"
         source: "audioviz/configVisualizer.qml"

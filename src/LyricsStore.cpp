@@ -31,6 +31,8 @@ LyricsStore::LyricsStore()
                           "synced TEXT, plain TEXT, roman TEXT, srcdur REAL, fetched INTEGER, provider TEXT, words TEXT)"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS offsets(key TEXT PRIMARY KEY, ms INTEGER)"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS nudges(key TEXT PRIMARY KEY, provider TEXT, ms INTEGER)"));
+    q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS library(key TEXT PRIMARY KEY, title TEXT, artist TEXT, album TEXT,"
+                          "duration INTEGER, lang TEXT, synced TEXT, plain TEXT, roman TEXT, source TEXT, updated INTEGER)"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS wins(artist TEXT, provider TEXT, n INTEGER, PRIMARY KEY(artist, provider))"));
 }
 
@@ -181,4 +183,90 @@ QString LyricsStore::favourite(const QString &artist)
         total += q.value(1).toInt();
     }
     return (top >= 3 && top >= 0.7 * total) ? who : QString();
+}
+
+namespace {
+LibraryEntry readEntry(QSqlQuery &q)
+{
+    LibraryEntry e;
+    e.key = q.value(0).toString();
+    e.title = q.value(1).toString();
+    e.artist = q.value(2).toString();
+    e.album = q.value(3).toString();
+    e.durationSec = q.value(4).toInt();
+    e.lang = q.value(5).toString();
+    e.synced = q.value(6).toString();
+    e.plain = q.value(7).toString();
+    e.roman = q.value(8).toString();
+    e.source = q.value(9).toString();
+    e.updated = q.value(10).toLongLong();
+    return e;
+}
+constexpr const char *kLibraryCols = "key, title, artist, album, duration, lang, synced, plain, roman, source, updated";
+}
+
+std::optional<LibraryEntry> LyricsStore::library(const QString &key)
+{
+    if (!m_db.isOpen())
+        return std::nullopt;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT %1 FROM library WHERE key=?").arg(QLatin1String(kLibraryCols)));
+    q.addBindValue(key);
+    if (!q.exec() || !q.next())
+        return std::nullopt;
+    return readEntry(q);
+}
+
+qint64 LyricsStore::libraryStamp(const QString &key)
+{
+    if (!m_db.isOpen())
+        return 0;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT updated FROM library WHERE key=?"));
+    q.addBindValue(key);
+    return (q.exec() && q.next()) ? q.value(0).toLongLong() : 0;
+}
+
+void LyricsStore::putLibrary(const LibraryEntry &e)
+{
+    if (!m_db.isOpen())
+        return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO library(%1) VALUES(?,?,?,?,?,?,?,?,?,?,?)").arg(QLatin1String(kLibraryCols)));
+    q.addBindValue(e.key);
+    q.addBindValue(e.title);
+    q.addBindValue(e.artist);
+    q.addBindValue(e.album);
+    q.addBindValue(e.durationSec);
+    q.addBindValue(e.lang);
+    q.addBindValue(e.synced);
+    q.addBindValue(e.plain);
+    q.addBindValue(e.roman);
+    q.addBindValue(e.source);
+    q.addBindValue(QDateTime::currentMSecsSinceEpoch());
+    q.exec();
+}
+
+void LyricsStore::removeLibrary(const QString &key)
+{
+    if (!m_db.isOpen())
+        return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("DELETE FROM library WHERE key=?"));
+    q.addBindValue(key);
+    q.exec();
+}
+
+QList<LibraryEntry> LyricsStore::libraryList(int limit)
+{
+    QList<LibraryEntry> out;
+    if (!m_db.isOpen())
+        return out;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT %1 FROM library ORDER BY updated DESC LIMIT ?").arg(QLatin1String(kLibraryCols)));
+    q.addBindValue(limit);
+    if (q.exec())
+        while (q.next())
+            out << readEntry(q);
+    return out;
 }

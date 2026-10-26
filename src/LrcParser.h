@@ -54,4 +54,31 @@ inline QVector<LyricLine> parse(const QString &lrc)
     return out;
 }
 
+// "[mm:ss.xx]"
+inline QString stamp(qint64 ms)
+{
+    ms = std::max<qint64>(0, ms);
+    return QStringLiteral("[%1:%2.%3]").arg(ms / 60000, 2, 10, QLatin1Char('0'))
+        .arg(ms / 1000 % 60, 2, 10, QLatin1Char('0')).arg(ms % 1000 / 10, 2, 10, QLatin1Char('0'));
+}
+
+// Rewrites every timestamp of an LRC text with fn(ms); every other character is kept as written.
+template <typename Fn>
+inline QString mapStamps(const QString &lrc, Fn fn)
+{
+    static const QRegularExpression re(QStringLiteral(R"(\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\])"));
+    QString out;
+    qsizetype last = 0;
+    for (auto it = re.globalMatch(lrc); it.hasNext();) {
+        const auto m = it.next();
+        out += lrc.mid(last, m.capturedStart() - last);
+        const QString frac = m.captured(3);
+        qint64 ms = m.captured(1).toLongLong() * 60000 + m.captured(2).toLongLong() * 1000;
+        ms += frac.size() == 1 ? frac.toInt() * 100 : frac.size() == 2 ? frac.toInt() * 10 : frac.toInt();
+        out += stamp(fn(ms));
+        last = m.capturedEnd();
+    }
+    return out + lrc.mid(last);
+}
+
 } // namespace Lrc

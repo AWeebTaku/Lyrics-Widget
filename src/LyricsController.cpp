@@ -1,6 +1,7 @@
 #include "LyricsController.h"
 
 #include "GapFill.h"
+#include "Keys.h"
 #include "Palette.h"
 #include "RomanAlign.h"
 #include "Romanizer.h"
@@ -23,18 +24,6 @@
 #include <limits>
 
 namespace {
-
-// YouTube: watch?v=ID. Spotify: /track/ID. Stable per recording, so a song and its music video
-// (different uploads, different timing) never share a cache entry.
-QString trackId(const QString &url)
-{
-    const QUrl u(url);
-    if (u.host().contains(QLatin1String("youtube")))
-        return QUrlQuery(u).queryItemValue(QStringLiteral("v"));
-    if (u.host().contains(QLatin1String("spotify")))
-        return u.path().section(QLatin1Char('/'), -1);
-    return {};
-}
 
 // "作词 : x", "Composer: y" credit rows that NetEase puts at 00:00.
 bool isCredit(const QString &t)
@@ -59,6 +48,14 @@ LyricsController::LyricsController(QObject *parent) : QObject(parent), m_watcher
     connect(&m_watcher, &PlayerWatcher::timingChanged, this, &LyricsController::resync);
     connect(&m_watcher, &PlayerWatcher::timingChanged, this, &LyricsController::playingChanged);
 
+    m_dbDebounce.setSingleShot(true);
+    m_dbDebounce.setInterval(400);
+    connect(&m_dbDebounce, &QTimer::timeout, this, &LyricsController::checkLibrary);
+    connect(&m_dbWatch, &QFileSystemWatcher::fileChanged, this, [this] {
+        watchDb(); // the -wal file comes and goes
+        m_dbDebounce.start();
+    });
+    watchDb();
 
     m_preTimer.setSingleShot(true);
     connect(&m_preTimer, &QTimer::timeout, this, [this] {
@@ -323,13 +320,10 @@ void LyricsController::onTrackChanged()
     t.title = p->title();
     t.artist = p->artist();
     t.album = p->album();
-    t.id = trackId(p->url());
+    t.id = Keys::trackId(p->url());
     t.durationSec = int(p->lengthUs() / 1'000'000);
 
-    const QString key = !t.id.isEmpty()
-                            ? QStringLiteral("id:") + t.id
-                            : Text::norm(t.artist) + QLatin1Char('|') + Text::norm(t.title)
-                                  + QLatin1Char('|') + QString::number(t.durationSec);
+    const QString key = Keys::songKey(t);
     if (key == m_key)
         return; // same song (e.g. metadata refresh): keep what we have
     m_preQueue.clear(); // the user moved on: drop any look-ahead in progress
@@ -354,6 +348,22 @@ void LyricsController::onTrackChanged()
         return;
     }
 
+    // The user's own library wins over everything: lyrics they saved, edited or retimed
+    m_libraryStamp = 0;
+    if (const auto lib = m_store.library(key)) {
+        m_libraryStamp = lib->updated;
+        StoredLyrics s;
+        s.found = true;
+        s.synced = lib->synced;
+        s.plain = lib->plain;
+        s.roman = lib->roman;
+        s.srcDur = lib->durationSec;
+        s.provider = QStringLiteral("library");
+        m_requestId = 0;
+        apply(s);
+        schedulePrefetch();
+        return;
+    }
     if (Text::notASong(t, p->url())) {
         m_requestId = 0;
         setStatus(QStringLiteral("Not a song — no lyrics to look up"));
@@ -526,7 +536,8 @@ void LyricsController::apply(const StoredLyrics &s)
 
     // Sped-up / slowed version of a song: stretch the timestamps to the playing length
     m_timeScale = 1;
-    if (s.srcDur > 0 && m_track.durationSec > 0 && Text::tempoVariant(m_track.title) != 0) {
+    if (s.srcDur > 0 && m_track.durationSec > 0 && s.provider != QLatin1String("library")
+        && Text::tempoVariant(m_track.title) != 0) {
         const double k = m_track.durationSec / s.srcDur;
         if (k > 0.5 && k < 1.6 && std::abs(k - 1) > 0.03) {
             m_timeScale = k;
@@ -970,3 +981,21 @@ void LyricsController::fetchVideoTitle(const QString &videoId, std::function<voi
     });
 }
 
+void LyricsController::watchDb()
+{
+    const QString db = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/lyrics.db");
+    for (const QString &f : {db, db + QStringLiteral("-wal")})
+        if (QFile::exists(f) && !m_dbWatch.files().contains(f))
+            m_dbWatch.addPath(f);
+}
+
+// The settings page saved or removed this song's library entry: show the change at once.
+void LyricsController::checkLibrary()
+{
+    if (m_key.isEmpty() || !m_lyricsEnabled || m_suspended)
+        return;
+    if (m_store.libraryStamp(m_key) != m_libraryStamp) {
+        m_key.clear();
+        onTrackChanged();
+    }
+}

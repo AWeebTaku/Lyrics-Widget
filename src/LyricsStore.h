@@ -1,5 +1,6 @@
 #pragma once
 #include <QSqlDatabase>
+#include <QList>
 #include <QString>
 #include <optional>
 
@@ -12,6 +13,21 @@ struct StoredLyrics {
     double srcDur = 0;         // length of the version the lyrics were timed against
     QString provider;          // who supplied it
     QString words;             // word timing (JSON), may be empty
+};
+
+// A song in the user's own lyrics library: lyrics they fetched, edited or retimed. These win over the cache
+// and survive rebuilds. The metadata (title, artist, length, language, source) is what a shared catalogue
+// would need to find a song again.
+struct LibraryEntry {
+    QString key;       // see Keys::songKey
+    QString title, artist, album;
+    int durationSec = 0;
+    QString lang;      // "" = unknown
+    QString synced;    // LRC; empty when only plain text exists
+    QString plain;
+    QString roman;
+    QString source;    // "edited", or the provider the text came from
+    qint64 updated = 0; // ms since epoch
 };
 
 // Tiny SQLite cache. A cache hit makes a repeat song show lyrics instantly,
@@ -31,6 +47,13 @@ public:
     // Which provider keeps winning for an artist (empty until there is a clear favourite)
     void addWin(const QString &artist, const QString &provider);
     QString favourite(const QString &artist);
+
+    // the lyrics library
+    std::optional<LibraryEntry> library(const QString &key);
+    qint64 libraryStamp(const QString &key); // 0 when there is no entry
+    void putLibrary(const LibraryEntry &e);
+    void removeLibrary(const QString &key);
+    QList<LibraryEntry> libraryList(int limit = 200);
 
 private:
     QString m_conn;
