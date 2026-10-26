@@ -35,8 +35,9 @@ KCM.SimpleKCM {
         QQC2.TabBar {
             id: tabs
             Layout.fillWidth: true
-            QQC2.TabButton { text: i18n("Lyrics") }
-            QQC2.TabButton { text: i18n("Visualizer") }
+            implicitWidth: 0 // the width comes from the layout; the buttons take half each
+            QQC2.TabButton { text: i18n("Lyrics"); width: tabs.width / 2 }
+            QQC2.TabButton { text: i18n("Visualizer"); width: tabs.width / 2 }
         }
         StackLayout {
             currentIndex: tabs.currentIndex
