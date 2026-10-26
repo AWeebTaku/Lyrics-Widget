@@ -229,7 +229,8 @@ PlasmoidItem {
         Row {
             id: nudgeRow
             visible: root.cfg.showSyncControls && hover.hovered && lyrics.synced
-            anchors { bottom: parent.bottom; bottomMargin: 8; horizontalCenter: parent.horizontalCenter }
+            // a quarter of the way up from the bottom edge, centred
+            anchors { bottom: parent.bottom; bottomMargin: Math.max(8, parent.height * 0.25); horizontalCenter: parent.horizontalCenter }
             spacing: 14
             Repeater {
                 model: [
