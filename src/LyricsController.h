@@ -37,6 +37,8 @@ class LyricsController : public QObject
     // ms the current line stays on screen (min of the gaps before and after it). The line animation
     // scales to this so fast and slow songs both look right.
     Q_PROPERTY(int lineGapMs READ lineGapMs NOTIFY currentIndexChanged)
+    // the current line has been sung and a long instrumental break follows: the UI fades it out
+    Q_PROPERTY(bool lineHidden READ lineHidden NOTIFY lineHiddenChanged)
     Q_PROPERTY(int offsetMs READ offsetMs WRITE setOffsetMs NOTIFY offsetMsChanged)
     Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
     // true = a full screen window covers the widget: do no work at all (timers, lookups, prefetch)
@@ -83,6 +85,7 @@ public:
     bool synced() const { return m_synced; }
     int currentIndex() const { return m_index; }
     int lineGapMs() const { return m_lineGapMs; }
+    bool lineHidden() const { return m_lineHidden; }
     int offsetMs() const { return m_offsetMs; }
     void setOffsetMs(int ms);
     bool suspended() const { return m_suspended; }
@@ -133,6 +136,7 @@ signals:
     void audioChanged();
     void bpmChanged();
     void beat();
+    void lineHiddenChanged();
     void prefetchCountChanged();
 
 private:
@@ -143,6 +147,8 @@ private:
     void resync();
     void setStatus(const QString &s);
     void setIndex(int i);
+    void setLineHidden(bool on);
+    qint64 breakStartMs(int i) const;
     void clearLyrics();
     void schedulePrefetch();
     void prefetchNext();
@@ -196,6 +202,7 @@ private:
     bool m_hasRoman = false;
     int m_index = -1;
     int m_lineGapMs = 2000;
+    bool m_lineHidden = false;
     int m_offsetMs = 0;
     int m_leadMs = 0;
     bool m_suspended = false;

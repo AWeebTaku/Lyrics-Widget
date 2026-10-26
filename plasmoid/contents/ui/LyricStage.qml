@@ -23,6 +23,9 @@ Item {
     property real kick: 0              // 1 right after a beat, fades to 0
     function beat() { if (pulseOn) { kickAnim.restart() } }
     NumberAnimation { id: kickAnim; target: stage; property: "kick"; from: 1; to: 0; duration: 260; easing.type: Easing.OutQuad }
+    property bool hidden: false        // the line is sung and a long break follows: fade everything out
+    opacity: hidden ? 0 : 1
+    Behavior on opacity { NumberAnimation { duration: stage.hidden ? 450 : 100 } }  // quick back in
     property real karaokeFrac: -1      // 0..1 of the current line sung, -1 = no word timing
 
     property int active: 0             // slot holding the current line

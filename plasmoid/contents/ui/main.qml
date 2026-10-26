@@ -182,6 +182,7 @@ PlasmoidItem {
             gapMs: lyrics.lineGapMs
             animate: root.cfg.animateLines
             curColor: root.curColor
+            hidden: lyrics.lineHidden
             showSides: root.cfg.showNeighbours && (!root.cfg.autoCompact || view.height >= 150)
             karaokeFrac: view.kfrac
             bpm: root.cfg.audioTempo ? lyrics.bpm : 0

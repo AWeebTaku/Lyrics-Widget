@@ -19,6 +19,7 @@
 #include <QUrlQuery>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace {
 
@@ -300,6 +301,7 @@ void LyricsController::clearLyrics()
     m_hasRoman = false;
     m_synced = false;
     m_index = -1;
+    setLineHidden(false);
     emit linesChanged();
     emit currentIndexChanged();
 }
@@ -701,10 +703,43 @@ void LyricsController::resync()
     const int idx = int(it - m_lrc.cbegin()) - 1; // -1 = before the first line
     setIndex(idx);
 
+    // a finished line is hidden during a long instrumental break
+    const qint64 hideAt = idx >= 0 ? breakStartMs(idx) : -1;
+    setLineHidden(hideAt >= 0 && posMs >= hideAt);
+
     if (!p->playing())
         return;
-    if (it != m_lrc.cend())
-        m_timer.start(int(std::max<qint64>(1, qint64((it->timeMs - posMs) * m_timeScale))));
+    qint64 wake = it != m_lrc.cend() ? it->timeMs : -1; // the next line, or the moment the break starts
+    if (hideAt >= 0 && posMs < hideAt && (wake < 0 || hideAt < wake))
+        wake = hideAt;
+    if (wake >= 0)
+        m_timer.start(int(std::max<qint64>(1, qint64((wake - posMs) * m_timeScale))));
+}
+
+void LyricsController::setLineHidden(bool on)
+{
+    if (on == m_lineHidden)
+        return;
+    m_lineHidden = on;
+    emit lineHiddenChanged();
+}
+
+// When line i has been sung, if a break long enough to notice follows; -1 when there is none. The end
+// of the line is its last word's time when there is word timing, otherwise guessed from its length,
+// plus a short hold. The last line of the song counts too (an instrumental outro).
+qint64 LyricsController::breakStartMs(int i) const
+{
+    if (i < 0 || i >= m_lrc.size() || i >= m_lines.size() || m_lines[i].isEmpty())
+        return -1; // empty lines are the break markers themselves
+    qint64 sung = 0;
+    const int src = i < m_entrySrc.size() ? m_entrySrc[i] : -1;
+    if (src >= 0 && src < m_srcWords.size() && !m_srcWords[src].isEmpty())
+        sung = m_srcWords[src].last().toList().value(0).toLongLong();
+    if (sung <= 0)
+        sung = std::clamp<qint64>(1500 + m_lines[i].size() * 110, 3000, 9000);
+    const qint64 end = m_lrc[i].timeMs + sung + 1200;
+    const qint64 next = i + 1 < m_lrc.size() ? m_lrc[i + 1].timeMs : std::numeric_limits<qint64>::max();
+    return next - end > 4000 ? end : -1;
 }
 
 // Provider that usually has this artist's lyrics, or "".
