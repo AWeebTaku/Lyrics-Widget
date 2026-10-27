@@ -20,6 +20,7 @@ struct Track {
 
 struct Candidate {
     QString artist, title;
+    bool boxed = false; // the song was named in 【】 of a fan upload (AMV/MAD): the video's length and channel are not the song's
     bool operator==(const Candidate &o) const { return artist == o.artist && title == o.title; }
 };
 
@@ -49,7 +50,12 @@ inline QString cleanTitle(QString t)
     static const QRegularExpression tail(
         QStringLiteral(R"(\s+(mv|m/v|official( music)? video|lyrics?( video)?|audio|hd|4k)\s*$)"),
         QRegularExpression::CaseInsensitiveOption);
+    // "【AMV/MAD】", "【歌ってみた】", "(MMD)": what kind of upload it is, not part of the song
+    static const QRegularExpression kind(
+        QStringLiteral(R"re(\s*[\(\[\{（【]\s*(?:amv|mad|mad動画|アニメmad|音mad|mmd|pv|mv|歌ってみた|弾いてみた|叩いてみた|踊ってみた|手描き|cover)(?:\s*[/／・&+,]\s*(?:amv|mad|mad動画|アニメmad|音mad|mmd|pv|mv|歌ってみた|弾いてみた|叩いてみた|踊ってみた|手描き|cover))*\s*[\)\]\}）】]\s*)re"),
+        QRegularExpression::CaseInsensitiveOption);
     t.remove(site);
+    t.remove(kind);
     t.remove(bracket);
     t.remove(tail);
     t.remove(dashTail);
@@ -145,6 +151,15 @@ inline QVector<Candidate> candidates(const Track &t)
     const bool split = m.hasMatch() && m.capturedStart() > 0;
     const QString left = split ? cleanArtist(title.left(m.capturedStart())) : QString();
     const QString right = split ? cleanTitle(title.mid(m.capturedEnd())) : QString();
+
+    // Fan uploads: "Anime【Song】" (after the upload-kind tag is gone): the song is in the brackets
+    static const QRegularExpression boxed(QStringLiteral(R"(^(.+?)\s*【(.+?)】\s*$)"));
+    const auto bm = boxed.match(title);
+    if (bm.hasMatch() && !bm.captured(2).simplified().isEmpty()) {
+        const Candidate c{QString(), bm.captured(2).simplified(), true}; // the channel is the uploader, not the singer
+        if (!out.contains(c))
+            out.push_back(c);
+    }
 
     // Japanese uploads: "Artist「Song」"
     static const QRegularExpression kakko(QStringLiteral(R"(^(.*?)\s*[「『](.+?)[」』])"));
@@ -291,12 +306,14 @@ inline double score(const Candidate &want, int wantSec, const QString &title,
     if (as < 0.5 && !(ts == 1 && wantSec > 0 && std::abs(durSec - wantSec) <= 2))
         return -1;
     // Title alone (no artist to check): the length has to vouch for it.
-    if (want.artist.isEmpty() && !(wantSec > 0 && durSec > 0 && std::abs(durSec - wantSec) <= 6))
+    if (want.boxed && ts < 0.9)
+        return -1; // nothing but the name vouches for it: it has to be (nearly) exact
+    if (want.artist.isEmpty() && !want.boxed && !(wantSec > 0 && durSec > 0 && std::abs(durSec - wantSec) <= 6))
         return -1;
     double s = 0.6 * ts + 0.4 * as;
     if (wantSec > 0 && durSec > 0) {
         const double d = std::abs(durSec - wantSec);
-        s += d <= 2 ? 0.2 : d <= 6 ? 0.1 : d > 15 ? -0.3 : 0;
+        s += d <= 2 ? 0.2 : d <= 6 ? 0.1 : d > 15 && !want.boxed ? -0.3 : 0; // an AMV is a cut of the song: no penalty
     }
     if (!wantAlbum.isEmpty() && !album.isEmpty() && similarity(wantAlbum, album) >= 0.8)
         s += 0.1; // same release: strongest sign it is the same recording
