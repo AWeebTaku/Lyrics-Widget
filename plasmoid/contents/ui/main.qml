@@ -41,10 +41,14 @@ PlasmoidItem {
     // Colours of the album cover (when switched on): the main one for the current line, the second for the
     // other lines, all of them as a gradient in the visualizer
     readonly property bool tinted: cfg.tintFromArt && lyrics.palette.length > 0
-    readonly property color curColor: tinted ? lyrics.palette[0] : cfg.textColor
+    // A very dark cover color would make the text vanish on a dark desktop: lift it to a readable lightness
+    function lift(c) {
+        return cfg.liftDark && c.hslLightness < 0.5 ? Qt.hsla(Math.max(0, c.hslHue), c.hslSaturation, 0.5, c.a) : c
+    }
+    readonly property color curColor: tinted ? lift(lyrics.palette[0]) : cfg.textColor
     // "One color" uses only the cover's main colour (current line and visualizer); the other lines keep their own
     readonly property bool multiColor: tinted && cfg.tintMode === 0 && lyrics.palette.length > 1
-    readonly property color sideColor: multiColor ? Qt.alpha(lyrics.palette[1], 0.8) : cfg.dimColor
+    readonly property color sideColor: multiColor ? Qt.alpha(lift(lyrics.palette[1]), 0.8) : cfg.dimColor
 
     // Windows on this screen: a full screen / maximized one suspends the whole widget
     TasksModel {
@@ -177,7 +181,7 @@ PlasmoidItem {
             gapMs: lyrics.lineGapMs
             animate: root.cfg.animateLines
             curColor: root.curColor
-            curColors: root.multiColor ? lyrics.palette.slice(0, 4) : []
+            curColors: root.multiColor ? lyrics.palette.slice(0, 4).map(c => root.lift(c)) : []
             curFlow: root.cfg.lyricColorFlow
             sideColor: root.sideColor
             hidden: lyrics.lineHidden
