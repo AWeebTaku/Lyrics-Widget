@@ -41,9 +41,9 @@ PlasmoidItem {
     // Colours of the album cover (when switched on): the main one for the current line, the second for the
     // other lines, all of them as a gradient in the visualizer
     readonly property bool tinted: cfg.tintFromArt && lyrics.palette.length > 0
-    // A very dark cover color would make the text vanish on a dark desktop: lift it to a readable lightness
+    // A very dark cover color would make the text vanish on a dark desktop: lift it to half brightness
     function lift(c) {
-        return cfg.liftDark && c.hslLightness < 0.5 ? Qt.hsla(Math.max(0, c.hslHue), c.hslSaturation, 0.5, c.a) : c
+        return c.hslLightness < 0.5 ? Qt.hsla(Math.max(0, c.hslHue), c.hslSaturation, 0.5, c.a) : c
     }
     readonly property color curColor: tinted ? lift(lyrics.palette[0]) : cfg.textColor
     // "One color" uses only the cover's main colour (current line and visualizer); the other lines keep their own

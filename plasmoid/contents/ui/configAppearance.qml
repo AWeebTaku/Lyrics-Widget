@@ -34,7 +34,6 @@ KCM.SimpleKCM {
     property alias cfg_textColor: textColor.value
     property alias cfg_dimColor: dimColor.value
     property alias cfg_tintFromArt: tint.checked
-    property alias cfg_liftDark: liftDark.checked
     property int cfg_tintMode
     property int cfg_lyricColorFlow
     property int cfg_vizColorFlow
@@ -88,7 +87,6 @@ KCM.SimpleKCM {
     property string cfg_textColorDefault
     property string cfg_dimColorDefault
     property bool cfg_tintFromArtDefault
-    property bool cfg_liftDarkDefault
     property int cfg_tintModeDefault
     property int cfg_lyricColorFlowDefault
     property int cfg_vizColorFlowDefault
@@ -207,11 +205,6 @@ KCM.SimpleKCM {
             ColorField { id: textColor; Kirigami.FormData.label: i18n("Current line:") }
             ColorField { id: dimColor; alpha: true; Kirigami.FormData.label: i18n("Other lines:") }
             QQC2.CheckBox { id: tint; text: i18n("Use colors from the album cover") }
-            RowLayout {
-                enabled: tint.checked
-                QQC2.CheckBox { id: liftDark; text: i18n("Lighten very dark cover colors") }
-                Kirigami.ContextualHelpButton { toolTipText: i18n("A nearly black cover would make the lyrics vanish on a dark desktop. Colors darker than half brightness are raised to it.") }
-            }
             QQC2.ComboBox {
                 Kirigami.FormData.label: i18n("Cover colors:")
                 enabled: tint.checked
