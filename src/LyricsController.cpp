@@ -442,14 +442,9 @@ void LyricsController::onResult(quint64 id, const LyricsResult &r, bool final)
         return; // a newer track superseded this request
 
     if (m_refreshing && !r.networkError && r.synced.isEmpty()) {
-        if (final) { // nothing else out there: the next press starts over
-            m_refreshing = false;
-            m_skip.clear();
-            m_track.skip.clear();
-            m_track.onlySynced = false;
-            setStatus(QStringLiteral("No other lyrics found"));
-        }
-        return; // the lyrics on screen stay
+        if (final) // nothing else out there: the lyrics from before come back, the next press starts over
+            restoreAfterRefresh(QStringLiteral("No other lyrics found"));
+        return;
     }
     if (r.networkError)
         setStatus(QStringLiteral("Couldn't reach the lyrics service — retrying…"));
@@ -469,8 +464,11 @@ void LyricsController::onResult(quint64 id, const LyricsResult &r, bool final)
                 m_requestId = m_fetcher.lookup(m_track);
         });
     }
-    if (r.networkError)
+    if (r.networkError) {
+        if (m_refreshing && !retry)
+            restoreAfterRefresh(QStringLiteral("Couldn't reach the lyrics service"));
         return;
+    }
     StoredLyrics s;
     s.found = r.found;
     s.instrumental = r.instrumental;
@@ -508,6 +506,7 @@ void LyricsController::onResult(quint64 id, const LyricsResult &r, bool final)
 
 void LyricsController::apply(const StoredLyrics &s)
 {
+    m_applied = s;
     m_srcLrc.clear();
     m_srcText.clear();
     m_srcRoman.clear();
@@ -876,8 +875,20 @@ void LyricsController::refreshLyrics()
     m_track.onlySynced = true;
     m_refreshing = true;
     m_retries = 0;
-    setStatus(QStringLiteral("Looking for other lyrics…"));
+    clearLyrics(); // the old lyrics make way for the search
+    setStatus(QStringLiteral("Finding lyrics…"));
     m_requestId = m_fetcher.lookup(m_track);
+}
+
+void LyricsController::restoreAfterRefresh(const QString &note)
+{
+    m_refreshing = false;
+    m_skip.clear();
+    m_track.skip.clear();
+    m_track.onlySynced = false;
+    m_requestId = 0;
+    apply(m_applied);
+    setStatus(note);
 }
 
 void LyricsController::startLookup()

@@ -148,7 +148,7 @@ PlasmoidItem {
         function updateStatusTimer() {
             statusShown = true
             const s = lyrics.status
-            if (s !== "" && !s.startsWith("Loading") && !s.startsWith("Couldn't"))
+            if (s !== "" && !s.startsWith("Loading") && !s.startsWith("Finding") && !s.startsWith("Couldn't"))
                 statusTimer.restart()
             else
                 statusTimer.stop()

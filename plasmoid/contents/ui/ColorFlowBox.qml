@@ -17,6 +17,12 @@ QQC2.ComboBox {
         { text: i18n("To the center"), value: 6 },
         { text: i18n("Fill (main color only)"), value: 5 }
     ]
-    currentIndex: Math.max(0, indexOfValue(value))
+    // looked up in the model itself: indexOfValue() is not ready yet when the page opens
+    currentIndex: {
+        for (let i = 0; i < model.length; ++i)
+            if (model[i].value === value)
+                return i
+        return 0
+    }
     onActivated: picked(currentValue)
 }

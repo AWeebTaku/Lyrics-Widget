@@ -91,6 +91,12 @@ KCM.SimpleKCM {
     property int cfg_lyricColorFlowDefault
     property int cfg_vizColorFlowDefault
 
+    function weightIndex(w) {
+        for (let i = 0; i < weights.length; ++i)
+            if (weights[i].value === w)
+                return i
+        return 1
+    }
     readonly property var weights: [
         { text: i18n("Light"), value: 300 }, { text: i18n("Normal"), value: 400 }, { text: i18n("Medium"), value: 500 },
         { text: i18n("Semi-bold"), value: 600 }, { text: i18n("Bold"), value: 700 }, { text: i18n("Black"), value: 900 }
@@ -127,14 +133,14 @@ KCM.SimpleKCM {
                 Kirigami.FormData.label: i18n("Current line weight:")
                 textRole: "text"; valueRole: "value"
                 model: weights
-                currentIndex: Math.max(0, indexOfValue(cfg_currentWeight))
+                currentIndex: weightIndex(cfg_currentWeight)
                 onActivated: cfg_currentWeight = currentValue
             }
             QQC2.ComboBox {
                 Kirigami.FormData.label: i18n("Other lines weight:")
                 textRole: "text"; valueRole: "value"
                 model: weights
-                currentIndex: Math.max(0, indexOfValue(cfg_sideWeight))
+                currentIndex: weightIndex(cfg_sideWeight)
                 onActivated: cfg_sideWeight = currentValue
             }
             QQC2.CheckBox { id: italic; text: i18n("Italic") }
