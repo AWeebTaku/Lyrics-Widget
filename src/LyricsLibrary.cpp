@@ -66,7 +66,9 @@ void LyricsLibrary::onTrack()
     }
     m_key = key;
     const bool had = m_saved;
-    m_saved = !key.isEmpty() && m_store.library(key).has_value();
+    const auto entry = key.isEmpty() ? std::nullopt : m_store.library(key);
+    m_saved = entry.has_value();
+    m_ignored = entry && entry->source == QLatin1String("none");
     emit trackChanged();
     if (had != m_saved)
         emit savedChanged();
@@ -107,6 +109,11 @@ void LyricsLibrary::search(const QString &title, const QString &artist)
         m_skip.clear();
     }
     t.skip = m_skip;
+    if (m_ignored) { // looking for lyrics by hand takes the song off the ignore list
+        m_store.removeLibrary(m_key);
+        m_saved = m_ignored = false;
+        emit savedChanged();
+    }
     setStatus(tr("Searching…"), true);
     m_searchId = m_fetcher.lookup(t);
 }
@@ -138,9 +145,29 @@ bool LyricsLibrary::save(const QString &text, const QString &title, const QStrin
     }
     m_store.putLibrary(e);
     m_saved = true;
+    m_ignored = false;
     emit savedChanged();
     setStatus(e.synced.isEmpty() ? tr("Saved as untimed lyrics.") : tr("Saved. The widget uses it now."));
     return true;
+}
+
+void LyricsLibrary::ignoreSong()
+{
+    if (m_key.isEmpty()) {
+        setStatus(tr("Play the song first."));
+        return;
+    }
+    LibraryEntry e;
+    e.key = m_key;
+    e.title = m_track.title;
+    e.artist = m_track.artist;
+    e.album = m_track.album;
+    e.durationSec = m_track.durationSec;
+    e.source = QStringLiteral("none"); // no text: the widget shows nothing and does not look the song up
+    m_store.putLibrary(e);
+    m_saved = m_ignored = true;
+    emit savedChanged();
+    setStatus(tr("The widget will not look up lyrics for this song. Press Get lyrics to look for them yourself, or save your own."));
 }
 
 void LyricsLibrary::remove()
@@ -148,7 +175,7 @@ void LyricsLibrary::remove()
     if (m_key.isEmpty())
         return;
     m_store.removeLibrary(m_key);
-    m_saved = false;
+    m_saved = m_ignored = false;
     emit savedChanged();
     setStatus(tr("Removed from the library. The widget looks the song up again."));
 }

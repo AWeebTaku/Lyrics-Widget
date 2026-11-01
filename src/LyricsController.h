@@ -156,7 +156,7 @@ private:
     LyricsStore m_store;
     QStringList m_skip;        // sources already shown for this song (see refreshLyrics)
     QString m_shown;           // source id of the lyrics on screen
-    bool m_refreshing = false, m_libEdited = false;
+    bool m_refreshing = false, m_libEdited = false, m_libIgnored = false;
     StoredLyrics m_applied;    // what is on screen, to put back when refreshing finds nothing
     void restoreAfterRefresh(const QString &note);
     LyricsFetcher m_fetcher;

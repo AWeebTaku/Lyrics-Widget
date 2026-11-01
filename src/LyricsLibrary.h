@@ -19,6 +19,7 @@ class LyricsLibrary : public QObject
     Q_PROPERTY(int durationSec READ durationSec NOTIFY trackChanged)
     Q_PROPERTY(bool hasSong READ hasSong NOTIFY trackChanged)
     Q_PROPERTY(bool saved READ saved NOTIFY savedChanged) // the library has this song
+    Q_PROPERTY(bool ignored READ ignored NOTIFY savedChanged) // ...as "no lyrics": the widget does not look it up
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY statusChanged)
 
@@ -30,12 +31,14 @@ public:
     int durationSec() const { return m_track.durationSec; }
     bool hasSong() const { return !m_track.title.isEmpty(); }
     bool saved() const { return m_saved; }
+    bool ignored() const { return m_ignored; }
     QString status() const { return m_status; }
     bool busy() const { return m_busy; }
 
     Q_INVOKABLE QString load();                                           // the saved lyrics, else the cached ones
     Q_INVOKABLE void search(const QString &title, const QString &artist); // answer arrives as found()
     Q_INVOKABLE void startOver() { m_skip.clear(); m_query.clear(); } // the next search begins with the best result
+    Q_INVOKABLE void ignoreSong(); // no lyrics for this song (a cover or edit that matches nothing); saving lyrics later replaces it
     Q_INVOKABLE bool save(const QString &text, const QString &title, const QString &artist);
     Q_INVOKABLE void remove();
     // t' = t * percent/100 + shiftMs, for every timestamp of the text
@@ -59,7 +62,7 @@ private:
     LyricsFetcher m_fetcher;
     Track m_track;
     QString m_key, m_status;
-    bool m_saved = false, m_busy = false;
+    bool m_saved = false, m_ignored = false, m_busy = false;
     quint64 m_searchId = 0;
     QStringList m_skip; // results of this search already shown: each press of Get lyrics shows the next one
     QString m_query;

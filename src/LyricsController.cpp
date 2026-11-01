@@ -344,7 +344,7 @@ void LyricsController::onTrackChanged()
     m_track = t;
     m_skip.clear();
     m_shown.clear();
-    m_refreshing = m_libEdited = false;
+    m_refreshing = m_libEdited = m_libIgnored = false;
     m_readingLines.clear();
     m_trackOffsetMs = m_store.offset(key); // a learned provider delay may replace this in apply()
     m_gapSec = 0;
@@ -366,6 +366,12 @@ void LyricsController::onTrackChanged()
     m_libraryStamp = 0;
     if (const auto lib = m_store.library(key)) {
         m_libraryStamp = lib->updated;
+        if (lib->source == QLatin1String("none") && lib->synced.isEmpty() && lib->plain.isEmpty()) {
+            m_libIgnored = true; // the user turned lyrics off for this song (library page)
+            m_requestId = 0;
+            setStatus(QStringLiteral("Lyrics are turned off for this song"));
+            return;
+        }
         StoredLyrics s;
         s.found = true;
         s.synced = lib->synced;
@@ -883,6 +889,10 @@ void LyricsController::refreshLyrics()
 {
     if (m_key.isEmpty() || !m_lyricsEnabled || m_suspended || m_refreshing)
         return;
+    if (m_libIgnored) {
+        setStatus(QStringLiteral("Lyrics are turned off for this song: use Get lyrics in the library to look for them"));
+        return;
+    }
     if (m_libEdited) {
         setStatus(QStringLiteral("You edited these lyrics: remove them in the library to look again"));
         return;

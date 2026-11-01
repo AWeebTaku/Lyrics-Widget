@@ -168,12 +168,21 @@ Kirigami.FormLayout {
             enabled: lib.saved
             onClicked: lib.remove()
         }
-        QQC2.Label { text: lib.saved ? i18n("This song is in your library") : i18n("Not in your library"); opacity: 0.8 }
+        QQC2.Button {
+            text: i18n("No lyrics for this song")
+            icon.name: "dialog-cancel"
+            enabled: lib.hasSong && !lib.ignored
+            onClicked: lib.ignoreSong()
+        }
+        QQC2.Label {
+            text: lib.ignored ? i18n("Lyrics are off for this song") : lib.saved ? i18n("This song is in your library") : i18n("Not in your library")
+            opacity: 0.8
+        }
     }
     QQC2.Label {
         Layout.maximumWidth: Kirigami.Units.gridUnit * 28
         wrapMode: Text.WordWrap
         opacity: 0.7
-        text: i18n("Saved lyrics are used instead of anything the widget finds, and are kept when you rebuild. Offsets set with the hover buttons still apply on top.")
+        text: i18n("Saved lyrics are used instead of anything the widget finds, and are kept when you rebuild. Offsets set with the hover buttons still apply on top. \"No lyrics for this song\" puts it on an ignore list so the widget stops looking it up (for a cover or edit that matches nothing). Get lyrics takes it off the list again; saving your own lyrics shows them.")
     }
 }
