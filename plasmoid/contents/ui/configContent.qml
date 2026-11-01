@@ -72,11 +72,11 @@ KCM.SimpleKCM {
 
                 Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Timing") }
                 RowLayout {
-                    Kirigami.FormData.label: i18n("Shift all lyrics (ms):")
-                    QQC2.SpinBox {
-                        from: -5000; to: 5000; stepSize: 50; editable: true
-                        value: cfg_offsetMs
-                        onValueModified: cfg_offsetMs = value
+                    Kirigami.FormData.label: i18n("Shift all lyrics (s):")
+                    SecondsSpinBox {
+                        from: -500; to: 500; stepSize: 5
+                        value: Math.round(cfg_offsetMs / 10)
+                        onValueModified: cfg_offsetMs = value * 10
                     }
                     Kirigami.ContextualHelpButton { toolTipText: i18n("Positive: lyrics appear earlier. Negative: later.") }
                 }

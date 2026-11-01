@@ -146,27 +146,27 @@ Kirigami.FormLayout {
         Kirigami.ContextualHelpButton { toolTipText: i18n("Above 100 spreads the lines further apart (the song is longer than the lyrics' version). Below 100 packs them closer.") }
     }
     RowLayout {
-        Kirigami.FormData.label: i18n("Move all lines (ms):")
-        QQC2.SpinBox { id: shiftSpin; from: -60000; to: 60000; stepSize: 100; value: 0; editable: true }
+        Kirigami.FormData.label: i18n("Move all lines (s):")
+        SecondsSpinBox { id: shiftSpin; from: -6000; to: 6000; stepSize: 10; value: 0 }
         QQC2.Button {
             text: i18n("Apply")
             enabled: timing.lines > 0 && shiftSpin.value !== 0
-            onClicked: { setText(lib.retime(editor.text, 100, shiftSpin.value), true); shiftSpin.value = 0 }
+            onClicked: { setText(lib.retime(editor.text, 100, shiftSpin.value * 10), true); shiftSpin.value = 0 }
         }
         Kirigami.ContextualHelpButton { toolTipText: i18n("Positive moves the lines later, negative earlier.") }
     }
     RowLayout {
-        Kirigami.FormData.label: i18n("From the selected line (ms):")
-        QQC2.SpinBox { id: partSpin; from: -60000; to: 60000; stepSize: 100; value: 0; editable: true }
+        Kirigami.FormData.label: i18n("From the selected line (s):")
+        SecondsSpinBox { id: partSpin; from: -6000; to: 6000; stepSize: 10; value: 0 }
         QQC2.Button {
             text: i18n("Onwards")
             enabled: timing.lines > 0 && partSpin.value !== 0
-            onClicked: { setText(lib.shiftLines(editor.text, selFirst, -1, partSpin.value), true); partSpin.value = 0 }
+            onClicked: { setText(lib.shiftLines(editor.text, selFirst, -1, partSpin.value * 10), true); partSpin.value = 0 }
         }
         QQC2.Button {
             text: i18n("Selection only")
             enabled: timing.lines > 0 && partSpin.value !== 0
-            onClicked: { setText(lib.shiftLines(editor.text, selFirst, selLast, partSpin.value), true); partSpin.value = 0 }
+            onClicked: { setText(lib.shiftLines(editor.text, selFirst, selLast, partSpin.value * 10), true); partSpin.value = 0 }
         }
         Kirigami.ContextualHelpButton { toolTipText: i18n("Click a line or select several in the text above, then add (positive) or remove (negative) time. Onwards moves the first selected line and every line after it, to correct a song that drifts from that point. Selection only moves just the selected lines.") }
     }
