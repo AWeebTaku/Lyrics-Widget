@@ -12,6 +12,7 @@
 struct Track {
     QString title, artist, album, id; // id: YouTube video id / Spotify track id (may be empty)
     int durationSec = 0;
+    QStringList alt; // other names of the song (YouTube Music's title in the original script, the album): searched too
     QString lang;   // "en" / "ja" / "ko" / "zh" when the title says which language version this is, else empty
     QStringList skip;      // sources ("lrclib:12", "netease:34"...) not to pick again: lets a lookup return the next-best lyrics
     bool onlySynced = false; // ignore results without timestamps
@@ -209,6 +210,15 @@ inline QVector<Candidate> candidates(const Track &t)
         const QString v = stripVariant(out[i].title);
         if (!v.isEmpty() && !out.contains({out[i].artist, v}))
             out.push_back({out[i].artist, v});
+    }
+    // The song's other names (e.g. the Japanese title behind an English one): right after the first guess
+    for (const QString &a : t.alt) {
+        const QString at = cleanTitle(a);
+        bool known = at.isEmpty();
+        for (const Candidate &c : std::as_const(out))
+            known |= norm(c.title) == norm(at);
+        if (!known)
+            out.insert(std::min<qsizetype>(1, out.size()), {artist, at});
     }
     // several artists ("A, B", "A & B", "A feat. B", "A × B"): the databases often list only the first or the
     // main one, so each of the first two is also tried alone, right after the full credit

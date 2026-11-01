@@ -138,6 +138,10 @@ private:
     void startLookup();
     void watchDb();
     void checkLibrary();
+    void fetchAltTitles(const QString &videoId, std::function<void(const QStringList &)> done);
+    void beginLookup();
+    QString m_host;
+    QHash<QString, QStringList> m_altTitles; // YouTube Music video id -> its other names
     void fetchVideoTitle(const QString &videoId, std::function<void(const QString &)> done);
     void maybeFetchExtras(const StoredLyrics &s);
     bool isBannerLine(const QString &line) const;

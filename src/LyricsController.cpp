@@ -420,12 +420,30 @@ void LyricsController::onTrackChanged()
         });
         return;
     }
+    m_host = QUrl(p->url()).host();
+    // YouTube Music shows a song under its English name while the catalogues know it by its original one:
+    // ask YouTube Music for the other names first
+    if (m_host == QLatin1String("music.youtube.com") && t.id.size() == 11) {
+        const QString k = m_key;
+        fetchAltTitles(t.id, [this, k](const QStringList &alt) {
+            if (k != m_key)
+                return;
+            m_track.alt = alt;
+            beginLookup();
+        });
+        return;
+    }
+    beginLookup();
+}
+
+void LyricsController::beginLookup()
+{
     // The player's text can hide which language version this is ("0 (zero)" for the English single).
     // The title in the track itself says, and so does YouTube's own title for the video.
-    m_track.lang = Text::languageHint(t.title);
-    if (m_track.lang.isEmpty() && QUrl(p->url()).host().contains(QLatin1String("youtube")) && !t.id.isEmpty()) {
+    m_track.lang = Text::languageHint(m_track.title);
+    if (m_track.lang.isEmpty() && m_host.contains(QLatin1String("youtube")) && !m_track.id.isEmpty()) {
         const QString k = m_key;
-        fetchVideoTitle(t.id, [this, k](const QString &videoTitle) {
+        fetchVideoTitle(m_track.id, [this, k](const QString &videoTitle) {
             if (k != m_key)
                 return;
             m_track.lang = Text::languageHint(videoTitle);
@@ -979,6 +997,59 @@ void LyricsController::maybeFetchExtras(const StoredLyrics &s)
 }
 
 // YouTube's title for a video (public oEmbed, nothing but the id is sent), cached for the session.
+// The song's names as YouTube Music lists them in Japanese (title and album); empty on any failure.
+void LyricsController::fetchAltTitles(const QString &videoId, std::function<void(const QStringList &)> done)
+{
+    if (m_altTitles.contains(videoId)) {
+        done(m_altTitles.value(videoId));
+        return;
+    }
+    QNetworkRequest req(QUrl(QStringLiteral("https://music.youtube.com/youtubei/v1/next?prettyPrint=false")));
+    req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+    req.setRawHeader("Origin", "https://music.youtube.com");
+    req.setTransferTimeout(3000);
+    const QJsonObject ctx{{QStringLiteral("client"), QJsonObject{{QStringLiteral("clientName"), QStringLiteral("WEB_REMIX")},
+                                                                  {QStringLiteral("clientVersion"), QStringLiteral("1.20240101.01.00")},
+                                                                  {QStringLiteral("hl"), QStringLiteral("ja")}}}};
+    QNetworkReply *rep = m_artNam.post(req, QJsonDocument(QJsonObject{{QStringLiteral("context"), ctx}, {QStringLiteral("videoId"), videoId}}).toJson(QJsonDocument::Compact));
+    connect(rep, &QNetworkReply::finished, this, [this, rep, videoId, done] {
+        rep->deleteLater();
+        QStringList alt;
+        if (rep->error() == QNetworkReply::NoError) {
+            const QJsonObject o = QJsonDocument::fromJson(rep->readAll()).object();
+            // the playing video's entry in the queue panel: its title in the account language
+            const QJsonArray tabs = o.value(QStringLiteral("contents")).toObject()
+                .value(QStringLiteral("singleColumnMusicWatchNextResultsRenderer")).toObject()
+                .value(QStringLiteral("tabbedRenderer")).toObject()
+                .value(QStringLiteral("watchNextTabbedResultsRenderer")).toObject().value(QStringLiteral("tabs")).toArray();
+            for (const QJsonValue &tab : tabs) {
+                const QJsonArray items = tab.toObject().value(QStringLiteral("tabRenderer")).toObject().value(QStringLiteral("content")).toObject()
+                    .value(QStringLiteral("musicQueueRenderer")).toObject().value(QStringLiteral("content")).toObject()
+                    .value(QStringLiteral("playlistPanelRenderer")).toObject().value(QStringLiteral("contents")).toArray();
+                for (const QJsonValue &it : items) {
+                    const QJsonObject r = it.toObject().value(QStringLiteral("playlistPanelVideoRenderer")).toObject();
+                    if (r.value(QStringLiteral("videoId")).toString() != videoId)
+                        continue;
+                    const QString title = r.value(QStringLiteral("title")).toObject().value(QStringLiteral("runs")).toArray()
+                                              .first().toObject().value(QStringLiteral("text")).toString().trimmed();
+                    if (!title.isEmpty())
+                        alt << title;
+                }
+            }
+            const QString album = o.value(QStringLiteral("playerOverlays")).toObject().value(QStringLiteral("playerOverlayRenderer")).toObject()
+                .value(QStringLiteral("browserMediaSession")).toObject().value(QStringLiteral("browserMediaSessionRenderer")).toObject()
+                .value(QStringLiteral("album")).toObject().value(QStringLiteral("runs")).toArray().first().toObject()
+                .value(QStringLiteral("text")).toString().trimmed();
+            if (!album.isEmpty())
+                alt << album;
+            if (m_altTitles.size() > 64)
+                m_altTitles.clear();
+            m_altTitles.insert(videoId, alt);
+        }
+        done(alt);
+    });
+}
+
 void LyricsController::fetchVideoTitle(const QString &videoId, std::function<void(const QString &)> done)
 {
     if (m_videoTitles.contains(videoId)) {
