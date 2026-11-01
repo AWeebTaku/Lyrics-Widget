@@ -49,7 +49,7 @@ inline QString cleanTitle(QString t)
                                        QRegularExpression::CaseInsensitiveOption);
     // bare trailing noise: "Good Day MV", "Song Official Video"
     static const QRegularExpression tail(
-        QStringLiteral(R"(\s+(mv|m/v|official( music)? video|lyrics?( video)?|audio|hd|4k)\s*$)"),
+        QStringLiteral(R"(\s+(mv|m/v|official( music)? video|lyrics?( video)?|audio|hd|4k|full( song| version| audio)?)\s*$)"),
         QRegularExpression::CaseInsensitiveOption);
     // "【AMV/MAD】", "【歌ってみた】", "(MMD)": what kind of upload it is, not part of the song
     static const QRegularExpression kind(
