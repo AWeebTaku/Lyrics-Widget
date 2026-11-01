@@ -29,6 +29,7 @@ namespace Text {
 
 inline bool hasNonLatin(const QString &s);
 inline QString norm(const QString &s);
+inline double similarity(const QString &a, const QString &b);
 
 inline QString cleanTitle(QString t)
 {
@@ -165,7 +166,10 @@ inline QVector<Candidate> candidates(const Track &t)
     // Japanese uploads: "Artist「Song」"
     static const QRegularExpression kakko(QStringLiteral(R"(^(.*?)\s*[「『](.+?)[」』])"));
     const auto km = kakko.match(title);
-    const bool videoLike = t.album.isEmpty();
+    // "Artist - Song" where the player's artist is neither side of the dash is an upload by a channel (a
+    // slowed/sped-up edit, a cover): the dash split is the real credit, even when the player lists an album
+    const bool uploader = split && !artist.isEmpty() && similarity(artist, left) < 0.5 && similarity(artist, right) < 0.5;
+    const bool videoLike = t.album.isEmpty() || uploader;
     if (km.hasMatch() && !km.captured(2).isEmpty()) {
         add(cleanArtist(km.captured(1)), km.captured(2).simplified());
         if (!km.captured(1).isEmpty() && videoLike)
