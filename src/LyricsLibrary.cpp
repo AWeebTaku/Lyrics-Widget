@@ -180,6 +180,14 @@ void LyricsLibrary::remove()
     setStatus(tr("Removed from the library. The widget looks the song up again."));
 }
 
+QString LyricsLibrary::shiftLines(const QString &text, int firstLine, int lastLine, int shiftMs) const
+{
+    QStringList lines = text.split(QLatin1Char('\n'));
+    for (int i = std::max(0, firstLine); i < lines.size() && (lastLine < 0 || i <= lastLine); ++i)
+        lines[i] = Lrc::mapStamps(lines[i], [shiftMs](qint64 ms) { return std::max<qint64>(0, ms + shiftMs); });
+    return lines.join(QLatin1Char('\n'));
+}
+
 QString LyricsLibrary::retime(const QString &text, double percent, int shiftMs) const
 {
     const double k = percent / 100.0;

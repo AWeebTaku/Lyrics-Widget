@@ -43,6 +43,8 @@ public:
     Q_INVOKABLE void remove();
     // t' = t * percent/100 + shiftMs, for every timestamp of the text
     Q_INVOKABLE QString retime(const QString &text, double percent, int shiftMs) const;
+    // moves the timestamps of lines firstLine..lastLine (0-based; lastLine < 0 = to the end) by shiftMs
+    Q_INVOKABLE QString shiftLines(const QString &text, int firstLine, int lastLine, int shiftMs) const;
     // linear: the first timestamp lands at firstSec, the last at lastSec
     Q_INVOKABLE QString fit(const QString &text, double firstSec, double lastSec) const;
     Q_INVOKABLE QVariantMap timing(const QString &text) const; // {first, last, lines} in seconds

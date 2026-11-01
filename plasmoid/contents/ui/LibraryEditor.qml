@@ -10,7 +10,18 @@ Kirigami.FormLayout {
 
     LyricsLibrary { id: lib }
 
+    id: root
     property bool loading: false
+    // the lines the cursor or the selection is on (0-based), for "from here onwards"
+    property int selFirst: 0
+    property int selLast: 0
+    function lineAt(pos) { return editor.text.substring(0, pos).split("\n").length - 1 }
+    function updateSelection() {
+        const a = editor.selectionStart, b = editor.selectionEnd
+        selFirst = lineAt(a)
+        // a selection that ends at the very start of a line does not include that line
+        selLast = b > a ? lineAt(b - 1) : selFirst
+    }
     property bool dirty: false
     readonly property var timing: lib.timing(editor.text)
 
@@ -105,9 +116,13 @@ Kirigami.FormLayout {
                 font.family: "monospace"
                 wrapMode: TextEdit.NoWrap
                 selectByMouse: true
+                persistentSelection: true // the selection stays while a button is pressed
                 background: null
                 placeholderText: i18n("Lyrics, one line each. A line starts with its time: [01:23.45] text")
                 onTextChanged: if (!loading) dirty = true
+                onSelectionStartChanged: root.updateSelection()
+                onSelectionEndChanged: root.updateSelection()
+                onCursorPositionChanged: root.updateSelection()
             }
         }
     }
@@ -139,6 +154,25 @@ Kirigami.FormLayout {
             onClicked: { setText(lib.retime(editor.text, 100, shiftSpin.value), true); shiftSpin.value = 0 }
         }
         Kirigami.ContextualHelpButton { toolTipText: i18n("Positive moves the lines later, negative earlier.") }
+    }
+    RowLayout {
+        Kirigami.FormData.label: i18n("From the selected line (ms):")
+        QQC2.SpinBox { id: partSpin; from: -60000; to: 60000; stepSize: 100; value: 0; editable: true }
+        QQC2.Button {
+            text: i18n("Onwards")
+            enabled: timing.lines > 0 && partSpin.value !== 0
+            onClicked: { setText(lib.shiftLines(editor.text, selFirst, -1, partSpin.value), true); partSpin.value = 0 }
+        }
+        QQC2.Button {
+            text: i18n("Selection only")
+            enabled: timing.lines > 0 && partSpin.value !== 0
+            onClicked: { setText(lib.shiftLines(editor.text, selFirst, selLast, partSpin.value), true); partSpin.value = 0 }
+        }
+        Kirigami.ContextualHelpButton { toolTipText: i18n("Click a line or select several in the text above, then add (positive) or remove (negative) time. Onwards moves the first selected line and every line after it, to correct a song that drifts from that point. Selection only moves just the selected lines.") }
+    }
+    QQC2.Label {
+        opacity: 0.7
+        text: selLast > selFirst ? i18n("Selected: lines %1 to %2", selFirst + 1, selLast + 1) : i18n("Selected: line %1", selFirst + 1)
     }
     RowLayout {
         Kirigami.FormData.label: i18n("First line at (s):")
