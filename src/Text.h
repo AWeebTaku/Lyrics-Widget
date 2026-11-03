@@ -432,6 +432,22 @@ inline bool splitBy(const QString &title, QString &song, QString &artist)
     return true;
 }
 
+// "guilty as sin x about you || taylor swift & the 1975 (transition)": a mix of two songs played back to back.
+// Fills a and b with the two tracks (title + artist each), in playing order.
+inline bool splitTransition(const Track &t, Track &a, Track &b)
+{
+    static const QRegularExpression re(
+        QStringLiteral(R"(^(.+?)\s+x\s+(.+?)\s*\|\|\s*(.+?)\s*(?:&|\bx\b)\s*(.+?)\s*[\(\[]transition[\)\]])"),
+        QRegularExpression::CaseInsensitiveOption);
+    const auto m = re.match(t.title.simplified());
+    if (!m.hasMatch())
+        return false;
+    a = b = Track();
+    a.title = m.captured(1).simplified(); a.artist = m.captured(3).simplified();
+    b.title = m.captured(2).simplified(); b.artist = m.captured(4).simplified();
+    return true;
+}
+
 // A remix, edit, mashup or fan edit of another song: its length and structure differ from the original.
 inline bool editLike(const QString &title)
 {

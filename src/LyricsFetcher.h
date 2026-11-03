@@ -81,6 +81,9 @@ private:
     void publish(const JobPtr &job);
     void ytmusic(const JobPtr &job); // plain lyrics of the playing YouTube Music video (last resort)
 
+    quint64 lookupTransition(const Track &t, const Track &a, const Track &b);
+
+    QList<LyricsFetcher *> m_parts; // the two sub-lookups of a transition mix
     QNetworkAccessManager m_nam;
     static QHash<QString, qint64> &nextSlot();               // host -> earliest next request (ms)
     QHash<QUrl, QPair<qint64, QByteArray>> m_memo;          // url -> (time, body) of recent good answers

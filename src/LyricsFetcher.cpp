@@ -57,6 +57,11 @@ LyricsFetcher::LyricsFetcher(QObject *parent) : QObject(parent) {}
 quint64 LyricsFetcher::lookup(const Track &t)
 {
     m_current = ++m_nextId; // first: aborted replies' handlers must already see themselves as stale
+    qDeleteAll(m_parts);
+    m_parts.clear();
+    Track ta, tb;
+    if (Text::splitTransition(t, ta, tb))
+        return lookupTransition(t, ta, tb);
     // Stale replies are not aborted: aborting mid-flight stalled later requests on the shared
     // connections. They finish harmlessly (tiny responses) and get ignored by the job-id check.
     auto job = std::make_shared<Job>();
@@ -85,6 +90,50 @@ quint64 LyricsFetcher::lookup(const Track &t)
         publish(job);
     });
     return job->id;
+}
+
+// A mix of two songs: look both up, then play the second one's lyrics after the first's. Where the second song
+// starts is a guess (the mix ends with it), so the timing may need a nudge or an edit in the library.
+quint64 LyricsFetcher::lookupTransition(const Track &t, const Track &a, const Track &b)
+{
+    struct State { LyricsResult r[2]; bool done[2] = {false, false}; };
+    auto st = std::make_shared<State>();
+    const quint64 id = m_current;
+    const int total = t.durationSec;
+    int i = 0;
+    for (const Track &part : {a, b}) {
+        auto *f = new LyricsFetcher(this);
+        m_parts << f;
+        connect(f, &LyricsFetcher::result, this, [this, st, i, id, total](quint64, const LyricsResult &r, bool final) {
+            st->r[i] = r;
+            st->done[i] = final;
+            if (id != m_current || !st->done[0] || !st->done[1])
+                return;
+            const LyricsResult &x = st->r[0], &y = st->r[1];
+            LyricsResult out = x.found && !y.found ? x : y.found && !x.found ? y : x;
+            if (x.found && y.found) {
+                out.sourceId = x.sourceId + QLatin1Char('+') + y.sourceId;
+                out.plain = x.plain + QStringLiteral("\n\n") + y.plain;
+                out.roman.clear();
+                out.instrumental = false;
+                out.srcDur = total;
+                out.synced.clear();
+                if (!x.synced.isEmpty() && !y.synced.isEmpty()) {
+                    const auto lines = Lrc::parse(x.synced);
+                    const qint64 end = lines.isEmpty() ? 0 : lines.last().timeMs + 2000;
+                    // the mix ends with the second song, so line its end up with the mix's end
+                    const qint64 at = std::max<qint64>(end, total > 0 && y.srcDur > 0 ? qint64((total - y.srcDur) * 1000) : end);
+                    out.synced = x.synced + QLatin1Char('\n') + Lrc::mapStamps(y.synced, [at](qint64 ms) { return ms + at; });
+                }
+            }
+            out.networkError = x.networkError || y.networkError;
+            out.found = x.found || y.found;
+            emit result(id, out, true);
+        });
+        f->lookup(part);
+        ++i;
+    }
+    return id;
 }
 
 // Keeps the memo small: only the newest few downloads are worth remembering for a replay or a retry.
