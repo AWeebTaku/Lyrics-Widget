@@ -154,11 +154,11 @@ int LyricsStore::learnedOffset(const QString &provider)
             v << q.value(0).toInt();
     if (v.size() < 5)
         return 0;
-    const int neg = int(std::count_if(v.cbegin(), v.cend(), [](int x) { return x < 0; }));
-    const int agree = std::max<int>(neg, int(v.size()) - neg);
-    if (agree < 0.8 * v.size())
-        return 0; // nudges go both ways: no systematic delay to correct
     const int med = v[v.size() / 2];
+    // a systematic delay means the nudges cluster around one value; a wide spread (-2 s, +1 s, +3 s) is noise
+    const int near = int(std::count_if(v.cbegin(), v.cend(), [med](int x) { return std::abs(x - med) <= 500; }));
+    if (near < 0.8 * v.size())
+        return 0;
     return std::abs(med) >= 100 ? med : 0;
 }
 
