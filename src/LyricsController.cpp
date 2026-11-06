@@ -848,7 +848,7 @@ void LyricsController::noteWin(const Track &t, const LyricsResult &r)
         m_store.addWin(Text::norm(cands.first().artist), r.provider);
 }
 
-void LyricsController::updateArt(const QString &url)
+void LyricsController::updateArt(const QString &url, int tries)
 {
     if (url == m_artUrl)
         return;
@@ -864,7 +864,17 @@ void LyricsController::updateArt(const QString &url)
         return;
     }
     if (url.startsWith(QLatin1String("file:"))) {
-        set(Palette::of(QImage(QUrl(url).toLocalFile())));
+        const QImage img(QUrl(url).toLocalFile());
+        // the browser may still be writing the file when it announces it: look again shortly instead of
+        // settling on "no colours" (which shows the visualizer's fallback colours) for the whole song
+        if (img.isNull() && tries < 8)
+            QTimer::singleShot(300, this, [this, url, tries] {
+                if (url == m_artUrl) {
+                    m_artUrl.clear();
+                    updateArt(url, tries + 1);
+                }
+            });
+        set(img.isNull() ? QList<QColor>() : Palette::of(img));
         return;
     }
     QNetworkReply *rep = m_artNam.get(QNetworkRequest(QUrl(url)));

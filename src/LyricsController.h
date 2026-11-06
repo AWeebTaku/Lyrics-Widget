@@ -134,7 +134,7 @@ private:
     void schedulePrefetch();
     void prefetchNext();
     void romanizeKanji(bool force = false);
-    void updateArt(const QString &url);
+    void updateArt(const QString &url, int tries = 0);
     void startLookup();
     void watchDb();
     void checkLibrary();
