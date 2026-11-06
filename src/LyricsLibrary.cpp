@@ -10,6 +10,7 @@
 
 LyricsLibrary::LyricsLibrary(QObject *parent) : QObject(parent), m_watcher(this), m_fetcher(this)
 {
+    m_watcher.setWatchPosition(true); // playheadSec() must follow seeks the player does not announce
     connect(&m_watcher, &PlayerWatcher::trackChanged, this, &LyricsLibrary::onTrack);
     connect(&m_fetcher, &LyricsFetcher::result, this, [this](quint64 id, const LyricsResult &r, bool final) {
         if (id != m_searchId || !final)
@@ -189,6 +190,20 @@ QString LyricsLibrary::shiftLines(const QString &text, int firstLine, int lastLi
     return lines.join(QLatin1Char('\n'));
 }
 
+namespace {
+const QRegularExpression &leadStamp()
+{
+    static const QRegularExpression re(QStringLiteral(R"(^\s*\[\d{1,3}:\d{2}(?:[.:]\d{1,3})?\]\s*)"));
+    return re;
+}
+}
+
+double LyricsLibrary::playheadSec() const
+{
+    const MprisPlayer *p = m_watcher.active();
+    return p ? p->positionUs() / 1e6 : -1;
+}
+
 double LyricsLibrary::lineTime(const QString &text, int line) const
 {
     const QStringList lines = text.split(QLatin1Char('\n'));
@@ -203,9 +218,8 @@ QString LyricsLibrary::setLineTime(const QString &text, int line, double sec) co
     QStringList lines = text.split(QLatin1Char('\n'));
     if (line < 0 || line >= lines.size())
         return text;
-    static const QRegularExpression lead(QStringLiteral(R"(^\s*\[\d{1,3}:\d{2}(?:[.:]\d{1,3})?\])"));
-    lines[line].replace(lead, QString());
-    lines[line] = Lrc::stamp(qint64(std::lround(sec * 1000))) + lines[line];
+    const QString rest = QString(lines[line]).remove(leadStamp()).trimmed();
+    lines[line] = Lrc::stamp(qint64(std::lround(sec * 1000))) + (rest.isEmpty() ? QString() : QLatin1Char(' ') + rest);
     return lines.join(QLatin1Char('\n'));
 }
 

@@ -36,6 +36,21 @@ Item {
         lineSpin.value = t < 0 ? 0 : Math.round(t * 100)
     }
 
+    // the selected line gets the song's current time; the cursor moves on to the next line
+    function stampNow() {
+        const pos = lib.playheadSec()
+        if (pos < 0 || editor.text.length === 0)
+            return
+        const line = selFirst
+        setText(lib.setLineTime(editor.text, line, pos), true)
+        const lines = editor.text.split("\n")
+        let at = 0
+        for (let i = 0; i <= Math.min(line, lines.length - 1); ++i)
+            at += lines[i].length + 1
+        editor.cursorPosition = Math.min(at, editor.text.length)
+        editor.forceActiveFocus()
+    }
+
     function setText(t, markDirty) {
         loading = true
         editor.text = t
@@ -119,6 +134,19 @@ Item {
                       + "  ·  " + (root.selLast > root.selFirst ? i18n("selected: lines %1 to %2", root.selFirst + 1, root.selLast + 1)
                                                                  : i18n("selected: line %1", root.selFirst + 1))
             }
+
+            // play the song and press this (or Ctrl+Enter) as each line starts: the selected line gets the playhead's
+            // time and the next line is selected. Fine-tune afterwards with the timing controls.
+            RowLayout {
+                QQC2.Button {
+                    text: i18n("Stamp line at playhead")
+                    icon.name: "media-record"
+                    enabled: editor.text.length > 0
+                    onClicked: root.stampNow()
+                }
+                QQC2.Label { text: i18n("Ctrl+Enter"); opacity: 0.6 }
+            }
+            Shortcut { sequence: "Ctrl+Return"; onActivated: root.stampNow() }
         }
 
         // ---- right: song, timing, library

@@ -50,6 +50,7 @@ public:
     // the time of one line (0-based), for setting a single line's time by hand
     Q_INVOKABLE double lineTime(const QString &text, int line) const; // seconds, -1 = the line has no time
     Q_INVOKABLE QString setLineTime(const QString &text, int line, double sec) const; // replaces / adds the line's first stamp
+    Q_INVOKABLE double playheadSec() const; // where the playing song is, -1 when nothing plays
     Q_INVOKABLE QVariantMap timing(const QString &text) const; // {first, last, lines} in seconds
 
 signals:
