@@ -3,6 +3,7 @@
 #include "Keys.h"
 #include "LrcParser.h"
 
+#include <QRegularExpression>
 #include <QTimer>
 #include <algorithm>
 #include <cmath>
@@ -185,6 +186,26 @@ QString LyricsLibrary::shiftLines(const QString &text, int firstLine, int lastLi
     QStringList lines = text.split(QLatin1Char('\n'));
     for (int i = std::max(0, firstLine); i < lines.size() && (lastLine < 0 || i <= lastLine); ++i)
         lines[i] = Lrc::mapStamps(lines[i], [shiftMs](qint64 ms) { return std::max<qint64>(0, ms + shiftMs); });
+    return lines.join(QLatin1Char('\n'));
+}
+
+double LyricsLibrary::lineTime(const QString &text, int line) const
+{
+    const QStringList lines = text.split(QLatin1Char('\n'));
+    if (line < 0 || line >= lines.size())
+        return -1;
+    const auto p = Lrc::parse(lines[line]);
+    return p.isEmpty() ? -1 : p.first().timeMs / 1000.0;
+}
+
+QString LyricsLibrary::setLineTime(const QString &text, int line, double sec) const
+{
+    QStringList lines = text.split(QLatin1Char('\n'));
+    if (line < 0 || line >= lines.size())
+        return text;
+    static const QRegularExpression lead(QStringLiteral(R"(^\s*\[\d{1,3}:\d{2}(?:[.:]\d{1,3})?\])"));
+    lines[line].replace(lead, QString());
+    lines[line] = Lrc::stamp(qint64(std::lround(sec * 1000))) + lines[line];
     return lines.join(QLatin1Char('\n'));
 }
 

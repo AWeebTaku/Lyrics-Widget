@@ -27,6 +27,13 @@ Item {
         selFirst = lineAt(a)
         // a selection that ends at the very start of a line does not include that line
         selLast = b > a ? lineAt(b - 1) : selFirst
+        refreshLine()
+    }
+
+    // the selected line's time in the spin box
+    function refreshLine() {
+        const t = lib.lineTime(editor.text, selFirst)
+        lineSpin.value = t < 0 ? 0 : Math.round(t * 100)
     }
 
     function setText(t, markDirty) {
@@ -94,7 +101,7 @@ Item {
                         persistentSelection: true // the selection stays while a button is pressed
                         background: null
                         placeholderText: i18n("Lyrics, one line each. A line starts with its time: [01:23.45] text")
-                        onTextChanged: if (!root.loading) root.dirty = true
+                        onTextChanged: { if (!root.loading) root.dirty = true; root.refreshLine() }
                         onSelectionStartChanged: root.updateSelection()
                         onSelectionEndChanged: root.updateSelection()
                         onCursorPositionChanged: root.updateSelection()
@@ -204,6 +211,14 @@ Item {
                         enabled: root.timing.lines > 0 && partSpin.value !== 0
                         onClicked: { root.setText(lib.shiftLines(editor.text, root.selFirst, root.selLast, partSpin.value * 10), true); partSpin.value = 0 }
                     }
+                }
+
+                QQC2.Label { text: i18n("Selected line at (s)") }
+                SecondsSpinBox { id: lineSpin; from: 0; to: 720000; stepSize: 10; Layout.fillWidth: true }
+                QQC2.Button {
+                    text: i18n("Set")
+                    enabled: editor.text.length > 0
+                    onClicked: root.setText(lib.setLineTime(editor.text, root.selFirst, lineSpin.value / 100), true)
                 }
 
                 QQC2.Label { text: i18n("First (s)") }

@@ -47,6 +47,9 @@ public:
     Q_INVOKABLE QString shiftLines(const QString &text, int firstLine, int lastLine, int shiftMs) const;
     // linear: the first timestamp lands at firstSec, the last at lastSec
     Q_INVOKABLE QString fit(const QString &text, double firstSec, double lastSec) const;
+    // the time of one line (0-based), for setting a single line's time by hand
+    Q_INVOKABLE double lineTime(const QString &text, int line) const; // seconds, -1 = the line has no time
+    Q_INVOKABLE QString setLineTime(const QString &text, int line, double sec) const; // replaces / adds the line's first stamp
     Q_INVOKABLE QVariantMap timing(const QString &text) const; // {first, last, lines} in seconds
 
 signals:
