@@ -17,10 +17,12 @@ struct Track {
     QStringList skip;      // sources ("lrclib:12", "netease:34"...) not to pick again: lets a lookup return the next-best lyrics
     bool onlySynced = false; // ignore results without timestamps
     QString prefer; // provider that usually has this artist's lyrics ("lrclib"/"netease"/"qq"), may be empty
+    bool loose = false; // second pass, after the exact artist + title search found nothing: broader guesses
 };
 
 struct Candidate {
     QString artist, title;
+    bool strict = false; // title alone (no artist to check): the length has to match almost exactly
     bool boxed = false; // the song was named in 【】 of a fan upload (AMV/MAD): the video's length and channel are not the song's
     bool operator==(const Candidate &o) const { return artist == o.artist && title == o.title; }
 };
@@ -189,7 +191,23 @@ inline QVector<Candidate> candidates(const Track &t)
         add(left, right);
         add(right, left);
     }
-    add(QString(), title);
+    // Title alone is a first guess only when the player gave no usable artist: otherwise another artist's song of
+    // the same name and about the same length passes for this one. The loose pass (nothing found yet) tries it,
+    // with the length having to match almost exactly, and the artist with its letters joined ("K E T N E L").
+    if (artist.isEmpty() || videoLike)
+        add(QString(), title);
+    if (t.loose) {
+        QVector<Candidate> extra;
+        const QStringList letters = artist.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        const bool spaced = letters.size() >= 3 && std::all_of(letters.cbegin(), letters.cend(), [](const QString &w) { return w.size() == 1; });
+        if (spaced)
+            extra.push_back({letters.join(QString()), title});
+        if (!artist.isEmpty() && !videoLike)
+            extra.push_back({QString(), title, true});
+        for (int i = int(extra.size()) - 1; i >= 0; --i)
+            if (!out.contains(extra[i]))
+                out.push_front(extra[i]); // the strict guesses already failed: these are searched first
+    }
 
     // "Good Day (좋은날)": also try without the parenthetical, and the parenthetical alone
     // when it is in another script. Inserted right after the candidate they came from.
@@ -326,7 +344,7 @@ inline double score(const Candidate &want, int wantSec, const QString &title,
     // Title alone (no artist to check): the length has to vouch for it.
     if (want.boxed && ts < 0.9)
         return -1; // nothing but the name vouches for it: it has to be (nearly) exact
-    if (want.artist.isEmpty() && !want.boxed && !(wantSec > 0 && durSec > 0 && std::abs(durSec - wantSec) <= 6))
+    if (want.artist.isEmpty() && !want.boxed && !(wantSec > 0 && durSec > 0 && std::abs(durSec - wantSec) <= (want.strict ? 2 : 6)))
         return -1;
     double s = 0.6 * ts + 0.4 * as;
     if (wantSec > 0 && durSec > 0) {

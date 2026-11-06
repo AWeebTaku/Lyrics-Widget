@@ -68,6 +68,7 @@ private:
     void get(const JobPtr &job, const QUrl &url, Reply cb, int attempt = 0);
     void send(const JobPtr &job, const QUrl &url, Reply cb, int attempt);
     void searchAll(const JobPtr &job, int maxCands, SearchUrl url, SearchParse parse, SearchDone done);
+    void start(const JobPtr &job); // runs every provider for the job
     void lrclib(const JobPtr &job);
     void netease(const JobPtr &job);
     void neteaseLyric(const JobPtr &job, qint64 songId, double conf, double dur);

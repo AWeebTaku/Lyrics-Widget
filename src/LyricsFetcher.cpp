@@ -73,11 +73,17 @@ quint64 LyricsFetcher::lookup(const Track &t)
         publish(job);
         return job->id;
     }
+    start(job);
+    return job->id;
+}
+
+void LyricsFetcher::start(const JobPtr &job)
+{
     lrclib(job);
     netease(job);
     qq(job);
     kugou(job);
-    // A provider that has not answered in 7 s (QQ often does not) must not hold the answer up: the
+    // A provider that has not answered in 7 s (QQ often does) must not hold the answer up: the
     // others' lyrics, romanization and word timing are published without it.
     QTimer::singleShot(7000, this, [this, job] {
         if (job->finalSent)
@@ -89,7 +95,6 @@ quint64 LyricsFetcher::lookup(const Track &t)
         giveUp(job->kgDone, job->kg);
         publish(job);
     });
-    return job->id;
 }
 
 // A mix of two songs: look both up, then play the second one's lyrics after the first's. Where the second song
@@ -885,5 +890,18 @@ void LyricsFetcher::publish(const JobPtr &job)
         qWarning() << "publish" << job->id << "final" << final << "allDone" << allDone << "synced" << out.synced.size() << "conf" << out.conf;
     job->published = true;
     job->finalSent = allDone || lrcEnough || favEnough;
+    // Nothing for "artist + title": divide down to the broader guesses (title alone with a tight length match,
+    // letters-joined artist...) under the same request, instead of giving up
+    if (final && !out.found && !out.networkError && !job->track.loose) {
+        auto again = std::make_shared<Job>();
+        again->id = job->id;
+        again->track = job->track;
+        again->track.loose = true;
+        again->cands = Text::candidates(again->track);
+        if (again->cands != job->cands) {
+            start(again);
+            return;
+        }
+    }
     emit result(job->id, out, final);
 }
