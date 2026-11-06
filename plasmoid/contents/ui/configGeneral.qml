@@ -15,7 +15,7 @@ KCM.SimpleKCM {
     property alias cfg_panelColor: panelColor.value
     property int cfg_panelRadius
     property alias cfg_hideWhenNothingPlaying: hideIdle.checked
-    property int cfg_fadeWhenPausedMin
+    property int cfg_hideAfterSec
     property alias cfg_pauseOnFullScreenWindow: pauseFull.checked
     property alias cfg_pauseOnMaximizedWindow: pauseMax.checked
 
@@ -28,7 +28,7 @@ KCM.SimpleKCM {
     property string cfg_panelColorDefault
     property int cfg_panelRadiusDefault
     property bool cfg_hideWhenNothingPlayingDefault
-    property int cfg_fadeWhenPausedMinDefault
+    property int cfg_hideAfterSecDefault
     property bool cfg_pauseOnFullScreenWindowDefault
     property bool cfg_pauseOnMaximizedWindowDefault
 
@@ -80,15 +80,27 @@ KCM.SimpleKCM {
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Hide and pause") }
         QQC2.CheckBox { id: hideIdle; text: i18n("Hide when nothing is playing") }
-        QQC2.CheckBox {
-            text: i18n("Fade out after 5 minutes of pause")
-            checked: cfg_fadeWhenPausedMin > 0
-            onToggled: cfg_fadeWhenPausedMin = checked ? 5 : 0
+        RowLayout {
+            QQC2.CheckBox {
+                text: i18n("Hide after pause or silence")
+                checked: cfg_hideAfterSec > 0
+                onToggled: cfg_hideAfterSec = checked ? 300 : 0
+            }
+            SecondsSpinBox {
+                enabled: cfg_hideAfterSec > 0
+                from: 100; to: 360000; stepSize: 500
+                value: cfg_hideAfterSec * 100
+                onValueModified: cfg_hideAfterSec = Math.max(1, Math.round(value / 100))
+            }
+            Kirigami.ContextualHelpButton { toolTipText: i18n("After the music has been paused this long, the widget fades out and the lyrics and the visualizer stop. The visualizer also hides after this long of silence. Playing again brings everything back.") }
         }
         RowLayout {
             QQC2.CheckBox { id: pauseFull; text: i18n("Stop while a window is full screen") }
             Kirigami.ContextualHelpButton { toolTipText: i18n("Saves power: no lyric updates, lookups or visualizer until the window closes.") }
         }
-        QQC2.CheckBox { id: pauseMax; text: i18n("Stop while a window is maximized") }
+        RowLayout {
+            QQC2.CheckBox { id: pauseMax; text: i18n("Hide while a window is maximized") }
+            Kirigami.ContextualHelpButton { toolTipText: i18n("The song and lyrics are still followed, so the widget fades back in on the right line when you are back on the desktop. The visualizer stops meanwhile.") }
+        }
     }
 }

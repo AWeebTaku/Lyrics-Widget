@@ -23,7 +23,6 @@ KCM.SimpleKCM {
     property alias cfg_sensitivity: cava.cfg_sensitivity
     property alias cfg_lowerCutoffFreq: cava.cfg_lowerCutoffFreq
     property alias cfg_higherCutoffFreq: cava.cfg_higherCutoffFreq
-    property alias cfg_cavaSleepTimer: cava.cfg_cavaSleepTimer
     property alias cfg_noiseReduction: cava.cfg_noiseReduction
     property alias cfg_monstercat: cava.cfg_monstercat
     property alias cfg_waves: cava.cfg_waves

@@ -26,12 +26,17 @@ PlasmoidItem {
 
     readonly property var cfg: Plasmoid.configuration
 
-    // Fade out after the music has been paused for a while; any playback brings it back
+    // One time for everything: after the music has been paused for this long the widget fades out, the lyrics stop
+    // updating and the visualizer stops (it also hides after the same time of silence). Any playback brings it back.
     property bool faded: false
     Timer {
-        interval: Math.max(1, root.cfg.fadeWhenPausedMin) * 60000
-        running: root.cfg.fadeWhenPausedMin > 0 && !lyrics.playing && !lyrics.idle
+        interval: Math.max(1, root.cfg.hideAfterSec) * 1000
+        running: root.cfg.hideAfterSec > 0 && !lyrics.playing && !lyrics.idle
         onTriggered: root.faded = true
+    }
+    Connections {
+        target: root.cfg
+        function onHideAfterSecChanged() { root.faded = false }
     }
     Connections {
         target: lyrics
@@ -50,14 +55,14 @@ PlasmoidItem {
     readonly property bool multiColor: tinted && cfg.tintMode === 0 && lyrics.palette.length > 1
     readonly property color sideColor: multiColor ? Qt.alpha(lift(lyrics.palette[1]), 0.8) : cfg.dimColor
 
-    // Windows on this screen: a full screen / maximized one suspends the whole widget
+    // Windows on this screen: a full screen one suspends the whole widget; a maximized one only hides it (the song
+    // and lyrics are still followed, so it fades back in on the right line) and stops the visualizer
     TasksModel {
         id: windows
         screenGeometry: Plasmoid.containment.screenGeometry
     }
-    readonly property bool suspended:
-        (cfg.pauseOnFullScreenWindow && windows.fullScreenExists)
-        || (cfg.pauseOnMaximizedWindow && windows.maximizedExists)
+    readonly property bool covered: cfg.pauseOnMaximizedWindow && windows.maximizedExists
+    readonly property bool suspended: (cfg.pauseOnFullScreenWindow && windows.fullScreenExists) || faded
 
     LyricsController {
         id: lyrics
@@ -87,7 +92,7 @@ PlasmoidItem {
     fullRepresentation: Item {
         id: view
         clip: true
-        opacity: ((root.cfg.hideWhenNothingPlaying && lyrics.idle) || root.faded) ? 0 : 1
+        opacity: ((root.cfg.hideWhenNothingPlaying && lyrics.idle) || root.faded || root.covered) ? 0 : 1
         Behavior on opacity { NumberAnimation { duration: 250 } }
 
         Rectangle {
@@ -101,7 +106,7 @@ PlasmoidItem {
         // the Loader keeps cava off unless it is wanted and music is playing
         Loader {
             id: vizLoader
-            active: root.cfg.showVisualizer && !lyrics.idle && lyrics.playing && !root.suspended
+            active: root.cfg.showVisualizer && !lyrics.idle && (lyrics.playing || root.cfg.hideAfterSec > 0) && !root.suspended && !root.covered
             source: "AudioViz.qml"
             onLoaded: { item.tintFlow = Qt.binding(() => root.cfg.vizColorFlow); item.tintColors = Qt.binding(() => !root.tinted ? [] : (root.multiColor ? lyrics.palette.map(c => c.toString()) : [lyrics.palette[0].toString()])) }
             // size as a share of the widget, placed on a 3x3 grid plus a pixel offset

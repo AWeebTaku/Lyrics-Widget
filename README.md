@@ -36,7 +36,7 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
   YouTube Music through a small Chrome extension).
 - **Dynamic:** up to four colours from the album cover, exactly as they are (current line, other lines, and a gradient in
   the visualizer; black, white and grey covers give those greys), one colour or several; hides the neighbouring lines
-  when the widget is small, fades out when nothing plays, and pauses all work when a window is full screen or maximized.
+  when the widget is small, fades out when nothing plays or after a set time of pause (the lyrics and visualizer stop with it), pauses all work when a window is full screen, and hides (still following the song) when one is maximized.
 - Per-song sync offsets, layered/overlapping lyrics, size modes (free, fixed, full screen width).
 
 ## Requirements

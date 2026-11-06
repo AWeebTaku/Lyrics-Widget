@@ -80,9 +80,9 @@ Item {
         waveform: Plasmoid.configuration.waveform
         eqEnabled: Plasmoid.configuration.eqEnabled
         eq: Plasmoid.configuration.eq
-        idleCheck: Plasmoid.configuration.hideWhenIdle
-        idleTimer: Plasmoid.configuration.idleTimer
-        cavaSleepTimer: Plasmoid.configuration.cavaSleepTimer
+        idleCheck: Plasmoid.configuration.hideAfterSec > 0
+        idleTimer: Plasmoid.configuration.hideAfterSec
+        cavaSleepTimer: Math.max(1, Math.min(60, Plasmoid.configuration.hideAfterSec || 5))
         onHasErrorChanged: root.logger.error("cava.hasError:", hasError, error)
     }
 

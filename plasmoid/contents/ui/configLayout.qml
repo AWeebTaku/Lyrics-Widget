@@ -17,7 +17,6 @@ KCM.SimpleKCM {
     property int cfg_vizVAlign
     property int cfg_vizOffsetX
     property int cfg_vizOffsetY
-    property alias cfg_hideWhenIdle: hideSilent.checked
 
     property int cfg_lyricsHAlignDefault
     property int cfg_lyricsVAlignDefault
@@ -29,7 +28,6 @@ KCM.SimpleKCM {
     property int cfg_vizVAlignDefault
     property int cfg_vizOffsetXDefault
     property int cfg_vizOffsetYDefault
-    property bool cfg_hideWhenIdleDefault
 
     ColumnLayout {
         QQC2.TabBar {
@@ -92,7 +90,6 @@ KCM.SimpleKCM {
                         onValueModified: cfg_vizOffsetY = value
                     }
                 }
-                QQC2.CheckBox { id: hideSilent; text: i18n("Hide when the music is silent") }
             }
         }
     }

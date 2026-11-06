@@ -191,12 +191,6 @@
     <entry name="debugMode" type="Bool">
       <default>false</default>
     </entry>
-    <entry name="idleTimer" type="Int">
-      <default>5</default>
-    </entry>
-    <entry name="cavaSleepTimer" type="Int">
-      <default>5</default>
-    </entry>
     <entry name="visualizerStyle" type="Int">
       <default>1</default>
     </entry>
@@ -272,9 +266,6 @@
     <entry name="minimumLength" type="Int">
       <default>50</default>
     </entry>
-    <entry name="hideWhenIdle" type="Bool">
-      <default>false</default>
-    </entry>
     <entry name="spotifyAppQueue" type="Bool">
       <default>true</default>
     </entry>
@@ -347,7 +338,7 @@
     <entry name="tintFromArt" type="Bool">
       <default>false</default>
     </entry>
-    <entry name="fadeWhenPausedMin" type="Int">
+    <entry name="hideAfterSec" type="Int">
       <default>0</default>
     </entry>
   </group>
