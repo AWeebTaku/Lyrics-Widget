@@ -234,6 +234,10 @@ inline QVector<Candidate> candidates(const Track &t)
         if (parts.size() < 2)
             continue;
         qsizetype at = i + 1;
+        // "Artist - Song" vs "Song - Artist" is a guess whose swapped twin follows: the pieces go after the twin
+        // ("Come With Me Now" is a title, not "Come" + "Me Now")
+        if (at < out.size() && out[at].artist == out[i].title && out[at].title == out[i].artist)
+            ++at;
         for (int k = 0; k < 2; ++k) {
             const Candidate c{parts[k].simplified(), out[i].title};
             if (!c.artist.isEmpty() && !out.contains(c))
