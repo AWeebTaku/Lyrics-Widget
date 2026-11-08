@@ -295,7 +295,7 @@
         <div class="widget" id="widget" role="group" aria-label="Interactive demo of the widget. Drag it, click a line to jump.">
           <div class="wh">
             <div class="cover" aria-hidden="true"></div>
-            <div class="meta"><div class="t">Harbour Lights</div><div class="s" id="songS">Sample song, playing on Plasma</div></div>
+            <div class="meta"><div class="t">Harbour Lights</div><div class="s" id="songS">Sample song</div></div>
             <button class="ctl" id="play" type="button" aria-label="Pause">Pause</button>
           </div>
           <div class="lyr"><ol id="ly"></ol></div>
@@ -303,11 +303,11 @@
           <div class="prog" id="prog" role="slider" aria-label="Position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><span><b id="progB"></b></span></div>
         </div>
       </div>
-      <div class="picker" role="group" aria-label="Pick a player">
+      <div class="picker" role="group" aria-label="Pick a cover color">
         <small>Colors follow the cover:</small>
         <button class="pill" type="button" data-src="spotify" aria-pressed="false" style="--c:#1ed760"><i></i>Spotify</button>
         <button class="pill" type="button" data-src="ytm" aria-pressed="false" style="--c:#ff3b30"><i></i>YouTube Music</button>
-        <button class="pill" type="button" data-src="plasma" aria-pressed="true" style="--c:#3daee9"><i></i>Plasma</button>
+        <button class="pill" type="button" data-src="plasma" aria-pressed="true" style="--c:#3daee9"><i></i>Breeze blue</button>
       </div>
     </div>
   </header>
@@ -468,12 +468,12 @@
   new IntersectionObserver((e) => { visible = e[0].isIntersecting; }, { threshold: 0 }).observe($("stage"));
 
   // ---------- colors follow the cover ----------
-  const NAMES = { plasma: "Plasma", spotify: "Spotify", ytm: "YouTube Music" };
+  const SUB = { plasma: "Sample song", spotify: "Sample song, playing on Spotify", ytm: "Sample song, playing on YouTube Music" };
   const pills = [...document.querySelectorAll(".pill")];
   function setSrc(s) {
     root.dataset.src = s;
     pills.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.src === s)));
-    $("songS").textContent = "Sample song, playing on " + NAMES[s];
+    $("songS").textContent = SUB[s];
   }
   pills.forEach((p) => (p.onclick = () => setSrc(p.dataset.src)));
   setSrc(root.dataset.src);
