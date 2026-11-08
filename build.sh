@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Clean rebuild + reinstall + restart. Wipes: build dir, cached lyrics, plasmashell QML cache.
+# Clean build + install + restart. Wipes: build dir, cached lyrics, plasmashell QML cache.
 # Keeps: your per-song sync offsets (and what the widget learned from them) in lyrics.db.
 set -euo pipefail
 cd "$(dirname "$0")"

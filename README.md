@@ -57,14 +57,14 @@ sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-webs
 
 ```
 git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget
-./rebuild.sh
+./build.sh
 ```
 
-`rebuild.sh` does a clean cycle each time: sets up the romanization helper (first run only, about 30 s and
+`build.sh` does a clean cycle each time: sets up the romanization helper (first run only, about 30 s and
 270 MB in `~/.local/share/lyric-widget/venv`), wipes the build folder, the cached lyrics and plasmashell's QML
 cache, builds, installs into `/usr` with `sudo`, and restarts plasmashell. Your widget settings and your
 per-song sync offsets are kept (offsets live in `lyrics.db` next to the cache, which only loses its lyrics table;
-`clear-all.sh` removes everything).
+`uninstall.sh` removes everything).
 
 Then right-click the desktop, **Add or Manage Widgets**, drag **Lyric Widget** onto it, and play something.
 Right-click the widget, **Configure**, for the settings.
@@ -84,8 +84,8 @@ Installed files: `/usr/lib/qt6/qml/org/lyricwidget/` (C++ plugin), `/usr/share/p
 ### Uninstall
 
 ```
-./clear-all.sh --dry-run    # shows what it would do
-./clear-all.sh              # asks for confirmation: removes the widget, installed files, caches and data
+./uninstall.sh --dry-run    # shows what it would do
+./uninstall.sh              # asks for confirmation: removes the widget, installed files, caches and data
 ```
 
 It keeps this source folder. Remove the Chrome extension yourself at `chrome://extensions`.
@@ -176,7 +176,7 @@ been tested against a live YouTube Music tab yet.
 ## Project layout
 
 ```
-CMakeLists.txt  rebuild.sh  clear-all.sh  setup-romaji.sh
+CMakeLists.txt  build.sh  uninstall.sh  setup-romaji.sh
 src/        C++ plugin (QML module org.lyricwidget): PlayerWatcher, LyricsController, LyricsFetcher, Text.h
             (matching), LyricsStore, ReadingFetcher, SpotifyApp, BrowserQueue, Process, ...
 plasmoid/   the widget: metadata.json, contents/ui (main.qml, LyricStage.qml, settings pages, audioviz/),

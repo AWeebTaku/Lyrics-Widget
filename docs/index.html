@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-src="plasma">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lyric Widget: synced lyrics for KDE Plasma</title>
+<meta name="description" content="A KDE Plasma 6 widget with timed lyrics for Spotify and YouTube Music, romanization, album-cover colors and an audio visualizer.">
+<meta name="color-scheme" content="dark light">
+<script>
+  // theme before first paint: saved choice, else the system's; ?theme= and ?src= are for sharing a view
+  (function () {
+    var q = new URLSearchParams(location.search), t = q.get("theme"), s = q.get("src"), saved = null;
+    try { saved = localStorage.getItem("lw-theme"); } catch (e) {}
+    t = t || saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.dataset.theme = t === "light" ? "light" : "dark";
+    if (s === "spotify" || s === "ytm" || s === "plasma") document.documentElement.dataset.src = s;
+  })();
+</script>
+<style>
+  /* ---- tokens. Dark is true AMOLED black; light is a cool off-white. The accent follows the chosen player. ---- */
+  :root {
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --r-card: 18px;      /* shape system: cards 18px, every control is a pill */
+    --ease: cubic-bezier(.16, 1, .3, 1);
+    --spring: cubic-bezier(.34, 1.56, .64, 1);
+  }
+  html[data-theme="dark"] {
+    --bg: #000; --surface: #0a0a0c; --surface2: #131318; --line: #24242b;
+    --text: #f3f4f6; --muted: #a3a9b4; color-scheme: dark;
+  }
+  html[data-theme="light"] {
+    --bg: #f5f6f8; --surface: #fff; --surface2: #eceef2; --line: #d8dbe2;
+    --text: #0f1218; --muted: #525a67; color-scheme: light;
+  }
+  /* accent + the text colour that sits on it (both pass 4.5:1) */
+  html[data-theme="dark"][data-src="plasma"]  { --accent: #3daee9; --on: #00131f; }
+  html[data-theme="dark"][data-src="spotify"] { --accent: #1ed760; --on: #00160a; }
+  html[data-theme="dark"][data-src="ytm"]     { --accent: #ff4e45; --on: #1c0200; }
+  html[data-theme="light"][data-src="plasma"]  { --accent: #0b6fb3; --on: #fff; }
+  html[data-theme="light"][data-src="spotify"] { --accent: #0e7a34; --on: #fff; }
+  html[data-theme="light"][data-src="ytm"]     { --accent: #d1002a; --on: #fff; }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font);
+         -webkit-font-smoothing: antialiased; transition: background .5s var(--ease), color .5s var(--ease); }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { margin: 0; letter-spacing: -.03em; line-height: 1.05; }
+  p { margin: 0; }
+
+  /* ---- controls ---- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+         padding: 12px 24px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
+         color: var(--text); font: 600 15px/1 var(--font); text-decoration: none; cursor: pointer;
+         transition: transform .25s var(--ease), background .3s, border-color .3s, color .3s; }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.main { background: var(--accent); color: var(--on); border-color: var(--accent); }
+  .btn.main:hover { filter: brightness(1.08); }
+  .btn.sm { padding: 9px 16px; font-size: 14px; }
+
+  /* ---- nav ---- */
+  nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 78%, transparent);
+        -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  nav b { font-size: 17px; letter-spacing: -.02em; }
+  nav .r { display: flex; align-items: center; gap: 22px; }
+  nav .r > a:not(.btn) { color: var(--muted); text-decoration: none; font-size: 14px; transition: color .2s; }
+  nav .r > a:not(.btn):hover { color: var(--text); }
+  #theme { min-width: 76px; }
+
+  /* ---- hero ---- */
+  .hero { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 40px; align-items: center;
+          min-height: calc(100dvh - 64px); padding: 24px 0 48px; }
+  .hero h1 { font-size: clamp(2.5rem, 4.5vw, 4.1rem); font-weight: 700; }
+  .hero h1 em { display: block; font-style: normal; color: var(--accent); transition: color .5s; }
+  .hero .sub { color: var(--muted); font-size: 18px; max-width: 30ch; margin: 22px 0 32px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ---- the live demo: a working miniature of the widget on a desktop ---- */
+  .demo { min-width: 0; }
+  .stage { position: relative; border-radius: var(--r-card); overflow: hidden; border: 1px solid var(--line);
+           height: clamp(400px, 56vh, 520px); isolation: isolate;
+           background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 38%, var(--bg)) 0%, var(--bg) 78%);
+           transition: background .6s var(--ease); }
+  .orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; z-index: -1;
+         background: var(--accent); transition: background .6s; }
+  .orb.a { width: 280px; height: 280px; left: -60px; top: -80px; animation: drift 14s ease-in-out infinite alternate; }
+  .orb.b { width: 220px; height: 220px; right: -40px; bottom: -70px; opacity: .35; animation: drift 18s ease-in-out infinite alternate-reverse; }
+  @keyframes drift { to { transform: translate(60px, 40px) scale(1.15); } }
+
+  .widget { position: absolute; left: 50%; top: 50%; width: min(86%, 520px); margin-left: calc(min(86%, 520px) / -2);
+            margin-top: -170px; border-radius: var(--r-card); padding: 16px 18px 14px; cursor: grab; user-select: none;
+            background: color-mix(in srgb, var(--bg) 58%, transparent);
+            -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+            border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+            box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 14%, transparent), 0 24px 60px rgb(0 0 0 / .35);
+            transition: transform .7s var(--spring), opacity .45s var(--ease); will-change: transform; touch-action: none; }
+  .widget.drag { cursor: grabbing; transition: none; }
+  .wh { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .cover { width: 44px; height: 44px; border-radius: 10px; flex: none; position: relative; overflow: hidden;
+           background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 35%, #000)); transition: background .6s; }
+  .cover::after { content: ""; position: absolute; inset: 0;
+           background: radial-gradient(circle at 30% 25%, rgb(255 255 255 / .45), transparent 55%); }
+  .wh .meta { min-width: 0; flex: 1; }
+  .wh .t { font-weight: 600; font-size: 15px; line-height: 1.25; }
+  .wh .s { color: var(--muted); font-size: 13px; line-height: 1.3; }
+  .ctl { min-width: 68px; height: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
+         color: var(--text); font: 600 12px var(--font); cursor: pointer; transition: transform .2s var(--ease), border-color .2s; }
+  .ctl:hover { border-color: var(--accent); }
+  .ctl:active { transform: scale(.92); }
+
+  .lyr { position: relative; height: 192px; overflow: hidden; text-align: center;
+         -webkit-mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent);
+         mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); }
+  .lyr ol { list-style: none; margin: 0; padding: 0; transition: transform .6s var(--ease); }
+  .lyr li { height: 40px; line-height: 40px; font-size: 19px; color: var(--muted); cursor: pointer;
+            transition: color .4s, transform .5s var(--ease); white-space: nowrap; }
+  .lyr li:hover { color: var(--text); }
+  .lyr li.on { color: var(--accent); font-weight: 650; transform: scale(1.1); }
+
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin: 6px 0 8px; }
+  .bars i { flex: 1; height: 100%; border-radius: 2px; transform-origin: bottom; transform: scaleY(.1);
+            background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 30%, transparent)); }
+  .prog { height: 18px; display: flex; align-items: center; cursor: pointer; }
+  .prog span { display: block; width: 100%; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .prog b { display: block; height: 100%; width: 0; background: var(--accent); }
+
+  .picker { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .picker small { color: var(--muted); font-size: 13px; margin-right: 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+          border: 1px solid var(--line); background: transparent; color: var(--text); font: 600 13px/1 var(--font);
+          cursor: pointer; transition: border-color .25s, background .25s, transform .2s var(--ease); }
+  .pill:hover { border-color: var(--accent); }
+  .pill:active { transform: scale(.96); }
+  .pill[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); }
+  .pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+
+  /* ---- works with: logos only ---- */
+  .logos { display: flex; align-items: center; gap: 22px 56px; flex-wrap: wrap; padding: 28px 0 8px;
+           border-top: 1px solid var(--line); }
+  .logos span { color: var(--muted); font-size: 14px; margin-right: 8px; }
+  .logos img { height: 28px; width: auto; opacity: .9; transition: transform .3s var(--spring), opacity .3s; }
+  .logos img:hover { transform: translateY(-3px) scale(1.08); opacity: 1; }
+
+  /* ---- features: a bento of working miniatures ---- */
+  section { padding: 96px 0 0; }
+  h2 { font-size: clamp(2rem, 4vw, 3.1rem); font-weight: 700; }
+  .lead { color: var(--muted); max-width: 52ch; margin-top: 14px; font-size: 17px; }
+  .bento { display: grid; gap: 16px; margin-top: 44px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .cell { position: relative; border-radius: var(--r-card); padding: 26px; overflow: hidden; min-width: 0;
+          background: var(--surface); border: 1px solid var(--line);
+          transition: border-color .3s, transform .5s var(--ease); }
+  .cell::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
+          background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 20%, transparent), transparent 65%); }
+  .cell:hover::before { opacity: 1; }
+  .cell:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+  .cell > * { position: relative; }
+  .c1 { grid-column: span 7; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), var(--surface) 70%); }
+  .c2 { grid-column: span 5; }
+  .c3 { grid-column: span 4; background: var(--surface2); }
+  .c4 { grid-column: span 5;
+        background-image: radial-gradient(color-mix(in srgb, var(--text) 14%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
+  .c5 { grid-column: span 3; background: linear-gradient(200deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), var(--surface) 75%); }
+  .cell h3 { font-size: 22px; letter-spacing: -.02em; }
+  .cell .p { color: var(--muted); font-size: 15px; margin: 8px 0 20px; max-width: 46ch; }
+
+  /* stamp */
+  .clock { font: 600 30px/1 var(--mono); letter-spacing: -.02em; margin-bottom: 14px; }
+  .stamps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 6px; }
+  .stamps li { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 8px 12px; border-radius: 12px;
+               border: 1px solid transparent; font-size: 15px; transition: background .3s, border-color .3s; }
+  .stamps li time { font: 500 14px var(--mono); color: var(--muted); }
+  .stamps li.cur { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .stamps li.set time { color: var(--accent); }
+  /* romanization */
+  .big { font-size: 24px; line-height: 1.35; min-height: 144px; font-weight: 600; letter-spacing: -.01em; display: grid; gap: 6px; align-content: start; margin-bottom: 8px; }
+  .big span { display: inline-block; transition: opacity .35s, transform .45s var(--ease), filter .35s; }
+  .big.sw span { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  .switch { display: inline-flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; cursor: pointer;
+            color: var(--text); font: 600 14px var(--font); }
+  .switch i { width: 46px; height: 28px; border-radius: 999px; background: var(--line); position: relative; transition: background .3s; flex: none; }
+  .switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%;
+            background: var(--text); transition: transform .35s var(--spring), background .3s; }
+  .switch[aria-checked="true"] i { background: var(--accent); }
+  .switch[aria-checked="true"] i::after { transform: translateX(18px); background: var(--on); }
+  /* look-ahead queue */
+  .queue { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+  .queue li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px;
+              border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 15px;
+              transition: opacity .4s, transform .5s var(--ease); }
+  .queue li.out { opacity: 0; transform: translateX(-20px); }
+  .queue .st { font-size: 13px; color: var(--muted); min-width: 74px; text-align: right; }
+  .queue li.ready .st { color: var(--accent); font-weight: 600; }
+  .queue li.wait .st { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--text) 18%, var(--line)) 50%, var(--line) 75%);
+              background-size: 200% 100%; animation: shimmer 1.2s linear infinite; color: transparent; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  /* matching chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .chip { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+          font-size: 14px; font-weight: 600; transition: border-color .3s, background .3s, transform .4s var(--spring), color .3s; }
+  .chip.look { border-color: var(--muted); animation: pulse .9s ease-in-out infinite alternate; }
+  @keyframes pulse { to { transform: translateY(-3px); } }
+  .chip.best { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent); }
+  .chip.done { color: var(--muted); }
+  /* hide under a maximized window */
+  .mini { height: 72px; border-radius: 14px; display: grid; place-items: center; text-align: center; padding: 0 12px;
+          background: color-mix(in srgb, var(--bg) 60%, transparent); border: 1px solid var(--line); margin-bottom: 14px;
+          font-weight: 600; font-size: 15px; transition: opacity .45s var(--ease); }
+  .mini.hid { opacity: .06; }
+  .note { color: var(--muted); font-size: 13px; min-height: 40px; margin-top: 12px; }
+
+  /* ---- install ---- */
+  .inst { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: start; }
+  .inst ul { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 22px; }
+  .inst li strong { display: block; font-size: 17px; margin-bottom: 2px; }
+  .inst li span { color: var(--muted); font-size: 15px; }
+  code { font-family: var(--mono); font-size: .92em; }
+  .term { border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+  .term .bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 10px 18px;
+               border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  .term pre { margin: 0; padding: 20px 22px; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.9 var(--mono); }
+  .term pre .c { color: var(--muted); }
+  .term pre .d { color: var(--accent); user-select: none; }
+
+  footer { margin-top: 112px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-top: 32px; padding-bottom: 56px; }
+  footer p { max-width: 62ch; }
+
+  /* ---- reveal on scroll ---- */
+  .rv { opacity: 0; transform: translateY(26px); transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: var(--d, 0s); }
+  .rv.in { opacity: 1; transform: none; }
+
+  @media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 40px; gap: 36px; }
+    .hero .sub { max-width: 40ch; }
+    .bento { grid-template-columns: 1fr; }
+    .c1, .c2, .c3, .c4, .c5 { grid-column: auto; }
+    .inst { grid-template-columns: 1fr; gap: 36px; }
+    nav .r > a:not(.btn) { display: none; }
+    section { padding-top: 72px; }
+  }
+  @media (max-width: 520px) {
+    .wrap { padding: 0 16px; }
+    .lyr li { font-size: 14px; }
+    .lyr li.on { transform: none; }
+    .widget { padding: 14px 14px 12px; }
+    .logos { gap: 20px 32px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
+    .rv { opacity: 1; transform: none; }
+    html { scroll-behavior: auto; }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .widget { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    nav { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <b>Lyric Widget</b>
+    <div class="r">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <button class="btn sm" id="theme" type="button" aria-label="Switch between dark and light">Light</button>
+      <a class="btn sm main" href="https://github.com/AWeebTaku/Lyrics-Widget">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero">
+    <div>
+      <h1>Synced lyrics <em>for your desktop</em></h1>
+      <p class="sub">A KDE Plasma 6 widget with timed lyrics for Spotify and YouTube Music. No accounts, no keys.</p>
+      <div class="row">
+        <a class="btn main" id="mag" href="#install">Install</a>
+        <a class="btn" href="https://github.com/AWeebTaku/Lyrics-Widget">GitHub</a>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="stage" id="stage">
+        <div class="orb a"></div><div class="orb b"></div>
+        <div class="widget" id="widget" role="group" aria-label="Interactive demo of the widget. Drag it, click a line to jump.">
+          <div class="wh">
+            <div class="cover" aria-hidden="true"></div>
+            <div class="meta"><div class="t">Harbour Lights</div><div class="s" id="songS">Sample song, playing on Plasma</div></div>
+            <button class="ctl" id="play" type="button" aria-label="Pause">Pause</button>
+          </div>
+          <div class="lyr"><ol id="ly"></ol></div>
+          <div class="bars" id="bars" aria-hidden="true"></div>
+          <div class="prog" id="prog" role="slider" aria-label="Position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><span><b id="progB"></b></span></div>
+        </div>
+      </div>
+      <div class="picker" role="group" aria-label="Pick a player">
+        <small>Colors follow the cover:</small>
+        <button class="pill" type="button" data-src="spotify" aria-pressed="false" style="--c:#1ed760"><i></i>Spotify</button>
+        <button class="pill" type="button" data-src="ytm" aria-pressed="false" style="--c:#ff3b30"><i></i>YouTube Music</button>
+        <button class="pill" type="button" data-src="plasma" aria-pressed="true" style="--c:#3daee9"><i></i>Plasma</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="logos rv">
+    <span>Works with</span>
+    <img src="https://cdn.simpleicons.org/spotify/1DB954" alt="Spotify" height="28">
+    <img src="https://cdn.simpleicons.org/youtubemusic/FF0000" alt="YouTube Music" height="28">
+    <img src="https://cdn.simpleicons.org/kde/1D99F3" alt="KDE Plasma" height="28">
+    <img src="https://cdn.simpleicons.org/googlechrome/4285F4" alt="Google Chrome" height="28">
+  </div>
+
+  <section id="features">
+    <h2 class="rv">Everything around the lyrics</h2>
+    <p class="lead rv">Try the controls. Each one is a working miniature of the real widget.</p>
+
+    <div class="bento">
+      <article class="cell c1 rv">
+        <h3>Stamp lines as the song plays</h3>
+        <p class="p">In the lyrics library, press once as each line starts. It takes the song's time and moves to the next line. Fine-tune afterwards.</p>
+        <div class="clock" id="clock">0.0 s</div>
+        <ul class="stamps" id="stamps"></ul>
+        <div class="row"><button class="btn main sm" id="stampBtn" type="button">Stamp line</button><button class="btn sm" id="stampReset" type="button">Start over</button></div>
+      </article>
+
+      <article class="cell c2 rv" style="--d:.08s">
+        <h3>Romanization replaces the line</h3>
+        <p class="p">Japanese, Korean and Chinese, from the provider, UtaTen readings or a local converter.</p>
+        <div class="big" id="roman" lang="ja"><span>夜明けまで歩こう</span><span>風の中で待っている</span><span>君の名前を呼んだ</span></div>
+        <button class="switch" id="romanSw" type="button" role="switch" aria-checked="false"><i></i>Romanize</button>
+      </article>
+
+      <article class="cell c3 rv">
+        <h3>Look-ahead</h3>
+        <p class="p">Lyrics for the next songs in a shuffled queue are fetched before they start.</p>
+        <ul class="queue" id="queue"></ul>
+        <button class="btn sm" id="skip" type="button">Skip track</button>
+      </article>
+
+      <article class="cell c4 rv" style="--d:.08s">
+        <h3>Matched, not guessed</h3>
+        <p class="p">Four lyric sources are searched in parallel and scored on title, artist, length and album. Spotify songs are asked of the Spotify app first.</p>
+        <div class="chips" id="chips"><span class="chip">Spotify app</span><span class="chip">LRCLIB</span><span class="chip">NetEase</span><span class="chip">QQ Music</span><span class="chip">Kugou</span></div>
+        <button class="btn sm" id="search" type="button">Run a search</button>
+      </article>
+
+      <article class="cell c5 rv" style="--d:.16s">
+        <h3>Out of the way</h3>
+        <p class="p">Maximize a window and it hides, still following the song.</p>
+        <div class="mini" id="mini"><span id="miniT">the harbour lamps are coming on</span></div>
+        <button class="switch" id="maxSw" type="button" role="switch" aria-checked="false"><i></i>Maximized</button>
+        <div class="note" id="miniN" aria-live="polite"></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="inst">
+      <div class="rv">
+        <h2>Install</h2>
+        <p class="lead">Tested on Arch Linux with Plasma 6 and Qt 6.12.</p>
+        <ul>
+          <li><strong>Install the packages</strong><span>Plasma 6 and the build tools. For YouTube, add Plasma Browser Integration to Chrome.</span></li>
+          <li><strong>Build</strong><span><code>build.sh</code> builds, installs into <code>/usr</code> with sudo and restarts plasmashell.</span></li>
+          <li><strong>Add the widget</strong><span>Right-click the desktop, choose Add or Manage Widgets, drag Lyric Widget out and play something.</span></li>
+        </ul>
+      </div>
+      <div class="term rv" style="--d:.1s">
+        <div class="bar"><span>Terminal</span><button class="btn sm" id="copy" type="button">Copy</button></div>
+<pre id="cmd"><span class="d">$ </span>sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
+<span class="d">$ </span>git clone https://github.com/AWeebTaku/Lyrics-Widget &amp;&amp; cd Lyrics-Widget
+<span class="d">$ </span>./build.sh
+<span class="c"># to remove everything later, preview first:</span>
+<span class="d">$ </span>./uninstall.sh --dry-run</pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+<div class="wrap">
+  <p>Lyric Widget is GPL-3.0. Its visualizer is built on <a href="https://github.com/luisbocanegra/plasma-audio-visualizer">Plasma Audio Visualizer</a> by Luis Bocanegra (GPL-3.0). Lyrics are fetched at runtime from third-party services and none are bundled.</p>
+  <a href="https://github.com/AWeebTaku/Lyrics-Widget">github.com/AWeebTaku/Lyrics-Widget</a>
+</div>
+</footer>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const root = document.documentElement;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+  // ---------- theme ----------
+  const themeBtn = $("theme");
+  const showTheme = () => { themeBtn.textContent = root.dataset.theme === "dark" ? "Light" : "Dark"; };
+  themeBtn.onclick = () => {
+    root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+    save("lw-theme", root.dataset.theme);
+    showTheme();
+  };
+  showTheme();
+
+  // ---------- the player: one clock drives lyrics, bars and the maximize demo ----------
+  const SONG = [
+    [0, "the harbour lamps are coming on"], [4, "we count the boats and let them go"],
+    [8, "a radio down by the rail"], [12, "plays something soft and something slow"],
+    [16, "hold the line until it is morning"], [20, "i will be where the tide turns back"],
+    [24, "carry me past the last street light"], [28, "and leave the porch light on"],
+  ];
+  const LEN = 32;
+  const ol = $("ly"), bars = $("bars"), progB = $("progB"), prog = $("prog"), playBtn = $("play");
+  SONG.forEach(([s, text]) => { const li = document.createElement("li"); li.textContent = text; li.onclick = () => seek(s); ol.appendChild(li); });
+  const items = [...ol.children];
+  const N = 36, bar = [], lvl = new Array(N).fill(0);
+  for (let i = 0; i < N; i++) { const b = document.createElement("i"); bars.appendChild(b); bar.push(b); }
+
+  let t = 0, playing = !reduce, cur = -1, last = performance.now(), visible = true, maxed = false;
+  const lineAt = (x) => { let k = 0; SONG.forEach(([s], i) => { if (x >= s) k = i; }); return k; };
+  function paintLine() {
+    const k = lineAt(t);
+    if (k === cur) return;
+    cur = k;
+    items.forEach((li, i) => li.classList.toggle("on", i === k));
+    ol.style.transform = "translateY(" + (76 - k * 40) + "px)";
+    $("miniT").textContent = SONG[k][1];
+    if (maxed) $("miniN").textContent = "Hidden, following line " + (k + 1) + " of " + SONG.length;
+  }
+  function seek(x) { t = Math.max(0, Math.min(LEN - 0.01, x)); paintLine(); }
+  function showPlay() { playBtn.textContent = playing ? "Pause" : "Play"; playBtn.setAttribute("aria-label", playing ? "Pause" : "Play"); }
+  playBtn.onclick = () => { playing = !playing; showPlay(); };
+  prog.onclick = (e) => { const r = prog.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * LEN); };
+  prog.onkeydown = (e) => { if (e.key === "ArrowRight") seek(t + 2); if (e.key === "ArrowLeft") seek(t - 2); };
+  showPlay();
+
+  // stamp demo state (its clock ticks in the same frame loop)
+  const SL = ["the harbour lamps are coming on", "we count the boats and let them go", "a radio down by the rail", "plays something soft and something slow"];
+  const stamps = $("stamps"), clock = $("clock");
+  let sIdx = 0, sT0 = performance.now(), sNow = 0, sTimes = [];
+
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (visible) {
+      if (playing) { t += dt; if (t >= LEN) t = 0; }
+      paintLine();
+      progB.style.width = (t / LEN * 100) + "%";
+      prog.setAttribute("aria-valuenow", Math.round(t / LEN * 100));
+      for (let i = 0; i < N; i++) {
+        const target = playing ? 0.18 + 0.82 * Math.abs(Math.sin(t * (1.3 + i * 0.11) + i)) * (0.55 + 0.45 * Math.sin(t * 0.9 + i * 0.35)) : 0.06;
+        lvl[i] += (target - lvl[i]) * 0.2;
+        bar[i].style.transform = "scaleY(" + lvl[i].toFixed(3) + ")";
+      }
+    }
+    sNow = (now - sT0) / 1000;
+    if (sIdx < SL.length) clock.textContent = sNow.toFixed(1) + " s";
+    requestAnimationFrame(frame);
+  }
+  new IntersectionObserver((e) => { visible = e[0].isIntersecting; }, { threshold: 0 }).observe($("stage"));
+
+  // ---------- colors follow the cover ----------
+  const NAMES = { plasma: "Plasma", spotify: "Spotify", ytm: "YouTube Music" };
+  const pills = [...document.querySelectorAll(".pill")];
+  function setSrc(s) {
+    root.dataset.src = s;
+    pills.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.src === s)));
+    $("songS").textContent = "Sample song, playing on " + NAMES[s];
+  }
+  pills.forEach((p) => (p.onclick = () => setSrc(p.dataset.src)));
+  setSrc(root.dataset.src);
+
+  // ---------- drag the widget: it follows the pointer and wobbles with its speed (a nod to Plasma's wobbly windows) ----------
+  const w = $("widget"), stage = $("stage");
+  let drag = false, ox = 0, oy = 0, px = 0, tx = 0, ty = 0;
+  w.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button, .prog, li")) return;
+    drag = true; w.classList.add("drag"); w.setPointerCapture(e.pointerId);
+    ox = e.clientX - tx; oy = e.clientY - ty; px = e.clientX;
+  });
+  w.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const sr = stage.getBoundingClientRect(), wr = w.getBoundingClientRect();
+    tx = Math.max(-(sr.width - wr.width) / 2 - 20, Math.min((sr.width - wr.width) / 2 + 20, e.clientX - ox));
+    ty = Math.max(-sr.height / 2 + 60, Math.min(sr.height / 2 + 20, e.clientY - oy));
+    const vx = reduce ? 0 : Math.max(-14, Math.min(14, (e.clientX - px) * 0.9)); px = e.clientX;
+    w.style.transform = "translate(" + tx + "px," + ty + "px) skewX(" + (-vx * 0.6) + "deg) rotate(" + (vx * 0.25) + "deg)";
+  });
+  const drop = () => { if (!drag) return; drag = false; w.classList.remove("drag"); tx = ty = 0; w.style.transform = ""; };
+  w.addEventListener("pointerup", drop); w.addEventListener("pointercancel", drop);
+
+  // ---------- magnetic install button ----------
+  const mag = $("mag");
+  if (!reduce && matchMedia("(hover: hover)").matches) {
+    mag.addEventListener("pointermove", (e) => {
+      const r = mag.getBoundingClientRect();
+      mag.style.transform = "translate(" + ((e.clientX - r.left - r.width / 2) * 0.18) + "px," + ((e.clientY - r.top - r.height / 2) * 0.3) + "px)";
+    });
+    mag.addEventListener("pointerleave", () => { mag.style.transform = ""; });
+  }
+
+  // ---------- spotlight on the feature cells ----------
+  document.querySelectorAll(".cell").forEach((c) => c.addEventListener("pointermove", (e) => {
+    const r = c.getBoundingClientRect();
+    c.style.setProperty("--mx", (e.clientX - r.left) + "px"); c.style.setProperty("--my", (e.clientY - r.top) + "px");
+  }));
+
+  // ---------- stamp ----------
+  SL.forEach((s) => { const li = document.createElement("li"); li.innerHTML = "<time>--:--.-</time><span></span>"; li.lastChild.textContent = s; stamps.appendChild(li); });
+  const sli = [...stamps.children];
+  const fmt = (x) => String(Math.floor(x / 60)).padStart(2, "0") + ":" + (x % 60).toFixed(1).padStart(4, "0");
+  function paintStamps() {
+    sli.forEach((li, i) => { li.classList.toggle("cur", i === sIdx); li.classList.toggle("set", i < sIdx); li.firstChild.textContent = i < sIdx ? fmt(sTimes[i]) : "--:--.-"; });
+    $("stampBtn").textContent = sIdx >= SL.length ? "Done" : "Stamp line";
+    $("stampBtn").disabled = sIdx >= SL.length;
+  }
+  $("stampBtn").onclick = () => { if (sIdx < SL.length) { sTimes[sIdx++] = sNow; paintStamps(); } };
+  $("stampReset").onclick = () => { sIdx = 0; sTimes = []; sT0 = performance.now(); paintStamps(); };
+  paintStamps();
+
+  // ---------- romanization ----------
+  const roman = $("roman"), rsw = $("romanSw");
+  const JA = ["夜明けまで歩こう", "風の中で待っている", "君の名前を呼んだ"], RO = ["yoake made arukou", "kaze no naka de matteiru", "kimi no namae o yonda"];
+  rsw.onclick = () => {
+    const on = rsw.getAttribute("aria-checked") !== "true";
+    rsw.setAttribute("aria-checked", String(on));
+    roman.classList.add("sw");
+    setTimeout(() => {
+      [...roman.children].forEach((el, i) => { el.textContent = (on ? RO : JA)[i]; });
+      roman.lang = on ? "ja-Latn" : "ja"; roman.classList.remove("sw");
+    }, reduce ? 0 : 280);
+  };
+
+  // ---------- look-ahead queue ----------
+  const Q = ["Slow Tide", "Paper Lanterns", "Northbound", "Glass Season", "Fifth Gear Blues", "Low Sun"];
+  const queue = $("queue"); let qNext = 0;
+  function addQ(ready) {
+    const li = document.createElement("li");
+    li.innerHTML = "<span></span><span class='st'></span>";
+    li.firstChild.textContent = Q[qNext++ % Q.length];
+    li.lastChild.textContent = ready ? "ready" : "fetching";
+    li.className = ready ? "ready" : "wait";
+    queue.appendChild(li);
+    if (!ready) setTimeout(() => { li.className = "ready"; li.lastChild.textContent = "ready"; }, 900 + Math.random() * 900);
+  }
+  addQ(true); addQ(true); addQ(false);
+  $("skip").onclick = () => {
+    const first = queue.firstElementChild; if (!first || first.classList.contains("out")) return;
+    first.classList.add("out");
+    setTimeout(() => { first.remove(); addQ(false); }, reduce ? 0 : 350);
+  };
+
+  // ---------- matching ----------
+  const chips = [...$("chips").children], searchBtn = $("search");
+  searchBtn.onclick = () => {
+    searchBtn.disabled = true;
+    const gap = reduce ? 0 : 260, first = reduce ? 0 : 700, best = 1 + Math.floor(Math.random() * 4); // one of the four lyric sources
+    chips.forEach((c) => { c.className = "chip look"; });
+    chips.forEach((c, i) => setTimeout(() => { c.className = "chip " + (i === best ? "best" : "done"); }, first + i * gap));
+    setTimeout(() => { searchBtn.disabled = false; }, first + chips.length * gap + 200);
+  };
+
+  // ---------- maximized window: hides, keeps following ----------
+  const msw = $("maxSw"), mini = $("mini");
+  msw.onclick = () => {
+    maxed = msw.getAttribute("aria-checked") !== "true";
+    msw.setAttribute("aria-checked", String(maxed));
+    mini.classList.toggle("hid", maxed);
+    $("miniN").textContent = maxed ? "Hidden, following line " + (cur + 1) + " of " + SONG.length : "";
+  };
+
+  // ---------- copy ----------
+  $("copy").onclick = async (e) => {
+    const text = $("cmd").textContent.split("\n").filter((l) => l && !l.startsWith("#")).map((l) => l.replace(/^\$ /, "")).join("\n");
+    try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied"; } catch (err) { e.target.textContent = "Select and copy"; }
+    setTimeout(() => (e.target.textContent = "Copy"), 1800);
+  };
+
+  // ---------- reveal on scroll ----------
+  const io = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: 0.15 });
+  document.querySelectorAll(".rv").forEach((el) => io.observe(el));
+
+  paintLine();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

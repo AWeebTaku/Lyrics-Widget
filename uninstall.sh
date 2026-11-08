@@ -6,9 +6,9 @@
 #   - the build output in this folder.
 # The source code in this folder is kept.
 #
-#   ./clear-all.sh              asks for confirmation
-#   ./clear-all.sh -y           no confirmation
-#   ./clear-all.sh --dry-run    only prints what it would do
+#   ./uninstall.sh              asks for confirmation
+#   ./uninstall.sh -y           no confirmation
+#   ./uninstall.sh --dry-run    only prints what it would do
 set -u
 cd "$(dirname "$0")"
 
