@@ -24,6 +24,26 @@ constexpr qint64 kMemoMs = 10 * 60 * 1000;
 const bool kDebug = qEnvironmentVariableIsSet("LYRICS_DEBUG")
                     || QFile::exists(QDir::homePath() + QStringLiteral("/.cache/lyric-widget/debug"));
 
+// A provider that fails three requests in a row (timeouts, 5xx, no network) is left alone for a minute: the
+// widget answers from the others at once instead of waiting 5 s for a dead one on every song.
+// ponytail: one pace for all fetchers, per-host state is process-wide; per-provider settings if that ever matters
+struct HostHealth { int fails = 0; qint64 downUntil = 0; };
+QHash<QString, HostHealth> &hostHealth()
+{
+    static QHash<QString, HostHealth> h;
+    return h;
+}
+void noteHost(const QString &host, bool failed)
+{
+    HostHealth &h = hostHealth()[host];
+    if (!failed) {
+        h = HostHealth();
+        return;
+    }
+    if (++h.fails >= 3)
+        h.downUntil = QDateTime::currentMSecsSinceEpoch() + 60000;
+}
+
 QString queryFor(const Candidate &c)
 {
     const QString q = c.artist.isEmpty() ? c.title : c.artist + QLatin1Char(' ') + c.title;
@@ -173,6 +193,14 @@ void LyricsFetcher::get(const JobPtr &job, const QUrl &url, Reply cb, int attemp
         });
         return;
     }
+    // A provider that just failed repeatedly is skipped for a while (see noteHost): report it as unreachable at once.
+    if (hostHealth().value(url.host()).downUntil > now) {
+        QTimer::singleShot(0, this, [this, job, cb] {
+            if (job->id == m_current)
+                cb(false, false, QByteArray());
+        });
+        return;
+    }
     // Pace requests per host: providers throttle bursts (429/503, NetEase silent empties).
     qint64 &slot = nextSlot()[url.host()]; // shared with the look-ahead fetcher: one pace per host
     const qint64 wait = std::max<qint64>(0, slot - now);
@@ -222,6 +250,7 @@ void LyricsFetcher::send(const JobPtr &job, const QUrl &url, Reply cb, int attem
             });
             return;
         }
+        noteHost(url.host(), err != QNetworkReply::NoError && err != QNetworkReply::ContentNotFoundError);
         if (err != QNetworkReply::NoError && err != QNetworkReply::ContentNotFoundError && kDebug)
             qWarning() << "lyrics request failed:" << url.toString(QUrl::RemoveQuery) << reply->errorString();
         cb(err == QNetworkReply::NoError, err == QNetworkReply::ContentNotFoundError, body);

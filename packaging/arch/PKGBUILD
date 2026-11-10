@@ -1,0 +1,34 @@
+# Maintainer: AWeebTaku (https://github.com/AWeebTaku)
+pkgname=lyric-widget-git
+pkgver=r0.0
+pkgrel=1
+pkgdesc='Synced lyrics widget for KDE Plasma 6 (Spotify, YouTube Music) with romanization and an audio visualizer'
+arch=(x86_64)
+url='https://github.com/AWeebTaku/Lyrics-Widget'
+license=(GPL-3.0-only)
+depends=(libplasma kirigami plasma-workspace qt6-base qt6-declarative qt6-websockets icu)
+makedepends=(git cmake ninja)
+optdepends=('cava: audio visualizer'
+            'python: accurate Japanese romanization (see the README, section Install)'
+            'plasma-browser-integration: clean title and artist for YouTube in Chrome')
+provides=(lyric-widget)
+conflicts=(lyric-widget)
+source=("git+$url.git")
+sha256sums=(SKIP)
+
+pkgver() {
+  cd Lyrics-Widget
+  printf 'r%s.%s' "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cmake -B build -S Lyrics-Widget -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_MESSAGE=NEVER
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

@@ -61,3 +61,13 @@ install(DIRECTORY extension/ DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget/e
 install(DIRECTORY plasmoid/
   DESTINATION ${CMAKE_INSTALL_DATADIR}/plasma/plasmoids/org.lyricwidget)
 
+
+# ---- tests (optional): table-driven checks of the lyric matching in src/Text.h
+option(BUILD_TESTS "Build the matching tests (run: ctest --test-dir build)" OFF)
+if(BUILD_TESTS)
+  enable_testing()
+  add_executable(matching_tests tests/matching.cpp src/Romanizer.cpp)
+  target_include_directories(matching_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  target_link_libraries(matching_tests PRIVATE Qt6::Core ICU::uc ICU::i18n)
+  add_test(NAME matching COMMAND matching_tests)
+endif()

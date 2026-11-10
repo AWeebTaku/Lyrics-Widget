@@ -4,8 +4,8 @@ Synced lyrics on your desktop for **Spotify** and **YouTube / YouTube Music in C
 romanization, text styles, an embedded audio visualizer and look-ahead for shuffled queues.
 A native Plasma widget: QML for the interface, a C++ plugin for everything else.
 
-> Status: personal project, developed and tested on Arch Linux with Plasma 6 and Qt 6.12. The repository has no
-> test suite; features were checked against real songs and with throw-away test programs. Issues and patches welcome.
+> Status: personal project, developed and tested on Arch Linux with Plasma 6.8 and Qt 6.12. The lyric matching has a
+> table-driven test program (see [Tests](#tests)); the rest was checked against real songs. Issues and patches welcome.
 
 ## Features
 
@@ -41,6 +41,9 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
 
 ## Requirements
 
+Versions: KDE **Plasma 6** (tested on 6.8), **Qt 6.4 or newer** (tested on 6.12), CMake 3.21+, a C++20 compiler (tested with GCC 16),
+ICU (tested with 78). Plasma 5 is not supported.
+
 | For | Packages |
 |---|---|
 | Build and run | KDE Plasma 6, `base-devel`, `cmake`, `ninja`, `qt6-base`, `qt6-declarative`, `qt6-websockets`, `icu` |
@@ -68,6 +71,9 @@ per-song sync offsets are kept (offsets live in `lyrics.db` next to the cache, w
 
 Then right-click the desktop, **Add or Manage Widgets**, drag **Lyric Widget** onto it, and play something.
 Right-click the widget, **Configure**, for the settings.
+
+On Arch Linux you can also build a package: `cd packaging/arch && makepkg -si` (the `PKGBUILD` builds the latest commit from
+GitHub; it is not on the AUR yet).
 
 Manual build, if you prefer:
 
@@ -183,7 +189,30 @@ plasmoid/   the widget: metadata.json, contents/ui (main.qml, LyricStage.qml, se
             contents/config (main.xml settings schema, config.qml pages)
 romaji/     romaji.py: MeCab + UniDic helper run in the private Python environment
 extension/  Chrome extension (Manifest V3) for the YouTube Music queue
+tests/      matching.cpp: table-driven checks of the lyric matching (see Tests)
+packaging/  arch/PKGBUILD for Arch Linux
 ```
+
+## Tests
+
+The lyric matching (which names are searched, how a provider's hit is scored) and the timestamp helpers are checked by one
+table-driven program, `tests/matching.cpp`. It needs no framework and no network:
+
+```
+cmake -B build -S . -G Ninja -DBUILD_TESTS=ON
+cmake --build build --target matching_tests
+ctest --test-dir build --output-on-failure
+```
+
+## Lyric sources and terms
+
+Lyrics are fetched while you listen and are not part of this repository; they belong to their rights holders. The cache and your
+library keep copies on your own machine for your own use. LRCLIB is a community-run open database. NetEase Cloud Music, QQ Music and
+Kugou are asked through their public web endpoints without accounts or keys: these are unofficial, can change or stop at any
+time, and their terms may not allow automated use, so check them before relying on this. Spotify's lyrics are read from the
+Spotify app on your own computer with your own session. This project is not affiliated with any of these services. When a
+provider is slow or down the widget waits at most 5 s for it, retries throttled requests, and leaves a provider that fails three
+times in a row alone for a minute, so the others answer without delay.
 
 ## Credits and license
 
