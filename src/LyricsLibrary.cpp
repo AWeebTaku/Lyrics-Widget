@@ -67,6 +67,10 @@ void LyricsLibrary::onTrack()
         return;
     }
     m_key = key;
+    if (m_cover) { // belongs to the song it was ticked for
+        m_cover = false;
+        emit coverModeChanged();
+    }
     const bool had = m_saved;
     const auto entry = key.isEmpty() ? std::nullopt : m_store.library(key);
     m_saved = entry.has_value();
@@ -98,7 +102,9 @@ void LyricsLibrary::search(const QString &title, const QString &artist)
         t.title = song;
         t.artist = by;
     }
-    m_stretchToSong = Text::editLike(title) || Text::tempoVariant(title) != 0;
+    m_stretchToSong = m_cover || Text::editLike(title) || Text::tempoVariant(title) != 0;
+    if (m_cover)
+        t.durationSec = 0; // the original has its own length: matching must not compare it with this song's
     t.id.clear();  // a search by name, not tied to the playing video
     t.prefer.clear();
     if (t.title.isEmpty()) {

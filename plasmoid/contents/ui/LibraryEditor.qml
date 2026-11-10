@@ -167,6 +167,10 @@ Item {
             QQC2.TextField { id: titleField; Layout.fillWidth: true; placeholderText: i18n("Title") }
             QQC2.TextField { id: artistField; Layout.fillWidth: true; placeholderText: i18n("Artist") }
             RowLayout {
+                QQC2.CheckBox { text: i18n("This is a cover or version of that song"); checked: lib.coverMode; onToggled: lib.coverMode = checked }
+                Kirigami.ContextualHelpButton { toolTipText: i18n("For a cover, remix or vocaloid version: type the ORIGINAL song's title and artist above. The search then ignores this song's length, and the timed lyrics it finds are stretched to fit it. Use Fit afterwards to line them up.") }
+            }
+            RowLayout {
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
                 QQC2.Button {

@@ -23,6 +23,7 @@ struct Track {
 struct Candidate {
     QString artist, title;
     bool strict = false; // title alone (no artist to check): the length has to match almost exactly
+    QString hint = QString(); // extra search word (a vocaloid's name): finds the cover whose lyrics are the original's
     bool boxed = false; // the song was named in 【】 of a fan upload (AMV/MAD): the video's length and channel are not the song's
     bool operator==(const Candidate &o) const { return artist == o.artist && title == o.title; }
 };
@@ -151,11 +152,21 @@ inline QVector<Candidate> candidates(const Track &t)
     if (isLabel(artist))
         artist.clear(); // a company, not the singer: rely on the title ("Artist - Song") instead
 
+    // "(Miku Version)", "(Vocaloid Cover)": a vocaloid's recording of another song. Its length and artist say
+    // nothing about the original, so a hit has to mention the vocaloid too (see score()): the same title at about
+    // the same length by a stranger ("Around the World") is not it.
+    static const QRegularExpression vocRe(
+        QStringLiteral(R"(\b(miku|hatsune|luka|megurine|kagamine|kaito|gumi|megpoid|teto|vocaloid|utau|synthv)\s+(?:version|ver\.?|cover)\b)"),
+        QRegularExpression::CaseInsensitiveOption);
+    const auto vocM = vocRe.match(t.title + QLatin1Char(' ') + t.artist);
+    const QString vocal = vocM.hasMatch() ? vocM.captured(1).toLower() : QString();
+
     QVector<Candidate> out;
-    auto add = [&out](const QString &a, const QString &ti) {
+    auto add = [&out, &vocal](const QString &a, const QString &ti) {
         if (ti.isEmpty())
             return;
-        const Candidate c{a, ti};
+        Candidate c{a, ti};
+        c.hint = vocal;
         if (!out.contains(c))
             out.push_back(c);
     };
@@ -214,8 +225,19 @@ inline QVector<Candidate> candidates(const Track &t)
             extra.push_back({letters.join(QString()), title});
         if (!artist.isEmpty() && !videoLike)
             extra.push_back({QString(), title, true});
+        // A vocaloid version of a song has the original's lyrics but not its length or artist: also search with
+        // the singer's name added and let only the title (and not the length) vouch for the hit
+        if (!vocal.isEmpty()) {
+            Candidate c;
+            c.title = title;
+            c.boxed = true;
+            c.hint = vocal;
+            extra.push_front(c);
+        }
+        for (Candidate &e : extra)
+            e.hint = vocal;
         for (int i = int(extra.size()) - 1; i >= 0; --i)
-            if (!out.contains(extra[i]))
+            if (!vocal.isEmpty() || !out.contains(extra[i]))
                 out.push_front(extra[i]); // the strict guesses already failed: these are searched first
     }
 
@@ -339,6 +361,8 @@ inline double score(const Candidate &want, int wantSec, const QString &title,
     const double ts = similarity(want.title, title);
     if (ts < 0.6)
         return -1;
+    if (!want.hint.isEmpty() && !(title + QLatin1Char(' ') + artist).contains(want.hint, Qt::CaseInsensitive))
+        return -1; // a vocaloid's version: the hit has to be a vocaloid's too
     // "-Instrumental-", "(Karaoke)", "off vocal" listings have no lyrics: skip unless asked for
     static const QRegularExpression noVocals(
         QStringLiteral(R"((instrumental|inst\.|karaoke|off\s*vocal|backing track|伴奏|纯音乐|カラオケ))"),

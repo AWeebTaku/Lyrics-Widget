@@ -22,8 +22,12 @@ class LyricsLibrary : public QObject
     Q_PROPERTY(bool ignored READ ignored NOTIFY savedChanged) // ...as "no lyrics": the widget does not look it up
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY statusChanged)
+    // the typed title and artist name the ORIGINAL of this song (a cover, remix or vocaloid version)
+    Q_PROPERTY(bool coverMode READ coverMode WRITE setCoverMode NOTIFY coverModeChanged)
 
 public:
+    bool coverMode() const { return m_cover; }
+    void setCoverMode(bool on) { if (on != m_cover) { m_cover = on; emit coverModeChanged(); } }
     explicit LyricsLibrary(QObject *parent = nullptr);
 
     QString title() const { return m_track.title; }
@@ -54,6 +58,7 @@ public:
     Q_INVOKABLE QVariantMap timing(const QString &text) const; // {first, last, lines} in seconds
 
 signals:
+    void coverModeChanged();
     void trackChanged();
     void savedChanged();
     void statusChanged();
@@ -72,5 +77,6 @@ private:
     quint64 m_searchId = 0;
     QStringList m_skip; // results of this search already shown: each press of Get lyrics shows the next one
     QString m_query;
+    bool m_cover = false;
     bool m_stretchToSong = false; // the searched title is an edit: stretch the result to the playing length
 };

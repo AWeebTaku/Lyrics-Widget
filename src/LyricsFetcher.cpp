@@ -26,7 +26,8 @@ const bool kDebug = qEnvironmentVariableIsSet("LYRICS_DEBUG")
 
 QString queryFor(const Candidate &c)
 {
-    return c.artist.isEmpty() ? c.title : c.artist + QLatin1Char(' ') + c.title;
+    const QString q = c.artist.isEmpty() ? c.title : c.artist + QLatin1Char(' ') + c.title;
+    return c.hint.isEmpty() ? q : q + QLatin1Char(' ') + c.hint;
 }
 
 LyricsResult fromLrclib(const QJsonObject &o)
