@@ -58,6 +58,13 @@ inline QString cleanTitle(QString t)
     static const QRegularExpression kind(
         QStringLiteral(R"re(\s*[\(\[\{（【]\s*(?:amv|mad|mad動画|アニメmad|音mad|mmd|pv|mv|歌ってみた|弾いてみた|叩いてみた|踊ってみた|手描き|cover)(?:\s*[/／・&+,]\s*(?:amv|mad|mad動画|アニメmad|音mad|mmd|pv|mv|歌ってみた|弾いてみた|叩いてみた|踊ってみた|手描き|cover))*\s*[\)\]\}）】]\s*)re"),
         QRegularExpression::CaseInsensitiveOption);
+    // Film-song uploads: "Subha Hone Na De Full Song" | Desi Boyz | ...  Quotes and the "Full (Video) Song" label
+    // are not part of the name; they may sit in the middle of the title, before a "|".
+    static const QRegularExpression songLabel(
+        QStringLiteral(R"(\s+(?:official\s+)?(?:full(?:\s+video)?|video|lyrical)\s+song\b)"),
+        QRegularExpression::CaseInsensitiveOption);
+    t.remove(QRegularExpression(QStringLiteral("[\"\u201C\u201D]")));
+    t.remove(songLabel);
     t.remove(site);
     t.remove(kind);
     t.remove(bracket);
@@ -136,7 +143,10 @@ inline QString stripVariant(QString t)
 // artist, so the dash split is tried first when the player gave no album (= not a song entry).
 inline QVector<Candidate> candidates(const Track &t)
 {
-    const QString title = cleanTitle(t.title);
+    QString title = cleanTitle(t.title);
+    // "Song | Film | Actors | Composer | Singers": the song is the first part, the rest is credits
+    if (title.count(QLatin1Char('|')) + title.count(QChar(0xFF5C)) >= 3)
+        title = cleanTitle(title.section(QRegularExpression(QStringLiteral("[|\uFF5C]")), 0, 0));
     QString artist = cleanArtist(t.artist);
     if (isLabel(artist))
         artist.clear(); // a company, not the singer: rely on the title ("Artist - Song") instead
