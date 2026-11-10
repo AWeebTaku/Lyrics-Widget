@@ -20,9 +20,15 @@ if os.path.exists(db):
 PY
 rm -rf "$HOME"/.cache/plasmashell/qmlcache                      # stale compiled QML
 
-cmake -B build -S . -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
+step() { printf '\n==> %s\n' "$1"; }
+
+step "Configuring"
+cmake -B build -S . -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_MESSAGE=NEVER --log-level=WARNING
+step "Building"
 cmake --build build
+step "Installing (needs sudo)"
 sudo rm -rf /usr/share/plasma/plasmoids/org.lyricwidget   # so files removed from the source do not linger
-sudo cmake --install build
+sudo cmake --install build > /dev/null
+step "Restarting plasmashell"
 systemctl --user restart plasma-plasmashell
 echo "done: widget rebuilt, caches cleared, plasmashell restarted"

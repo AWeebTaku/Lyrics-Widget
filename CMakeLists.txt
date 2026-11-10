@@ -11,6 +11,10 @@ include(GNUInstallDirs)
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Qml DBus Network Sql WebSockets)
 find_package(ICU REQUIRED COMPONENTS uc i18n)  # Han->pinyin, kana->romaji
 qt_standard_project_setup()
+# the module has no QML files or resources, so the new default resource prefix changes nothing; set it to silence the warning
+if(COMMAND qt_policy)
+  qt_policy(SET QTP0001 NEW)
+endif()
 
 # ---- C++ backend, shipped as the QML module "org.lyricwidget" -----------------
 qt_add_qml_module(lyricbackend
@@ -18,6 +22,7 @@ qt_add_qml_module(lyricbackend
   VERSION 1.0
   SHARED
   PLUGIN_TARGET lyricbackend
+  OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/org/lyricwidget
   SOURCES
     src/LrcParser.h
     src/Text.h
@@ -42,8 +47,8 @@ target_link_libraries(lyricbackend PRIVATE
 set(LYRIC_QML_DIR ${CMAKE_INSTALL_LIBDIR}/qt6/qml/org/lyricwidget)
 install(TARGETS lyricbackend LIBRARY DESTINATION ${LYRIC_QML_DIR})
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/qmldir
-  ${CMAKE_CURRENT_BINARY_DIR}/lyricbackend.qmltypes
+  ${CMAKE_CURRENT_BINARY_DIR}/org/lyricwidget/qmldir
+  ${CMAKE_CURRENT_BINARY_DIR}/org/lyricwidget/lyricbackend.qmltypes
   DESTINATION ${LYRIC_QML_DIR})
 
 # ---- Japanese romanization helper (run by the widget with the Python environment from setup-romaji.sh)
