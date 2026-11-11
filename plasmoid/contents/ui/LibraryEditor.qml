@@ -60,6 +60,13 @@ Item {
         firstSpin.value = Math.round(tm.first * 100)
         lastSpin.value = Math.round(tm.last * 100)
     }
+    // what Get lyrics looks up: the original's name when "cover or version" is ticked, else the song's own
+    function searchNow() {
+        if (lib.coverMode)
+            lib.search(origTitle.text, origArtist.text)
+        else
+            lib.search(titleField.text, artistField.text)
+    }
     function reloadFromSong() {
         titleField.text = lib.title
         artistField.text = lib.artist
@@ -69,6 +76,8 @@ Item {
     Connections {
         target: lib
         function onTrackChanged() { root.dirty = false; root.reloadFromSong() }
+        // unticked, or a new song (which unticks it): the original's name belonged to the last one
+        function onCoverModeChanged() { if (!lib.coverMode) { origTitle.text = ""; origArtist.text = "" } }
         function onFound(text) { root.setText(text, true) }
     }
     Component.onCompleted: reloadFromSong()
@@ -78,7 +87,7 @@ Item {
         title: i18n("Replace the lyrics?")
         subtitle: i18n("The text has changes that are not saved. Searching replaces it with the search result.")
         standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
-        onAccepted: lib.search(titleField.text, artistField.text)
+        onAccepted: root.searchNow()
     }
 
     RowLayout {
@@ -168,22 +177,24 @@ Item {
             QQC2.TextField { id: artistField; Layout.fillWidth: true; placeholderText: i18n("Artist") }
             RowLayout {
                 QQC2.CheckBox { text: i18n("This is a cover or version of that song"); checked: lib.coverMode; onToggled: lib.coverMode = checked }
-                Kirigami.ContextualHelpButton { toolTipText: i18n("For a cover, remix or vocaloid version: type the ORIGINAL song's title and artist above. The search then ignores this song's length, and the timed lyrics it finds are stretched to fit it. Use Fit afterwards to line them up.") }
+                Kirigami.ContextualHelpButton { toolTipText: i18n("For a cover, remix or vocaloid version: type the ORIGINAL song's title and artist in the boxes that appear. The search then ignores this song's length, and the timed lyrics it finds are stretched to fit it. Use Fit afterwards to line them up. Save still files the lyrics under this song's own title and artist above.") }
             }
+            QQC2.TextField { id: origTitle; visible: lib.coverMode; Layout.fillWidth: true; placeholderText: i18n("Original title") }
+            QQC2.TextField { id: origArtist; visible: lib.coverMode; Layout.fillWidth: true; placeholderText: i18n("Original artist") }
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
                 QQC2.Button {
                     text: i18n("Get lyrics")
                     icon.name: "edit-find"
-                    enabled: titleField.text.trim() !== "" && !lib.busy
+                    enabled: (lib.coverMode ? origTitle.text : titleField.text).trim() !== "" && !lib.busy
                     // unsaved edits in the box would be replaced: ask first
-                    onClicked: root.dirty && editor.text.trim() !== "" ? confirmSearch.open() : lib.search(titleField.text, artistField.text)
+                    onClicked: root.dirty && editor.text.trim() !== "" ? confirmSearch.open() : root.searchNow()
                 }
                 QQC2.Button {
                     text: i18n("Start over")
                     enabled: !lib.busy
-                    onClicked: { lib.startOver(); lib.search(titleField.text, artistField.text) }
+                    onClicked: { lib.startOver(); root.searchNow() }
                 }
                 QQC2.Button {
                     text: i18n("Load saved")
