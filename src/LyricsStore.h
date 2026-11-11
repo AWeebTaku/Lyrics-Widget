@@ -28,6 +28,7 @@ struct LibraryEntry {
     QString plain;
     QString roman;
     QString source;    // "edited", or the provider the text came from
+    QString origTitle, origArtist; // set when the song is a cover or version: the original's name
     qint64 updated = 0; // ms since epoch
 };
 

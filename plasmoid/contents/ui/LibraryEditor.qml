@@ -70,6 +70,8 @@ Item {
     function reloadFromSong() {
         titleField.text = lib.title
         artistField.text = lib.artist
+        origTitle.text = lib.origTitle
+        origArtist.text = lib.origArtist
         if (!dirty)
             setText(lib.load(), false)
     }
@@ -286,7 +288,7 @@ Item {
                     icon.name: "document-save"
                     enabled: lib.hasSong && editor.text.trim() !== ""
                     highlighted: root.dirty
-                    onClicked: if (lib.save(editor.text, titleField.text, artistField.text)) root.dirty = false
+                    onClicked: if (lib.save(editor.text, titleField.text, artistField.text, origTitle.text, origArtist.text)) root.dirty = false
                 }
                 QQC2.Button {
                     text: i18n("Remove")

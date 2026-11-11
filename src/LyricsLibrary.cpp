@@ -67,12 +67,16 @@ void LyricsLibrary::onTrack()
         return;
     }
     m_key = key;
-    if (m_cover) { // belongs to the song it was ticked for
-        m_cover = false;
-        emit coverModeChanged();
-    }
     const bool had = m_saved;
     const auto entry = key.isEmpty() ? std::nullopt : m_store.library(key);
+    // a cover's original name was saved with the song: the tick comes back with it; else it was the last song's
+    m_origTitle = entry ? entry->origTitle : QString();
+    m_origArtist = entry ? entry->origArtist : QString();
+    const bool cover = !m_origTitle.isEmpty();
+    if (m_cover != cover) {
+        m_cover = cover;
+        emit coverModeChanged();
+    }
     m_saved = entry.has_value();
     m_ignored = entry && entry->source == QLatin1String("none");
     emit trackChanged();
@@ -126,7 +130,7 @@ void LyricsLibrary::search(const QString &title, const QString &artist)
     m_searchId = m_fetcher.lookup(t);
 }
 
-bool LyricsLibrary::save(const QString &text, const QString &title, const QString &artist)
+bool LyricsLibrary::save(const QString &text, const QString &title, const QString &artist, const QString &origTitle, const QString &origArtist)
 {
     if (m_key.isEmpty()) {
         setStatus(tr("Play the song first: lyrics are saved for the song that is playing."));
@@ -144,6 +148,12 @@ bool LyricsLibrary::save(const QString &text, const QString &title, const QStrin
     e.durationSec = m_track.durationSec;
     e.lang = Text::languageHint(m_track.title);
     e.source = QStringLiteral("edited");
+    if (m_cover && !origTitle.trimmed().isEmpty()) {
+        e.origTitle = m_origTitle = origTitle.trimmed();
+        e.origArtist = m_origArtist = origArtist.trimmed();
+    } else {
+        m_origTitle = m_origArtist = QString();
+    }
     if (Text::usableLrc(text)) {
         e.synced = text;
         for (const LyricLine &l : Lrc::parse(text))

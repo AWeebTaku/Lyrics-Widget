@@ -38,6 +38,9 @@ LyricsStore::LyricsStore()
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS nudges(key TEXT PRIMARY KEY, provider TEXT, ms INTEGER)"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS library(key TEXT PRIMARY KEY, title TEXT, artist TEXT, album TEXT,"
                           "duration INTEGER, lang TEXT, synced TEXT, plain TEXT, roman TEXT, source TEXT, updated INTEGER)"));
+    // older databases lack the original's name (fails harmlessly when the column exists)
+    q.exec(QStringLiteral("ALTER TABLE library ADD COLUMN orig_title TEXT"));
+    q.exec(QStringLiteral("ALTER TABLE library ADD COLUMN orig_artist TEXT"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS wins(artist TEXT, provider TEXT, n INTEGER, PRIMARY KEY(artist, provider))"));
 }
 
@@ -207,9 +210,11 @@ LibraryEntry readEntry(QSqlQuery &q)
     e.roman = q.value(8).toString();
     e.source = q.value(9).toString();
     e.updated = q.value(10).toLongLong();
+    e.origTitle = q.value(11).toString();
+    e.origArtist = q.value(12).toString();
     return e;
 }
-constexpr const char *kLibraryCols = "key, title, artist, album, duration, lang, synced, plain, roman, source, updated";
+constexpr const char *kLibraryCols = "key, title, artist, album, duration, lang, synced, plain, roman, source, updated, orig_title, orig_artist";
 }
 
 std::optional<LibraryEntry> LyricsStore::library(const QString &key)
@@ -239,7 +244,7 @@ void LyricsStore::putLibrary(const LibraryEntry &e)
     if (!m_db.isOpen())
         return;
     QSqlQuery q(m_db);
-    q.prepare(QStringLiteral("INSERT OR REPLACE INTO library(%1) VALUES(?,?,?,?,?,?,?,?,?,?,?)").arg(QLatin1String(kLibraryCols)));
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO library(%1) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)").arg(QLatin1String(kLibraryCols)));
     q.addBindValue(e.key);
     q.addBindValue(e.title);
     q.addBindValue(e.artist);
@@ -251,6 +256,8 @@ void LyricsStore::putLibrary(const LibraryEntry &e)
     q.addBindValue(e.roman);
     q.addBindValue(e.source);
     q.addBindValue(QDateTime::currentMSecsSinceEpoch());
+    q.addBindValue(e.origTitle);
+    q.addBindValue(e.origArtist);
     q.exec();
 }
 

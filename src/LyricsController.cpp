@@ -514,6 +514,10 @@ void LyricsController::onResult(quint64 id, const LyricsResult &r, bool final)
         e.plain = r.plain;
         e.roman = r.roman;
         e.source = r.sourceId;
+        if (const auto old = m_store.library(m_key)) { // keep a cover's original name
+            e.origTitle = old->origTitle;
+            e.origArtist = old->origArtist;
+        }
         m_store.putLibrary(e);
         m_libraryStamp = m_store.libraryStamp(m_key); // no reload: it is on screen already
         m_refreshing = false;

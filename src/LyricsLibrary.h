@@ -28,6 +28,11 @@ class LyricsLibrary : public QObject
 public:
     bool coverMode() const { return m_cover; }
     void setCoverMode(bool on) { if (on != m_cover) { m_cover = on; emit coverModeChanged(); } }
+    // the original's name saved with a cover: shown again when the song comes back
+    Q_PROPERTY(QString origTitle READ origTitle NOTIFY trackChanged)
+    Q_PROPERTY(QString origArtist READ origArtist NOTIFY trackChanged)
+    QString origTitle() const { return m_origTitle; }
+    QString origArtist() const { return m_origArtist; }
     explicit LyricsLibrary(QObject *parent = nullptr);
 
     QString title() const { return m_track.title; }
@@ -43,7 +48,7 @@ public:
     Q_INVOKABLE void search(const QString &title, const QString &artist); // answer arrives as found()
     Q_INVOKABLE void startOver() { m_skip.clear(); m_query.clear(); } // the next search begins with the best result
     Q_INVOKABLE void ignoreSong(); // no lyrics for this song (a cover or edit that matches nothing); saving lyrics later replaces it
-    Q_INVOKABLE bool save(const QString &text, const QString &title, const QString &artist);
+    Q_INVOKABLE bool save(const QString &text, const QString &title, const QString &artist, const QString &origTitle = {}, const QString &origArtist = {});
     Q_INVOKABLE void remove();
     // t' = t * percent/100 + shiftMs, for every timestamp of the text
     Q_INVOKABLE QString retime(const QString &text, double percent, int shiftMs) const;
@@ -72,7 +77,7 @@ private:
     LyricsStore m_store;
     LyricsFetcher m_fetcher;
     Track m_track;
-    QString m_key, m_status;
+    QString m_key, m_status, m_origTitle, m_origArtist;
     bool m_saved = false, m_ignored = false, m_busy = false;
     quint64 m_searchId = 0;
     QStringList m_skip; // results of this search already shown: each press of Get lyrics shows the next one
