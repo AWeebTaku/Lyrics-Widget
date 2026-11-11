@@ -3,12 +3,16 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
+import "wide.js" as Wide
 import org.kde.plasma.plasmoid
 import "audioviz"
 
 // What the widget shows and when: the lyrics (what to show, timing, buttons) and the visualizer's audio input
 KCM.SimpleKCM {
     id: page
+    // settings window as wide as the library window; the page may not be in its window yet when it is created
+    Component.onCompleted: Wide.grow(Window.window, Kirigami.Units.gridUnit)
+    Window.onWindowChanged: Wide.grow(Window.window, Kirigami.Units.gridUnit)
     property alias cfg_showRoman: showRoman.checked
     property alias cfg_showNeighbours: showNeighbours.checked
     property alias cfg_showHeader: showHeader.checked

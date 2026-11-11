@@ -3,10 +3,14 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
+import "wide.js" as Wide
 import org.kde.plasma.plasmoid
 
 // Where things sit in the widget
 KCM.SimpleKCM {
+    // settings window as wide as the library window; the page may not be in its window yet when it is created
+    Component.onCompleted: Wide.grow(Window.window, Kirigami.Units.gridUnit)
+    Window.onWindowChanged: Wide.grow(Window.window, Kirigami.Units.gridUnit)
     property int cfg_lyricsHAlign
     property int cfg_lyricsVAlign
     property int cfg_lyricsOffsetX

@@ -3,12 +3,16 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
+import "wide.js" as Wide
 import org.kde.plasma.plasmoid
 import "audioviz"
 
 // How things look: the lyric text (font, style, colours) and the visualizer (the Plasma Audio Visualizer's style page)
 KCM.SimpleKCM {
     id: page
+    // settings window as wide as the library window; the page may not be in its window yet when it is created
+    Component.onCompleted: Wide.grow(Window.window, Kirigami.Units.gridUnit)
+    Window.onWindowChanged: Wide.grow(Window.window, Kirigami.Units.gridUnit)
     property alias cfg_fontFamily: fontField.value
     property int cfg_mainSize
     property int cfg_sideSize
