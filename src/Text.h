@@ -143,6 +143,16 @@ inline QString stripVariant(QString t)
 
 // Search guesses, best first. Music videos are titled "Artist - Song" with the channel as
 // artist, so the dash split is tried first when the player gave no album (= not a song entry).
+// A cut of a song: a TV-size opening or ending, a short version. The video is far shorter than the song, so the
+// song's own (complete) lyrics are wanted and the length says nothing about which song it is.
+inline bool shortCut(const QString &title)
+{
+    static const QRegularExpression re(
+        QStringLiteral(R"(\bTV[ -]?(size|ver\.?|version|edit|cut)\b|TVサイズ|\bshort[ -]?(ver\.?|version|size|edit)\b|ショート(ver|サイズ|版)|ノンクレジット|(OP|ED)ムービー|(OP|ED)テーマ)"),
+        QRegularExpression::CaseInsensitiveOption);
+    return re.match(title).hasMatch();
+}
+
 inline QVector<Candidate> candidates(const Track &t)
 {
     QString title = cleanTitle(t.title);
@@ -186,6 +196,13 @@ inline QVector<Candidate> candidates(const Track &t)
         if (!out.contains(c))
             out.push_back(c);
     }
+
+    // Anime openings and endings: "TVアニメ『Show』OPテーマ：Artist「Song」": the quoted title nearest the credit is the
+    // song, not the show (a quote earlier in the title)
+    static const QRegularExpression theme(QStringLiteral(R"((?:OP|ED|主題歌|オープニング|エンディング)(?:テーマ)?\s*[：:]\s*(.+?)\s*[「『](.+?)[」』])"));
+    const auto tm = theme.match(title);
+    if (tm.hasMatch() && !tm.captured(2).simplified().isEmpty())
+        add(cleanArtist(tm.captured(1)), tm.captured(2).simplified());
 
     // Japanese uploads: "Artist「Song」"
     static const QRegularExpression kakko(QStringLiteral(R"(^(.*?)\s*[「『](.+?)[」』])"));
@@ -298,6 +315,9 @@ inline QVector<Candidate> candidates(const Track &t)
     }
     if (out.size() > 8)
         out.resize(8);
+    if (shortCut(t.title)) // the video's length is not the song's: only the name has to match
+        for (Candidate &c : out)
+            c.boxed = true;
     return out;
 }
 

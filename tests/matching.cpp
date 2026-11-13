@@ -31,6 +31,22 @@ static bool titleOnly(const QVector<Candidate> &c)
 
 int main()
 {
+    // a TV-size opening: the song is the quote after "OPテーマ：", the show's name is not a song, and the 90 s video
+    // may match the full 200 s lyrics (the length is ignored for a cut)
+    {
+        const Track t = track(QString::fromUtf8("TVアニメ『呪術廻戦』第2期「懐玉・玉折」ノンクレジットOPムービー／OPテーマ：キタニタツヤ「青のすみか」｜毎週木曜夜11時56分～MBS/TBS系列全国28局にて放送中!!"), QString(), QString(), 90);
+        const auto c = Text::candidates(t);
+        CHECK(has(c, QString::fromUtf8("キタニタツヤ"), QString::fromUtf8("青のすみか"), 2));
+        bool allBoxed = !c.isEmpty();
+        for (const Candidate &x : c)
+            allBoxed &= x.boxed;
+        CHECK(allBoxed);
+        const Candidate &first = c.first();
+        CHECK(Text::score(first, 90, QString::fromUtf8("青のすみか"), QString::fromUtf8("キタニタツヤ"), 200) > 0.5);
+        CHECK(Text::shortCut(QStringLiteral("Artist - Song (TV Size)")));
+        CHECK(!Text::shortCut(QStringLiteral("Artist - Song (Official Audio)")));
+    }
+
     using namespace Text;
 
     // ---- which names get searched ----
