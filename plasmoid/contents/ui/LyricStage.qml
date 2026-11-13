@@ -21,6 +21,9 @@ Item {
     property color sideColor: cfg.dimColor
     property var curColors: []   // several colours for the current line (see StyledText)
     property int curFlow: 5
+    property real elapsed: -1          // karaoke: ms into the current line, -1 = off
+    property int durMs: 3000
+    property var wordStarts: []
     property bool hidden: false        // the line is sung and a long break follows: fade everything out
     // slow out, quick back in (the next line must not wait for the fade)
     states: State { name: "hidden"; when: stage.hidden; PropertyChanges { stage.opacity: 0 } }
@@ -103,6 +106,9 @@ Item {
             color: stage.curColor
             colors: stage.curColors
             flow: stage.curFlow
+            elapsed: stage.elapsed < 0 ? -1 : col.isActive ? stage.elapsed : 1e9 // a line on its way out is all lit
+            durMs: stage.durMs
+            wordStarts: stage.wordStarts
             pixelSize: Math.max(1, stage.cfg.mainSize)
         }
         StyledText {

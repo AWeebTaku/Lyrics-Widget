@@ -68,6 +68,7 @@ PlasmoidItem {
         id: lyrics
         suspended: root.suspended
         lyricsEnabled: root.cfg.showLyrics
+        karaoke: root.cfg.karaoke
         offsetMs: root.cfg.offsetMs
         prefetchCount: root.cfg.prefetchCount
         spotifyAppQueue: root.cfg.spotifyAppQueue
@@ -192,6 +193,24 @@ PlasmoidItem {
             hidden: lyrics.lineHidden
             showSides: root.cfg.showNeighbours && view.height >= 150   // no room for them in a small widget
             id: stage
+            // the karaoke effect: polled while playing (the position has no signal)
+            function readLine() {
+                stage.durMs = lyrics.lineDurMs()
+                stage.wordStarts = lyrics.lineWords()
+                stage.elapsed = lyrics.lineElapsedMs()
+            }
+            Timer {
+                interval: 33
+                repeat: true
+                running: root.cfg.karaoke && lyrics.playing && stage.visible && !root.suspended && !root.covered
+                triggeredOnStart: true
+                onTriggered: stage.elapsed = lyrics.lineElapsedMs()
+                onRunningChanged: { if (running) stage.readLine(); else if (!root.cfg.karaoke) stage.elapsed = -1 }
+            }
+            Connections {
+                target: lyrics
+                function onCurrentIndexChanged() { if (root.cfg.karaoke) stage.readLine() }
+            }
             prev: root.lineAt(lyrics.currentIndex - 1).replace(/\n/g, "  ·  ")
             cur: root.lineAt(lyrics.currentIndex)
             next: root.lineAt(lyrics.currentIndex + 1).replace(/\n/g, "  ·  ")

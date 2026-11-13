@@ -17,6 +17,7 @@ KCM.SimpleKCM {
     property alias cfg_showNeighbours: showNeighbours.checked
     property alias cfg_showHeader: showHeader.checked
     property alias cfg_animateLines: animate.checked
+    property alias cfg_karaoke: karaoke.checked
     property int cfg_offsetMs
     property alias cfg_showSyncControls: showSync.checked
     property alias cfg_hoverButtons: hoverButtons.checked
@@ -51,6 +52,7 @@ KCM.SimpleKCM {
     property bool cfg_showNeighboursDefault
     property bool cfg_showHeaderDefault
     property bool cfg_animateLinesDefault
+    property bool cfg_karaokeDefault
     property int cfg_offsetMsDefault
     property bool cfg_showSyncControlsDefault
     property bool cfg_hoverButtonsDefault
@@ -72,6 +74,10 @@ KCM.SimpleKCM {
                 QQC2.CheckBox { id: showNeighbours; text: i18n("Previous and next lines") }
                 QQC2.CheckBox { id: showHeader; text: i18n("Artist and title") }
                 QQC2.CheckBox { id: animate; text: i18n("Animate line changes") }
+                RowLayout {
+                    QQC2.CheckBox { id: karaoke; text: i18n("Karaoke effect") }
+                    Kirigami.ContextualHelpButton { toolTipText: i18n("The words of the current line light up one by one as they are sung; the rest of the line is dimmed. Word times come from NetEase, QQ Music and Kugou when they have them (fetched only while this is on), and from the Word timing tab of the lyrics library, which wins. Without them the words are spread over the line, so it is only a guess. Japanese and Chinese light up one character at a time.") }
+                }
 
                 Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Timing") }
                 RowLayout {

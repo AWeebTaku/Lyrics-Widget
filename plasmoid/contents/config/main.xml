@@ -302,6 +302,9 @@
     <entry name="animateLines" type="Bool">
       <default>true</default>
     </entry>
+    <entry name="karaoke" type="Bool">
+      <default>false</default>
+    </entry>
     <entry name="showLyrics" type="Bool">
       <default>true</default>
     </entry>

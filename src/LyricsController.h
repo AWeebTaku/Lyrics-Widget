@@ -26,6 +26,8 @@ class LyricsController : public QObject
     Q_PROPERTY(bool idle READ idle NOTIFY idleChanged)
     // false = lyrics switched off: no lookups, no look-ahead, nothing shown (the player is still followed)
     Q_PROPERTY(bool lyricsEnabled READ lyricsEnabled WRITE setLyricsEnabled NOTIFY lyricsEnabledChanged)
+    // karaoke effect on: fetch word-timed lyrics too (only then is anything extra requested)
+    Q_PROPERTY(bool karaoke READ karaoke WRITE setKaraoke NOTIFY karaokeChanged)
     Q_PROPERTY(QString title READ title NOTIFY trackInfoChanged)
     Q_PROPERTY(QString artist READ artist NOTIFY trackInfoChanged)
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
@@ -75,6 +77,8 @@ public:
     QStringList roman() const { return m_roman; }
     bool synced() const { return m_synced; }
     int currentIndex() const { return m_index; }
+    bool karaoke() const { return m_karaoke; }
+    void setKaraoke(bool on);
     int lineGapMs() const { return m_lineGapMs; }
     bool lineHidden() const { return m_lineHidden; }
     int offsetMs() const { return m_offsetMs; }
@@ -103,6 +107,10 @@ public:
     int estimatedLines() const { return m_filled; }
     int gapSec() const { return m_gapSec; }
     Q_INVOKABLE void nudge(int deltaMs); // saved per track; 0 resets
+    // karaoke: where the player is in the current line, how long the line lasts, and the saved word times (may be empty)
+    Q_INVOKABLE double lineElapsedMs() const; // -1 = no current line
+    Q_INVOKABLE int lineDurMs() const;
+    Q_INVOKABLE QVariantList lineWords() const;
     // Look for other lyrics for this song: the next best from the services, saved to the library. Wraps around.
     Q_INVOKABLE void refreshLyrics();
 
@@ -118,6 +126,7 @@ signals:
     void accentChanged();
     void lyricsEnabledChanged();
     void lineHiddenChanged();
+    void karaokeChanged();
     void prefetchCountChanged();
 
 private:
@@ -165,6 +174,8 @@ private:
 
     QString m_title, m_artist, m_status, m_key;
     QStringList m_lines, m_roman;
+    bool m_karaoke = false;
+    QHash<QString, QVariantList> m_words; // saved karaoke word times by line text (library)
     QVector<LyricLine> m_lrc;     // timeline actually shown (layered lines merged)
     QVector<LyricLine> m_srcLrc;  // one entry per lyric line as provided
     QStringList m_srcText, m_srcRoman;

@@ -1,6 +1,7 @@
 #include "LyricsFetcher.h"
 
 #include "LrcParser.h"
+#include "WordTiming.h"
 #include "RomanAlign.h"
 
 #include <QDateTime>
@@ -477,6 +478,8 @@ void LyricsFetcher::neteaseLyric(const JobPtr &job, qint64 songId, double conf, 
     // -1 on all = "send everything": original, translation, romanization
     for (const char *k : {"lv", "kv", "tv", "rv"})
         q.addQueryItem(QString::fromLatin1(k), QStringLiteral("-1"));
+    if (job->track.wantWords)
+        q.addQueryItem(QStringLiteral("yv"), QStringLiteral("-1")); // word-timed lyrics
     url.setQuery(q);
     get(job, url, [this, job, conf, dur, songId](bool ok, bool, const QByteArray &body) {
         LyricsResult r;
@@ -495,6 +498,9 @@ void LyricsFetcher::neteaseLyric(const JobPtr &job, qint64 songId, double conf, 
             (looksSynced(lrc) ? r.synced : r.plain) = lrc;
             r.roman = o.value(QStringLiteral("romalrc")).toObject().value(QStringLiteral("lyric")).toString();
             r.found = true;
+            if (job->track.wantWords && r.synced.size())
+                r.words = WordTiming::toJson(r.synced, WordTiming::parse(
+                    o.value(QStringLiteral("yrc")).toObject().value(QStringLiteral("lyric")).toString(), WordTiming::Yrc));
         }
         finishNetease(job, r);
     });
@@ -511,19 +517,30 @@ quint64 LyricsFetcher::lookupExtras(const Track &t)
     job->id = m_current;
     job->track = t;
     job->cands = Text::candidates(t);
-    job->lrcDone = job->qqDone = job->kgDone = true;
+    job->track.wantWords = true;
+    job->lrcDone = true;
     if (job->cands.isEmpty()) {
-        job->neDone = true;
+        job->neDone = job->qqDone = job->kgDone = true;
         publish(job);
         return job->id;
     }
     netease(job);
+    qq(job);
+    kugou(job);
     QTimer::singleShot(7000, this, [this, job] {
         if (job->finalSent)
             return;
         if (!job->neDone) {
             job->neDone = true;
             job->ne.networkError = true;
+        }
+        if (!job->qqDone) {
+            job->qqDone = true;
+            job->qq.networkError = true;
+        }
+        if (!job->kgDone) {
+            job->kgDone = true;
+            job->kg.networkError = true;
         }
         publish(job);
     });
@@ -607,6 +624,27 @@ void LyricsFetcher::qqLyric(const JobPtr &job, const QString &mid, double conf, 
                 r.synced = lrc;
                 r.found = true;
             }
+        }
+        if (r.found && job->track.wantWords) { // the same song's word-timed version (QRC)
+            QUrl w(QStringLiteral("https://u.y.qq.com/cgi-bin/musicu.fcg"));
+            const QJsonObject param{{QStringLiteral("songMID"), mid}, {QStringLiteral("songID"), 0}, {QStringLiteral("qrc"), 1},
+                                    {QStringLiteral("crypt"), 1}, {QStringLiteral("lrc"), 0}, {QStringLiteral("roma"), 0},
+                                    {QStringLiteral("trans"), 0}, {QStringLiteral("ct"), 19}, {QStringLiteral("cv"), 1859},
+                                    {QStringLiteral("type"), -1}};
+            const QJsonObject req{{QStringLiteral("comm"), QJsonObject{{QStringLiteral("ct"), 19}, {QStringLiteral("cv"), 1859}, {QStringLiteral("uin"), QStringLiteral("0")}}},
+                                  {QStringLiteral("req"), QJsonObject{{QStringLiteral("module"), QStringLiteral("music.musichallSong.PlayLyricInfo")},
+                                                                      {QStringLiteral("method"), QStringLiteral("GetPlayLyricInfo")},
+                                                                      {QStringLiteral("param"), param}}}};
+            w.setQuery(QUrlQuery(QStringLiteral("data=") + QString::fromUtf8(QUrl::toPercentEncoding(QString::fromUtf8(QJsonDocument(req).toJson(QJsonDocument::Compact))))));
+            get(job, w, [this, job, r](bool ok4, bool, const QByteArray &b4) mutable {
+                if (ok4) {
+                    const QByteArray hex = QJsonDocument::fromJson(b4).object().value(QStringLiteral("req")).toObject()
+                                               .value(QStringLiteral("data")).toObject().value(QStringLiteral("lyric")).toString().toLatin1();
+                    r.words = WordTiming::toJson(r.synced, WordTiming::parse(WordTiming::qrcText(hex), WordTiming::Qrc));
+                }
+                finishQq(job, r);
+            });
+            return;
         }
         finishQq(job, r);
     });
@@ -701,7 +739,7 @@ void LyricsFetcher::kugou(const JobPtr &job)
                     dq.addQueryItem(QStringLiteral("fmt"), QStringLiteral("lrc"));
                     dq.addQueryItem(QStringLiteral("charset"), QStringLiteral("utf8"));
                     d.setQuery(dq);
-                    get(job, d, [this, job, conf, dur, hash](bool ok2, bool, const QByteArray &b2) {
+                    get(job, d, [this, job, conf, dur, hash, d](bool ok2, bool, const QByteArray &b2) {
                         LyricsResult r;
                         r.conf = conf;
                         r.srcDur = dur;
@@ -713,6 +751,20 @@ void LyricsFetcher::kugou(const JobPtr &job)
                         if (ok2 && looksSynced(lrc)) {
                             r.synced = lrc;
                             r.found = true;
+                            if (job->track.wantWords) { // the same song's word-timed version
+                                QUrl k = d;
+                                QUrlQuery kq(d);
+                                kq.removeQueryItem(QStringLiteral("fmt"));
+                                kq.addQueryItem(QStringLiteral("fmt"), QStringLiteral("krc"));
+                                k.setQuery(kq);
+                                get(job, k, [this, job, r](bool ok3, bool, const QByteArray &b3) mutable {
+                                    if (ok3)
+                                        r.words = WordTiming::toJson(r.synced, WordTiming::parse(WordTiming::krcText(
+                                            QJsonDocument::fromJson(b3).object().value(QStringLiteral("content")).toString().toLatin1()), WordTiming::Krc));
+                                    finishKugou(job, r);
+                                });
+                                return;
+                            }
                         } else {
                             r.networkError = !ok2;
                         }
@@ -890,6 +942,7 @@ void LyricsFetcher::publish(const JobPtr &job)
             pick = &n;
     }
     LyricsResult out = pick ? *pick : n;
+    out.words = !out.words.isEmpty() ? out.words : !n.words.isEmpty() ? n.words : !q.words.isEmpty() ? q.words : k.words; // keyed by line text, so any provider's fits
     out.provider = pick == &l ? QStringLiteral("lrclib") : pick == &q ? QStringLiteral("qq")
                    : pick == &k ? QStringLiteral("kugou") : pick == &y ? QStringLiteral("ytmusic") : QStringLiteral("netease");
     // Romanization, best first: NetEase's own, then a human-made romaji copy from LRCLIB; the

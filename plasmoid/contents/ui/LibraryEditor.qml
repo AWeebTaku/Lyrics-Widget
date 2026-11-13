@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.lyricwidget
+import "words.js" as Words
 
 // The lyrics library editor: get, edit, retime and save the lyrics of the song that is playing. Used by the
 // settings page and by the widget's library window. Saved lyrics win over everything the widget looks up.
@@ -34,6 +35,58 @@ Item {
     function refreshLine() {
         const t = lib.lineTime(editor.text, selFirst)
         lineSpin.value = t < 0 ? 0 : Math.round(t * 100)
+        refreshWords()
+    }
+
+    // ---- word timing for the karaoke effect: when each word of the selected line starts, in ms from the line's start.
+    // Saved by line text, so a line sung twice shares its times. Lines without saved times are spread over the line.
+    property var wordMap: ({})
+    property string curText: ""
+    property var curSpans: []
+    property var curWords: []
+    property var curOffsets: []
+    property int wordCursor: 0
+    onSelFirstChanged: wordCursor = 0
+    function refreshWords() {
+        curText = lib.lineText(editor.text, selFirst)
+        curSpans = Words.spans(curText)
+        curWords = curSpans.map(p => curText.slice(p.s, p.e))
+        curOffsets = Words.offsets(curText, curSpans, wordMap[curText])
+                     ?? Words.spread(curWords.map(w => w.length), lib.lineDurMs(editor.text, selFirst))
+    }
+    function keepOffsets(o) {
+        wordMap[curText] = Words.pairs(curSpans, o)
+        curOffsets = o
+        dirty = true
+    }
+    function setOffset(i, ms) {
+        const o = curOffsets.slice()
+        o[i] = Math.max(0, ms)
+        keepOffsets(o)
+    }
+    function stampWord() {
+        const start = lib.lineTime(editor.text, selFirst), pos = lib.playheadSec()
+        if (start < 0 || pos < 0 || curWords.length === 0)
+            return
+        setOffset(wordCursor, Math.round((pos - start) * 1000))
+        wordCursor = Math.min(wordCursor + 1, curWords.length - 1)
+    }
+    function spreadWords() {
+        keepOffsets(Words.spread(curWords.map(w => w.length), lib.lineDurMs(editor.text, selFirst)))
+    }
+    function loadWords() {
+        try { wordMap = JSON.parse(lib.words || "{}") } catch (e) { wordMap = {} }
+        refreshWords()
+    }
+    // what is saved: only the lines that are still in the text
+    function wordsJson() {
+        const keep = {}
+        for (const l of editor.text.split("\n")) {
+            const t = lib.lineText(l, 0)
+            if (wordMap[t])
+                keep[t] = wordMap[t]
+        }
+        return JSON.stringify(keep)
     }
 
     // the selected line gets the song's current time; the cursor moves on to the next line
@@ -72,8 +125,10 @@ Item {
         artistField.text = lib.artist
         origTitle.text = lib.origTitle
         origArtist.text = lib.origArtist
-        if (!dirty)
+        if (!dirty) {
             setText(lib.load(), false)
+            loadWords()
+        }
     }
     Connections {
         target: lib
@@ -96,68 +151,172 @@ Item {
         anchors.fill: parent
         spacing: Kirigami.Units.largeSpacing
 
-        // ---- left: the lyrics
+        // ---- left: the lyrics, and the word timing for the karaoke effect, as two tabs
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumWidth: Kirigami.Units.gridUnit * 16
             Layout.preferredWidth: Kirigami.Units.gridUnit * 30
-            spacing: Kirigami.Units.smallSpacing
-
-            QQC2.Label { text: i18n("Lyrics"); font.bold: true }
-            Item { // a fixed frame: a bare ScrollView takes the height of its text and grows over the rest
+            QQC2.TabBar {
+                id: leftTabs
+                Layout.fillWidth: true
+                implicitWidth: 0 // the width comes from the layout; the buttons take half each
+                QQC2.TabButton { text: i18n("Lyrics"); width: leftTabs.width / 2 }
+                QQC2.TabButton { text: i18n("Word timing"); width: leftTabs.width / 2 }
+            }
+            StackLayout {
+                currentIndex: leftTabs.currentIndex
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 4
-                    color: Kirigami.Theme.backgroundColor
-                    border.width: 1
-                    border.color: Kirigami.Theme.disabledTextColor
-                }
-                QQC2.ScrollView {
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    clip: true
-                    QQC2.TextArea {
-                        id: editor
-                        font.family: "monospace"
-                        wrapMode: TextEdit.NoWrap
-                        selectByMouse: true
-                        persistentSelection: true // the selection stays while a button is pressed
-                        background: null
-                        placeholderText: i18n("Lyrics, one line each. A line starts with its time: [01:23.45] text")
-                        onTextChanged: { if (!root.loading) root.dirty = true; root.refreshLine() }
-                        onSelectionStartChanged: root.updateSelection()
-                        onSelectionEndChanged: root.updateSelection()
-                        onCursorPositionChanged: root.updateSelection()
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.minimumWidth: Kirigami.Units.gridUnit * 16
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 30
+                spacing: Kirigami.Units.smallSpacing
+
+                QQC2.Label { text: i18n("Lyrics"); font.bold: true }
+                Item { // a fixed frame: a bare ScrollView takes the height of its text and grows over the rest
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 4
+                        color: Kirigami.Theme.backgroundColor
+                        border.width: 1
+                        border.color: Kirigami.Theme.disabledTextColor
+                    }
+                    QQC2.ScrollView {
+                        anchors.fill: parent
+                        anchors.margins: 1
+                        clip: true
+                        QQC2.TextArea {
+                            id: editor
+                            font.family: "monospace"
+                            wrapMode: TextEdit.NoWrap
+                            selectByMouse: true
+                            persistentSelection: true // the selection stays while a button is pressed
+                            background: null
+                            placeholderText: i18n("Lyrics, one line each. A line starts with its time: [01:23.45] text")
+                            onTextChanged: { if (!root.loading) root.dirty = true; root.refreshLine() }
+                            onSelectionStartChanged: root.updateSelection()
+                            onSelectionEndChanged: root.updateSelection()
+                            onCursorPositionChanged: root.updateSelection()
+                        }
                     }
                 }
-            }
-            QQC2.Label {
-                Layout.fillWidth: true
-                elide: Text.ElideRight
-                opacity: 0.7
-                text: (root.timing.lines > 0
-                       ? i18np("%1 timed line, %2 s to %3 s", "%1 timed lines, %2 s to %3 s", root.timing.lines,
-                               Math.round(root.timing.first), Math.round(root.timing.last))
-                       : i18n("No timed lines"))
-                      + "  ·  " + (root.selLast > root.selFirst ? i18n("selected: lines %1 to %2", root.selFirst + 1, root.selLast + 1)
-                                                                 : i18n("selected: line %1", root.selFirst + 1))
-            }
-
-            // play the song and press this (or Ctrl+Enter) as each line starts: the selected line gets the playhead's
-            // time and the next line is selected. Fine-tune afterwards with the timing controls.
-            RowLayout {
-                QQC2.Button {
-                    text: i18n("Stamp line at playhead")
-                    icon.name: "media-record"
-                    enabled: editor.text.length > 0
-                    onClicked: root.stampNow()
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    opacity: 0.7
+                    text: (root.timing.lines > 0
+                           ? i18np("%1 timed line, %2 s to %3 s", "%1 timed lines, %2 s to %3 s", root.timing.lines,
+                                   Math.round(root.timing.first), Math.round(root.timing.last))
+                           : i18n("No timed lines"))
+                          + "  ·  " + (root.selLast > root.selFirst ? i18n("selected: lines %1 to %2", root.selFirst + 1, root.selLast + 1)
+                                                                     : i18n("selected: line %1", root.selFirst + 1))
                 }
-                QQC2.Label { text: i18n("Ctrl+Enter"); opacity: 0.6 }
+
+                // play the song and press this (or Ctrl+Enter) as each line starts: the selected line gets the playhead's
+                // time and the next line is selected. Fine-tune afterwards with the timing controls.
+                RowLayout {
+                    QQC2.Button {
+                        text: i18n("Stamp line at playhead")
+                        icon.name: "media-record"
+                        enabled: editor.text.length > 0
+                        onClicked: root.stampNow()
+                    }
+                    QQC2.Label { text: i18n("Ctrl+Enter"); opacity: 0.6 }
+                }
+                Shortcut { sequence: "Ctrl+Return"; onActivated: root.stampNow() }
+
             }
-            Shortcut { sequence: "Ctrl+Return"; onActivated: root.stampNow() }
+            ColumnLayout {
+                spacing: Kirigami.Units.smallSpacing
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    opacity: 0.7
+                    text: i18n("When each word of a line lights up in the karaoke effect (Settings, Behavior). Pick a line, then play the song and press Stamp word as each word is sung, or type the times. Kept with the lyrics when you press Save.")
+                }
+                QQC2.ScrollView { // the lines: click one to edit its words
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.minimumHeight: Kirigami.Units.gridUnit * 6
+                    clip: true
+                    background: Rectangle { color: Kirigami.Theme.backgroundColor; border.width: 1; border.color: Kirigami.Theme.disabledTextColor; radius: 4 }
+                    ListView {
+                        id: lineList
+                        model: editor.text.split("\n")
+                        delegate: QQC2.ItemDelegate {
+                            required property int index
+                            required property string modelData
+                            width: ListView.view.width
+                            height: visible ? implicitHeight : 0
+                            visible: modelData.trim() !== ""
+                            highlighted: index === root.selFirst
+                            text: modelData
+                            onClicked: {
+                                let pos = 0
+                                const ls = editor.text.split("\n")
+                                for (let i = 0; i < index; ++i)
+                                    pos += ls[i].length + 1
+                                editor.cursorPosition = pos
+                            }
+                        }
+                    }
+                }
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    opacity: 0.7
+                    text: root.curWords.length > 0 ? root.curText : i18n("Select a line with text")
+                }
+                QQC2.ScrollView {
+                    id: wordView
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Kirigami.Units.gridUnit * 7
+                    clip: true
+                    Flow {
+                        width: wordView.availableWidth
+                        spacing: Kirigami.Units.smallSpacing
+                        Repeater {
+                            model: root.curWords.length
+                            ColumnLayout {
+                                required property int index
+                                spacing: 0
+                                QQC2.Label {
+                                    text: root.curWords[index]
+                                    font.bold: index === root.wordCursor
+                                    color: index === root.wordCursor ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
+                                }
+                                SecondsSpinBox {
+                                    from: 0; to: 720000; stepSize: 10
+                                    implicitWidth: Kirigami.Units.gridUnit * 7
+                                    value: Math.round((root.curOffsets[index] ?? 0) / 10)
+                                    onValueModified: { root.wordCursor = index; root.setOffset(index, value * 10) }
+                                }
+                            }
+                        }
+                    }
+                }
+                RowLayout {
+                    QQC2.Button {
+                        text: i18n("Stamp word at playhead")
+                        icon.name: "media-record"
+                        enabled: root.curWords.length > 0 && lib.lineTime(editor.text, root.selFirst) >= 0
+                        onClicked: root.stampWord()
+                    }
+                    QQC2.Button {
+                        text: i18n("Spread evenly")
+                        enabled: root.curWords.length > 0
+                        onClicked: root.spreadWords()
+                    }
+                    QQC2.Label { text: i18n("Ctrl+Space"); opacity: 0.6 }
+                }
+                Shortcut { sequence: "Ctrl+Space"; onActivated: root.stampWord() }
+            }
+            }
         }
 
         // ---- right: song, timing, library
@@ -201,7 +360,7 @@ Item {
                 QQC2.Button {
                     text: i18n("Load saved")
                     enabled: lib.hasSong
-                    onClicked: { root.dirty = false; root.setText(lib.load(), false) }
+                    onClicked: { root.dirty = false; root.setText(lib.load(), false); root.loadWords() }
                 }
                 Kirigami.ContextualHelpButton { toolTipText: i18n("Get lyrics searches LRCLIB, NetEase, QQ Music and Kugou for the title and artist above and replaces the text (nothing is saved until you press Save). Press it again for the next best result; Start over goes back to the best one. For a remix or edit, a title like \"Alright by Kendrick Lamar, but ...\" finds the original song, stretched to the length of the song that is playing.") }
             }
@@ -288,7 +447,7 @@ Item {
                     icon.name: "document-save"
                     enabled: lib.hasSong && editor.text.trim() !== ""
                     highlighted: root.dirty
-                    onClicked: if (lib.save(editor.text, titleField.text, artistField.text, origTitle.text, origArtist.text)) root.dirty = false
+                    onClicked: if (lib.save(editor.text, titleField.text, artistField.text, origTitle.text, origArtist.text, root.wordsJson())) root.dirty = false
                 }
                 QQC2.Button {
                     text: i18n("Remove")

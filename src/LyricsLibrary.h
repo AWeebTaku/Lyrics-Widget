@@ -31,6 +31,8 @@ public:
     // the original's name saved with a cover: shown again when the song comes back
     Q_PROPERTY(QString origTitle READ origTitle NOTIFY trackChanged)
     Q_PROPERTY(QString origArtist READ origArtist NOTIFY trackChanged)
+    Q_PROPERTY(QString words READ words NOTIFY trackChanged) // karaoke word times of this song (JSON), see LibraryEntry
+    QString words() const { return m_words; }
     QString origTitle() const { return m_origTitle; }
     QString origArtist() const { return m_origArtist; }
     explicit LyricsLibrary(QObject *parent = nullptr);
@@ -48,7 +50,7 @@ public:
     Q_INVOKABLE void search(const QString &title, const QString &artist); // answer arrives as found()
     Q_INVOKABLE void startOver() { m_skip.clear(); m_query.clear(); } // the next search begins with the best result
     Q_INVOKABLE void ignoreSong(); // no lyrics for this song (a cover or edit that matches nothing); saving lyrics later replaces it
-    Q_INVOKABLE bool save(const QString &text, const QString &title, const QString &artist, const QString &origTitle = {}, const QString &origArtist = {});
+    Q_INVOKABLE bool save(const QString &text, const QString &title, const QString &artist, const QString &origTitle = {}, const QString &origArtist = {}, const QString &words = {});
     Q_INVOKABLE void remove();
     // t' = t * percent/100 + shiftMs, for every timestamp of the text
     Q_INVOKABLE QString retime(const QString &text, double percent, int shiftMs) const;
@@ -59,6 +61,8 @@ public:
     // the time of one line (0-based), for setting a single line's time by hand
     Q_INVOKABLE double lineTime(const QString &text, int line) const; // seconds, -1 = the line has no time
     Q_INVOKABLE QString setLineTime(const QString &text, int line, double sec) const; // replaces / adds the line's first stamp
+    Q_INVOKABLE QString lineText(const QString &text, int line) const; // the words of a line, without its time stamps
+    Q_INVOKABLE int lineDurMs(const QString &text, int line) const;    // how long the karaoke effect has for it
     Q_INVOKABLE double playheadSec() const; // where the playing song is, -1 when nothing plays
     Q_INVOKABLE QVariantMap timing(const QString &text) const; // {first, last, lines} in seconds
 
@@ -77,7 +81,7 @@ private:
     LyricsStore m_store;
     LyricsFetcher m_fetcher;
     Track m_track;
-    QString m_key, m_status, m_origTitle, m_origArtist;
+    QString m_key, m_status, m_origTitle, m_origArtist, m_words;
     bool m_saved = false, m_ignored = false, m_busy = false;
     quint64 m_searchId = 0;
     QStringList m_skip; // results of this search already shown: each press of Get lyrics shows the next one

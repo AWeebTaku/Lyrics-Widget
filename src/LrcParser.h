@@ -54,6 +54,9 @@ inline QVector<LyricLine> parse(const QString &lrc)
     return out;
 }
 
+// A guess at how long a line of `chars` characters takes to sing, plus a hold so a stretched word stays up.
+inline qint64 sungMs(qsizetype chars) { return std::clamp<qint64>(1500 + chars * 110, 3000, 9000); }
+
 // "[mm:ss.xx]"
 inline QString stamp(qint64 ms)
 {

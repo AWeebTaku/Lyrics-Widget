@@ -29,6 +29,7 @@ LyricsStore::LyricsStore()
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS lyrics_v6("
                           "key TEXT PRIMARY KEY, found INTEGER, instrumental INTEGER,"
                           "synced TEXT, plain TEXT, roman TEXT, srcdur REAL, fetched INTEGER, provider TEXT, extras INTEGER, source_id TEXT)"));
+    q.exec(QStringLiteral("ALTER TABLE lyrics_v6 ADD COLUMN words TEXT"));
     // the cache is only a convenience: forget what has not been fetched for 90 days (the library and the
     // offsets are the user's own and are never pruned)
     q.prepare(QStringLiteral("DELETE FROM lyrics_v6 WHERE fetched < ?"));
@@ -41,6 +42,7 @@ LyricsStore::LyricsStore()
     // older databases lack the original's name (fails harmlessly when the column exists)
     q.exec(QStringLiteral("ALTER TABLE library ADD COLUMN orig_title TEXT"));
     q.exec(QStringLiteral("ALTER TABLE library ADD COLUMN orig_artist TEXT"));
+    q.exec(QStringLiteral("ALTER TABLE library ADD COLUMN words TEXT"));
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS wins(artist TEXT, provider TEXT, n INTEGER, PRIMARY KEY(artist, provider))"));
 }
 
@@ -57,7 +59,7 @@ std::optional<StoredLyrics> LyricsStore::get(const QString &key)
         return std::nullopt;
     QSqlQuery q(m_db);
     q.prepare(QStringLiteral(
-        "SELECT found, instrumental, synced, plain, roman, srcdur, fetched, provider, extras, source_id FROM lyrics_v6 WHERE key=?"));
+        "SELECT found, instrumental, synced, plain, roman, srcdur, fetched, provider, extras, source_id, words FROM lyrics_v6 WHERE key=?"));
     q.addBindValue(key);
     if (!q.exec() || !q.next())
         return std::nullopt;
@@ -72,6 +74,7 @@ std::optional<StoredLyrics> LyricsStore::get(const QString &key)
     s.provider = q.value(7).toString();
     s.extras = q.value(8).toBool();
     s.sourceId = q.value(9).toString();
+    s.words = q.value(10).toString();
     const qint64 age = QDateTime::currentSecsSinceEpoch() - q.value(6).toLongLong();
     // "not found" and unsynced-only answers may improve later (catalogues grow, providers flake)
     if ((!s.found || (s.synced.isEmpty() && !s.instrumental)) && age > kNegativeTtlSecs)
@@ -90,8 +93,8 @@ void LyricsStore::put(const QString &key, const StoredLyrics &v)
         return;
     QSqlQuery q(m_db);
     q.prepare(QStringLiteral("INSERT OR REPLACE INTO lyrics_v6"
-                             "(key, found, instrumental, synced, plain, roman, srcdur, fetched, provider, extras, source_id)"
-                             " VALUES(?,?,?,?,?,?,?,?,?,?,?)"));
+                             "(key, found, instrumental, synced, plain, roman, srcdur, fetched, provider, extras, source_id, words)"
+                             " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)"));
     q.addBindValue(key);
     q.addBindValue(v.found ? 1 : 0);
     q.addBindValue(v.instrumental ? 1 : 0);
@@ -103,6 +106,7 @@ void LyricsStore::put(const QString &key, const StoredLyrics &v)
     q.addBindValue(v.provider);
     q.addBindValue(v.extras ? 1 : 0);
     q.addBindValue(v.sourceId);
+    q.addBindValue(v.words);
     q.exec();
 }
 
@@ -212,9 +216,10 @@ LibraryEntry readEntry(QSqlQuery &q)
     e.updated = q.value(10).toLongLong();
     e.origTitle = q.value(11).toString();
     e.origArtist = q.value(12).toString();
+    e.words = q.value(13).toString();
     return e;
 }
-constexpr const char *kLibraryCols = "key, title, artist, album, duration, lang, synced, plain, roman, source, updated, orig_title, orig_artist";
+constexpr const char *kLibraryCols = "key, title, artist, album, duration, lang, synced, plain, roman, source, updated, orig_title, orig_artist, words";
 }
 
 std::optional<LibraryEntry> LyricsStore::library(const QString &key)
@@ -244,7 +249,7 @@ void LyricsStore::putLibrary(const LibraryEntry &e)
     if (!m_db.isOpen())
         return;
     QSqlQuery q(m_db);
-    q.prepare(QStringLiteral("INSERT OR REPLACE INTO library(%1) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)").arg(QLatin1String(kLibraryCols)));
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO library(%1) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)").arg(QLatin1String(kLibraryCols)));
     q.addBindValue(e.key);
     q.addBindValue(e.title);
     q.addBindValue(e.artist);
@@ -258,6 +263,7 @@ void LyricsStore::putLibrary(const LibraryEntry &e)
     q.addBindValue(QDateTime::currentMSecsSinceEpoch());
     q.addBindValue(e.origTitle);
     q.addBindValue(e.origArtist);
+    q.addBindValue(e.words);
     q.exec();
 }
 

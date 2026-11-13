@@ -3,6 +3,8 @@
 #include "Keys.h"
 #include "LrcParser.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
 #include <QTimer>
 #include <algorithm>
@@ -72,6 +74,15 @@ void LyricsLibrary::onTrack()
     // a cover's original name was saved with the song: the tick comes back with it; else it was the last song's
     m_origTitle = entry ? entry->origTitle : QString();
     m_origArtist = entry ? entry->origArtist : QString();
+    // the word times the editor starts from: the providers' (cache), the user's own over them
+    QJsonObject w;
+    for (const QString &json : {key.isEmpty() ? QString() : m_store.get(key).value_or(StoredLyrics()).words,
+                                entry ? entry->words : QString()}) {
+        const QJsonObject o = QJsonDocument::fromJson(json.toUtf8()).object();
+        for (auto it = o.begin(); it != o.end(); ++it)
+            w.insert(it.key(), it.value());
+    }
+    m_words = w.isEmpty() ? QString() : QString::fromUtf8(QJsonDocument(w).toJson(QJsonDocument::Compact));
     const bool cover = !m_origTitle.isEmpty();
     if (m_cover != cover) {
         m_cover = cover;
@@ -130,7 +141,7 @@ void LyricsLibrary::search(const QString &title, const QString &artist)
     m_searchId = m_fetcher.lookup(t);
 }
 
-bool LyricsLibrary::save(const QString &text, const QString &title, const QString &artist, const QString &origTitle, const QString &origArtist)
+bool LyricsLibrary::save(const QString &text, const QString &title, const QString &artist, const QString &origTitle, const QString &origArtist, const QString &words)
 {
     if (m_key.isEmpty()) {
         setStatus(tr("Play the song first: lyrics are saved for the song that is playing."));
@@ -148,6 +159,7 @@ bool LyricsLibrary::save(const QString &text, const QString &title, const QStrin
     e.durationSec = m_track.durationSec;
     e.lang = Text::languageHint(m_track.title);
     e.source = QStringLiteral("edited");
+    e.words = m_words = words;
     if (m_cover && !origTitle.trimmed().isEmpty()) {
         e.origTitle = m_origTitle = origTitle.trimmed();
         e.origArtist = m_origArtist = origArtist.trimmed();
@@ -227,6 +239,26 @@ double LyricsLibrary::lineTime(const QString &text, int line) const
         return -1;
     const auto p = Lrc::parse(lines[line]);
     return p.isEmpty() ? -1 : p.first().timeMs / 1000.0;
+}
+
+QString LyricsLibrary::lineText(const QString &text, int line) const
+{
+    const QStringList lines = text.split(QLatin1Char('\n'));
+    return line < 0 || line >= lines.size() ? QString() : QString(lines[line]).remove(leadStamp()).trimmed();
+}
+
+// the time to the next timed line, but no more than the line takes to sing (as the widget does it)
+int LyricsLibrary::lineDurMs(const QString &text, int line) const
+{
+    const double start = lineTime(text, line);
+    const qint64 sung = Lrc::sungMs(lineText(text, line).size());
+    if (start < 0)
+        return int(sung);
+    const int n = int(text.count(QLatin1Char('\n'))) + 1;
+    for (int i = line + 1; i < n; ++i)
+        if (const double t = lineTime(text, i); t > start)
+            return int(std::min<qint64>(sung, std::lround((t - start) * 1000)));
+    return int(sung);
 }
 
 QString LyricsLibrary::setLineTime(const QString &text, int line, double sec) const

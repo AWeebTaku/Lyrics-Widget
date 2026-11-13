@@ -14,6 +14,7 @@ struct StoredLyrics {
     QString provider;          // who supplied it
     bool extras = false;       // the one-off background NetEase lookup (romanization) has been made
     QString sourceId;          // which provider result it is ("lrclib:12"), to skip it when asking for other lyrics
+    QString words;             // karaoke word times (JSON, WordTiming.h); "" = not asked yet, "{}" = asked, none
 };
 
 // A song in the user's own lyrics library: lyrics they fetched, edited or retimed. These win over the cache
@@ -28,6 +29,7 @@ struct LibraryEntry {
     QString plain;
     QString roman;
     QString source;    // "edited", or the provider the text came from
+    QString words;     // karaoke: JSON {"line text": [start ms of each word, from the line's start]}
     QString origTitle, origArtist; // set when the song is a cover or version: the original's name
     qint64 updated = 0; // ms since epoch
 };

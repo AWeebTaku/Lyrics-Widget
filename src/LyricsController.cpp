@@ -113,7 +113,8 @@ LyricsController::LyricsController(QObject *parent) : QObject(parent), m_watcher
         if (!cur || m_extrasKey != m_key)
             return;
         cur->extras = true; // asked: do not ask again for this song, whatever NetEase answered
-        if (cur->roman.isEmpty() && !r.roman.isEmpty()) {
+        cur->words = r.words.isEmpty() ? QStringLiteral("{}") : r.words;
+        if (cur->provider == QLatin1String("spotify") && cur->roman.isEmpty() && !r.roman.isEmpty()) {
             // NetEase's romanization is only used when it lines up with the lyrics being shown
             const auto shown = Lrc::parse(cur->synced);
             int hit = 0, total = 0;
@@ -345,6 +346,7 @@ void LyricsController::onTrackChanged()
     m_skip.clear();
     m_shown.clear();
     m_refreshing = m_libEdited = m_libIgnored = false;
+    m_words.clear();
     m_readingLines.clear();
     m_trackOffsetMs = m_store.offset(key); // a learned provider delay may replace this in apply()
     m_gapSec = 0;
@@ -381,6 +383,9 @@ void LyricsController::onTrackChanged()
         s.provider = QStringLiteral("library");
         m_shown = lib->source;
         m_libEdited = lib->source == QLatin1String("edited");
+        const QJsonObject w = QJsonDocument::fromJson(lib->words.toUtf8()).object();
+        for (auto it = w.begin(); it != w.end(); ++it)
+            m_words.insert(it.key(), it.value().toArray().toVariantList());
         m_requestId = 0;
         apply(s);
         schedulePrefetch();
@@ -517,6 +522,7 @@ void LyricsController::onResult(quint64 id, const LyricsResult &r, bool final)
         if (const auto old = m_store.library(m_key)) { // keep a cover's original name
             e.origTitle = old->origTitle;
             e.origArtist = old->origArtist;
+            e.words = old->words;
         }
         m_store.putLibrary(e);
         m_libraryStamp = m_store.libraryStamp(m_key); // no reload: it is on screen already
@@ -540,6 +546,11 @@ void LyricsController::apply(const StoredLyrics &s)
     m_srcRoman.clear();
     m_synced = false;
     m_syncedRaw = s.synced;
+    // the providers' word times; the ones the user set in the library (already in m_words) win
+    const QJsonObject provided = QJsonDocument::fromJson(s.words.toUtf8()).object();
+    for (auto it = provided.begin(); it != provided.end(); ++it)
+        if (!m_words.contains(it.key()))
+            m_words.insert(it.key(), it.value().toArray().toVariantList());
     m_filled = 0;
     m_provider = s.provider;
     // Self-correcting timing: a song the user never nudged starts with the delay their nudges have
@@ -814,6 +825,41 @@ void LyricsController::resync()
         m_timer.start(int(std::max<qint64>(1, qint64((wake - posMs) * m_timeScale))));
 }
 
+double LyricsController::lineElapsedMs() const
+{
+    const MprisPlayer *p = m_watcher.active();
+    if (!p || !m_synced || m_index < 0 || m_index >= m_lrc.size())
+        return -1;
+    return double(positionMs(p) - m_lrc[m_index].timeMs);
+}
+
+// LRC has no word times: a line lasts until the next one, but never longer than it takes to sing
+// (a long break must not stretch it)
+int LyricsController::lineDurMs() const
+{
+    if (m_index < 0 || m_index >= m_lrc.size() || m_index >= m_lines.size())
+        return 3000;
+    const qint64 start = m_lrc[m_index].timeMs, sung = Lrc::sungMs(m_lines[m_index].size());
+    const qint64 next = m_index + 1 < m_lrc.size() ? m_lrc[m_index + 1].timeMs : start + sung;
+    return int(std::max<qint64>(1, std::min(next - start, sung)));
+}
+
+QVariantList LyricsController::lineWords() const
+{
+    const int src = m_index >= 0 && m_index < m_entrySrc.size() ? m_entrySrc[m_index] : -1;
+    return src >= 0 && src < m_srcText.size() ? m_words.value(m_srcText[src].trimmed()) : QVariantList();
+}
+
+void LyricsController::setKaraoke(bool on)
+{
+    if (on == m_karaoke)
+        return;
+    m_karaoke = on;
+    emit karaokeChanged();
+    if (on && m_synced)
+        maybeFetchExtras(m_applied);
+}
+
 void LyricsController::setLineHidden(bool on)
 {
     if (on == m_lineHidden)
@@ -829,7 +875,7 @@ qint64 LyricsController::breakStartMs(int i) const
 {
     if (i < 0 || i >= m_lrc.size() || i >= m_lines.size() || m_lines[i].isEmpty())
         return -1; // empty lines are the break markers themselves
-    const qint64 sung = std::clamp<qint64>(1500 + m_lines[i].size() * 110, 3000, 9000);
+    const qint64 sung = Lrc::sungMs(m_lines[i].size());
     const qint64 end = m_lrc[i].timeMs + sung + kBreakHoldMs;
     const qint64 next = i + 1 < m_lrc.size() ? m_lrc[i + 1].timeMs : std::numeric_limits<qint64>::max();
     return next - end > 4000 ? end : -1;
@@ -1012,9 +1058,12 @@ bool LyricsController::isBannerLine(const QString &line) const
 }
 
 // Lyrics from the Spotify app come without romanization. Ask NetEase for it in the background, once per song.
+// With the karaoke effect on, the same lookup also brings word-timed lyrics (NetEase, Kugou), once per song.
 void LyricsController::maybeFetchExtras(const StoredLyrics &s)
 {
-    if (!m_synced || s.provider != QLatin1String("spotify") || s.extras || m_extrasKey == m_key)
+    const bool roman = s.provider == QLatin1String("spotify") && !s.extras;
+    const bool words = m_karaoke && s.provider != QLatin1String("library") && s.words.isEmpty();
+    if (!m_synced || !(roman || words) || m_extrasKey == m_key)
         return;
     m_extrasKey = m_key;
     m_extrasId = m_extras.lookupExtras(m_track);

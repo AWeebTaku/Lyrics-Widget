@@ -17,6 +17,7 @@ struct Track {
     QStringList skip;      // sources ("lrclib:12", "netease:34"...) not to pick again: lets a lookup return the next-best lyrics
     bool onlySynced = false; // ignore results without timestamps
     QString prefer; // provider that usually has this artist's lyrics ("lrclib"/"netease"/"qq"), may be empty
+    bool wantWords = false; // also fetch word-timed lyrics (karaoke)
     bool loose = false; // second pass, after the exact artist + title search found nothing: broader guesses
 };
 

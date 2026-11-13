@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
+import "words.js" as Words
 
 // One line of lyric text with the user's text style: font weight / italic / underline / spacing / case, a
 // shadow (optionally blurred), an outline and a highlight bar behind the line. All the style comes from
@@ -47,6 +48,17 @@ Item {
     property int fontSizeMode: Text.FixedSize
     property int minimumPixelSize: 1
     property int elide: Text.ElideRight
+    // karaoke: how far into the line the song is (ms, -1 = off), how long the line lasts, and its saved word times
+    property real elapsed: -1
+    property int durMs: 3000
+    property var wordStarts: []
+    readonly property int litChars: Words.lit(text, wordStarts, durMs, elapsed) // -1 = off, text.length = all
+    readonly property bool partial: litChars >= 0 && litChars < text.length
+    readonly property real unsungOpacity: partial ? 0.4 : 1
+    // the same text again with the words not sung yet transparent: it lays out exactly like the full text
+    readonly property string litText: partial && litChars > 0
+        ? esc(text.slice(0, litChars)) + '<font color="#00000000">' + esc(text.slice(litChars)) + "</font>" : ""
+    function esc(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>") }
 
     readonly property real contentWidth: face.contentWidth
     readonly property real contentHeight: face.contentHeight
@@ -74,7 +86,10 @@ Item {
         y: dy
         width: root.width
         height: root.height
-        text: root.text
+        property string shown: root.text
+        property int fmt: Text.PlainText
+        text: shown
+        textFormat: fmt
         color: root.color
         horizontalAlignment: root.horizontalAlignment
         verticalAlignment: root.verticalAlignment
@@ -118,7 +133,7 @@ Item {
         }
     }
 
-    Face { id: face; visible: !root.gradientOn }
+    Face { id: face; visible: !root.gradientOn; opacity: root.unsungOpacity }
 
     // ---- colours spread over the text: a gradient seen through the text's shape
     Face { id: maskFace; color: "white"; visible: false; layer.enabled: root.isCurrent } // always on for the current line: a layer switched on later stays empty
@@ -145,5 +160,17 @@ Item {
         source: fillRect
         maskEnabled: true
         maskSource: maskFace
+        opacity: root.unsungOpacity
+    }
+
+    // ---- karaoke: the words sung so far, at full strength over the dimmed line. A word lights up when it starts.
+    Face { visible: root.litText !== "" && !root.gradientOn; shown: root.litText; fmt: Text.StyledText }
+    Face { id: litMask; color: "white"; visible: false; layer.enabled: root.isCurrent; shown: root.litText; fmt: Text.StyledText }
+    MultiEffect {
+        visible: root.litText !== "" && root.gradientOn
+        anchors.fill: parent
+        source: fillRect
+        maskEnabled: true
+        maskSource: litMask
     }
 }

@@ -21,6 +21,7 @@ struct LyricsResult {
     QString synced;            // LRC
     QString plain;
     QString roman;             // LRC from the provider (NetEase romalrc); may be empty
+    QString words;             // karaoke word times (JSON, see WordTiming.h); only when the track asked for them
     double srcDur = 0;         // length (s) of the version the lyrics were timed against
     QString sourceId;          // "lrclib:123", "netease:456"...: lets a lookup skip results already shown
     QString provider;          // "lrclib" / "netease" / "qq": who the chosen lyrics came from
