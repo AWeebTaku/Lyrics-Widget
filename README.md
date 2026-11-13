@@ -22,6 +22,10 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
   survive rebuilds. Searching from the page understands edits: "Alright by Kendrick Lamar, but ..." finds the original
   song and stretches its timing to the length of the song that is playing (then fine-tune with Fit). The table keeps
   title, artist, length, language and source, so a shared catalogue could be added later.
+- **Karaoke effect** (Settings, Behavior; off by default): the words of the current line light up one by one as they are
+  sung, the rest of the line dimmed. Word times come from NetEase, QQ Music and Kugou when they have them (fetched only
+  while it is on), else the words are spread over the line. Japanese and Chinese light up one character at a time. The
+  library's **Word timing** tab edits the times of any line (stamp each word as it is sung) and they win over the providers.
 - **Quiet when there is nothing to show:** "No lyrics found" and similar messages fade away after a few seconds.
 - **Language versions:** when a song exists in several languages under one title (English and Japanese singles), the
   language named in the track or in YouTube's own video title ("-English version-") picks the matching lyrics; a
