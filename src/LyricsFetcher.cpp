@@ -880,7 +880,9 @@ void LyricsFetcher::publish(const JobPtr &job)
     // ...unless the song is CJK: LRCLIB also holds user-made romaji-only copies, which are not
     // the lyrics we want on the main line.
     const bool cjkTrack = Text::hasNonLatin(job->track.title + job->track.artist);
-    const bool lrcEnough = job->lrcDone && !l.synced.isEmpty() && l.conf >= 0.9
+    // A remix or extended mix: LRCLIB's copy may carry the original's timing, so the others are waited for to compare
+    const bool editTrack = Text::editLike(job->track.title);
+    const bool lrcEnough = job->lrcDone && !l.synced.isEmpty() && l.conf >= 0.9 && !editTrack
                            && !Text::hasNonLatin(l.synced) && !cjkTrack && !Text::incompleteLrc(l.synced);
     // The provider that usually has this artist's lyrics: once it answers with a clean, confident
     // synced result there is no point waiting for the others.
@@ -890,7 +892,7 @@ void LyricsFetcher::publish(const JobPtr &job)
                               : job->track.prefer == QLatin1String("kugou") ? &k : nullptr;
     const bool favDone = fav == &l ? job->lrcDone : fav == &n ? job->neDone : fav == &q ? job->qqDone
                          : fav == &k ? job->kgDone : false;
-    const bool favEnough = fav && favDone && !fav->synced.isEmpty() && fav->conf >= 0.9
+    const bool favEnough = fav && favDone && !fav->synced.isEmpty() && fav->conf >= 0.9 && !editTrack
                            && !Text::incompleteLrc(fav->synced) && (fav != &l || !cjkTrack);
     const bool haveSynced = (job->lrcDone && !l.synced.isEmpty()) || (job->neDone && !n.synced.isEmpty())
                             || (job->qqDone && !q.synced.isEmpty()) || (job->kgDone && !k.synced.isEmpty());
@@ -919,6 +921,24 @@ void LyricsFetcher::publish(const JobPtr &job)
         const bool pBad = Text::incompleteLrc(pick->synced);
         if (rBad != pBad ? pBad : r->conf > pick->conf)
             pick = r;
+    }
+    // Two providers that start singing together, and a third far from both: the third has another version's
+    // timing (LRCLIB lists "Extended Mix" entries that are the original's timestamps). Take one of the pair.
+    if (pick) {
+        QVector<const LyricsResult *> rest;
+        for (const LyricsResult *r : {&l, &n, &q, &k})
+            if (r != pick && !r->synced.isEmpty() && !(r == &l && romajiCopy))
+                rest.push_back(r);
+        const qint64 mine = Text::firstVocalMs(pick->synced);
+        for (qsizetype i = 0; mine >= 0 && i < rest.size(); ++i)
+            for (qsizetype j = i + 1; j < rest.size(); ++j) {
+                const qint64 a = Text::firstVocalMs(rest[i]->synced), b = Text::firstVocalMs(rest[j]->synced);
+                if (a >= 0 && b >= 0 && std::abs(a - b) <= 4000 && std::abs(a - mine) >= 8000 && std::abs(b - mine) >= 8000) {
+                    pick = rest[i]->conf >= rest[j]->conf ? rest[i] : rest[j];
+                    i = rest.size();
+                    break;
+                }
+            }
     }
     if (!pick && l.instrumental)
         pick = &l;

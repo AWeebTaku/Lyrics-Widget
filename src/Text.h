@@ -552,6 +552,24 @@ inline double maxStampGap(const QString &lrc)
 }
 inline bool incompleteLrc(const QString &lrc) { return maxStampGap(lrc) > 50; }
 
+// When the singing starts (ms), -1 when unknown: the first timed line that is not a credit ("Composed by：...") or
+// the title banner some providers put at 0:00. Copies of the same recording start within a few seconds of each other.
+inline qint64 firstVocalMs(const QString &lrc)
+{
+    static const QRegularExpression line(QStringLiteral(R"(^\[(\d+):(\d+(?:\.\d+)?)\]\s*(.*)$)"));
+    for (const QString &row : lrc.split(QLatin1Char('\n'))) {
+        const auto m = line.match(row.trimmed());
+        if (!m.hasMatch() || m.captured(3).trimmed().isEmpty())
+            continue;
+        const qint64 ms = qint64((m.captured(1).toInt() * 60 + m.captured(2).toDouble()) * 1000);
+        const QString text = m.captured(3);
+        if (text.contains(QChar(0xFF1A)) || text.contains(QLatin1String(": ")) || (ms < 1500 && text.contains(QLatin1String(" - "))))
+            continue;
+        return ms;
+    }
+    return -1;
+}
+
 // Mostly Japanese / Chinese / Korean text (not just an emoji or a fullwidth punctuation mark).
 inline bool isCjk(const QString &s)
 {

@@ -31,6 +31,11 @@ static bool titleOnly(const QVector<Candidate> &c)
 
 int main()
 {
+    // where the singing starts: credits and the title banner do not count
+    CHECK(Text::firstVocalMs(QStringLiteral("[00:00.00]Loco Papi (Extended Mix) - Sevenn\n[00:12.96]Composed by\uFF1AKevin\n[00:25.92]Go loco loco\n")) == 25920);
+    CHECK(Text::firstVocalMs(QStringLiteral("[00:02.06] Go loco loco\n[00:06.12] Go loco loco\n")) == 2060);
+    CHECK(Text::firstVocalMs(QStringLiteral("no stamps")) == -1);
+
     // a TV-size opening: the song is the quote after "OPテーマ：", the show's name is not a song, and the 90 s video
     // may match the full 200 s lyrics (the length is ignored for a cut)
     {
