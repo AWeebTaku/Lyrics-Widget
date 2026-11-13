@@ -209,7 +209,8 @@ ctest --test-dir build --output-on-failure
 Lyrics are fetched while you listen and are not part of this repository; they belong to their rights holders. The cache and your
 library keep copies on your own machine for your own use. LRCLIB is a community-run open database. NetEase Cloud Music, QQ Music and
 Kugou are asked through their public web endpoints without accounts or keys: these are unofficial, can change or stop at any
-time, and their terms may not allow automated use, so check them before relying on this. Spotify's lyrics are read from the
+time, and their terms may not allow automated use, so check them before relying on this. With the karaoke effect on, the same three also give word-timed lyrics (NetEase's and Kugou's formats are plain; QQ's is
+encrypted, and the cipher in `src/QqDes.h` is ported from [QQMusicDES](https://github.com/wangqr/QQMusicDES), MIT). Spotify's lyrics are read from the
 Spotify app on your own computer with your own session. This project is not affiliated with any of these services. When a
 provider is slow or down the widget waits at most 5 s for it, retries throttled requests, and leaves a provider that fails three
 times in a row alone for a minute, so the others answer without delay.
