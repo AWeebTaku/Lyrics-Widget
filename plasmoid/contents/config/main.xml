@@ -191,6 +191,357 @@
     <entry name="debugMode" type="Bool">
       <default>false</default>
     </entry>
+    <entry name="vizSmoothing" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="vizReleaseMs" type="Int">
+      <default>350</default>
+    </entry>
+    <entry name="vizPeakFall" type="Int">
+      <default>40</default>
+    </entry>
+    <entry name="vizBassWeight" type="Int">
+      <default>100</default>
+    </entry>
+    <entry name="vizTrebleWeight" type="Int">
+      <default>100</default>
+    </entry>
+    <entry name="vizTaper" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="vizColorMode" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="vizPalette" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="vizRainbowSpeed" type="Int">
+      <default>30</default>
+    </entry>
+    <entry name="vizGlow" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="lyricPulse" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="panelGlow" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="ambientGlow" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="reducedMotion" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="batterySaver" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="vizUserPresets" type="String">
+      <default>[]</default>
+    </entry>
+    <entry name="showCard" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="layoutMode" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="cardSurface" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="surfaceBlur" type="Int">
+      <default>40</default>
+    </entry>
+    <entry name="surfaceDim" type="Int">
+      <default>35</default>
+    </entry>
+    <entry name="surfaceGrain" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="surfaceShadow" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="surfaceEdge" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="artShape" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="artSize" type="Int">
+      <default>96</default>
+    </entry>
+    <entry name="artBorder" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="artGlow" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="artTilt" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="artReflect" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="artGreyPaused" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="artSpin" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="artClick" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="controlsShow" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="dockStyle" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="showSkip" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showShuffleRepeat" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="progressStyle" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="timeLabels" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="wheelSeekSec" type="Int">
+      <default>5</default>
+    </entry>
+    <entry name="doubleClickSkip" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="scrollVolume" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="trackTextStyle" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="trackShowAlbum" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="trackScroll" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="trackDetails" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="detailYear" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="detailLabel" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="detailCountry" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="detailTags" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="detailAbout" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="onlineInfo" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="panelMode" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="autoContrast" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="vizColorByLevel" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="vizGlowColorMode" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="simpleRender" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="idleThrottle" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="vizSpacing" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="allowCustomQml" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="customQmlFile" type="String">
+      <default></default>
+    </entry>
+    <entry name="vizFavourites" type="String">
+      <default>[]</default>
+    </entry>
+    <entry name="panelOrientation" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="panelCardSizing" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="panelCardScale" type="Int">
+      <default>100</default>
+    </entry>
+    <entry name="pillContent" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillArt" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="pillEq" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="pillProgress" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillControls" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillControlsOnHover" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="pillMaxWidth" type="Int">
+      <default>300</default>
+    </entry>
+    <entry name="pillPopupTrigger" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillClick" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillScroll" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="pillArtShape" type="Int">
+      <default>3</default>
+    </entry>
+    <entry name="pillArtBorder" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillArtGlow" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillTextStyle" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="pillDockStyle" type="Int">
+      <default>4</default>
+    </entry>
+    <entry name="pillEqStyle" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="compositorGlass" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="artSparks" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="artThumbnail" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="artFormat" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="artFallback" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="customButtonsFile" type="String">
+      <default></default>
+    </entry>
+    <entry name="customProgressFile" type="String">
+      <default></default>
+    </entry>
+    <entry name="showChapters" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="reactiveProgress" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="seekHover" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="progressColorSource" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="customProgressColor" type="String">
+      <default>#3daee9</default>
+    </entry>
+    <entry name="controlsColorSource" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="customControlColor" type="String">
+      <default>#ffffff</default>
+    </entry>
+    <entry name="cardAccentSource" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="customAccent" type="String">
+      <default>#a855f7</default>
+    </entry>
+    <entry name="titleSize" type="Int">
+      <default>15</default>
+    </entry>
+    <entry name="textAlign" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="showSource" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="showPlayerSwitch" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="hoverLift" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="dimWhenPaused" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="fadeVizWhenPaused" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="posterLines" type="Int">
+      <default>2</default>
+    </entry>
+    <entry name="posterVizBehind" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="posterVizOpacity" type="Int">
+      <default>60</default>
+    </entry>
+    <entry name="posterClock" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="orbitCenter" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="orbitRotate" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="orbitCoverPulse" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="orbitGlowRing" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="glassTint" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="ribbonCurvature" type="Int">
+      <default>100</default>
+    </entry>
+    <entry name="ribbonFullness" type="Int">
+      <default>100</default>
+    </entry>
+    <entry name="localLyrics" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="localLyricsFolder" type="String">
+      <default></default>
+    </entry>
     <entry name="visualizerStyle" type="Int">
       <default>1</default>
     </entry>

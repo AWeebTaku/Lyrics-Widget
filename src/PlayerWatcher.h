@@ -28,7 +28,21 @@ public:
     // players (Spotify's own slider) do not announce every seek, which would leave the lyrics behind.
     void setWatchPosition(bool on);
 
+    // what the player lets us do; the player's own answer comes back through the properties
+    double volume() const { return m_volume; }
+    bool shuffle() const { return m_shuffle; }
+    const QString &loop() const { return m_loop; } // "None", "Track" or "Playlist"
+    void playPause();
+    void next();
+    void previous();
+    void setPositionUs(qint64 positionUs); // jump to a place in the song
+    void seekRelativeUs(qint64 offsetUs);
+    void setVolume(double v);              // 0..1
+    void setShuffle(bool on);
+    void setLoop(const QString &mode);
+
 signals:
+    void controlsChanged(); // volume, shuffle or repeat changed
     void metadataChanged();
     void stateChanged();
     void positionChanged(); // position re-synced from the player (seek / refetch)
@@ -45,7 +59,12 @@ private:
     void updateWatch();
     void applyProps(const QVariantMap &props);
 
-    QString m_service, m_title, m_artist, m_album, m_url, m_artUrl;
+    void callPlayer(const QString &method, const QVariantList &args = {});
+    void setPlayerProp(const QString &name, const QVariant &value);
+
+    QString m_service, m_title, m_artist, m_album, m_url, m_artUrl, m_trackId, m_loop = QStringLiteral("None");
+    double m_volume = 1;
+    bool m_shuffle = false;
     qint64 m_lengthUs = 0;
     bool m_playing = false;
     qint64 m_basePosUs = 0;
@@ -67,8 +86,12 @@ public:
     // On: every MPRIS player on the bus counts (VLC, mpv, Strawberry...).
     void setAnyPlayer(bool on);
     void setSites(const QStringList &hosts); // websites that count as music in a browser
+    // the card's player switch: the next eligible player becomes the active one, until it goes away
+    void cycle();
+    int count() const; // eligible players that have a song
 
 signals:
+    void controlsChanged(); // the active player's volume, shuffle or repeat changed
     void trackChanged();  // active player switched, or its track changed
     void timingChanged(); // play/pause/seek on the active player
 
@@ -86,6 +109,7 @@ private:
     QHash<QString, MprisPlayer *> m_players;
     QPointer<MprisPlayer> m_active;
     QPointer<MprisPlayer> m_lastStarted;
+    QPointer<MprisPlayer> m_forced;
     bool m_watchPosition = false;
     bool m_any = false;
     QStringList m_sites;

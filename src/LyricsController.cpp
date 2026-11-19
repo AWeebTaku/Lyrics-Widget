@@ -1,6 +1,7 @@
 #include "LyricsController.h"
 
 #include "GapFill.h"
+#include "LocalFiles.h"
 #include "Keys.h"
 #include "Palette.h"
 #include "RomanAlign.h"
@@ -49,6 +50,7 @@ LyricsController::LyricsController(QObject *parent) : QObject(parent), m_watcher
     connect(&m_watcher, &PlayerWatcher::trackChanged, this, &LyricsController::onTrackChanged);
     connect(&m_watcher, &PlayerWatcher::timingChanged, this, &LyricsController::resync);
     connect(&m_watcher, &PlayerWatcher::timingChanged, this, &LyricsController::playingChanged);
+    connect(&m_watcher, &PlayerWatcher::controlsChanged, this, &LyricsController::controlsChanged);
 
     m_dbDebounce.setSingleShot(true);
     m_dbDebounce.setInterval(400);
@@ -357,6 +359,15 @@ void LyricsController::onTrackChanged()
     m_title = cands.isEmpty() ? t.title : cands.first().title;
     m_artist = cands.isEmpty() ? t.artist : cands.first().artist;
     emit trackInfoChanged();
+    {   // chapters from a file next to the song (a .chapters or .cue file)
+        QVariantList ch;
+        for (const auto &c : LocalFiles::chaptersFor(LocalFiles::pathFromUrl(p->url()), p->lengthUs() / 1e6))
+            ch << QVariantMap{{QStringLiteral("start"), c.start}, {QStringLiteral("title"), c.title}};
+        if (ch != m_chapters || !ch.isEmpty()) {
+            m_chapters = ch;
+            emit chaptersChanged();
+        }
+    }
     clearLyrics();
     if (!m_lyricsEnabled) {
         m_requestId = 0;
@@ -390,6 +401,27 @@ void LyricsController::onTrackChanged()
         apply(s);
         schedulePrefetch();
         return;
+    }
+    // Lyrics on the user's own disk come next: a .lrc beside the song (or in the lyrics folder), or inside the file
+    if (m_localLyrics) {
+        const QString path = LocalFiles::pathFromUrl(p->url());
+        const QString lrcFile = LocalFiles::findLrc(path, m_localFolder, p->title(), p->artist());
+        QString text = lrcFile.isEmpty() ? QString() : LocalFiles::readText(lrcFile);
+        if (text.trimmed().isEmpty() && !path.isEmpty())
+            text = LocalFiles::embeddedLyrics(path);
+        if (!text.trimmed().isEmpty()) {
+            StoredLyrics s;
+            s.found = true;
+            (Text::usableLrc(text) ? s.synced : s.plain) = text;
+            if (const QString rf = lrcFile.isEmpty() ? QString() : LocalFiles::findReading(lrcFile); !rf.isEmpty())
+                s.roman = LocalFiles::readText(rf);
+            s.srcDur = t.durationSec;
+            s.provider = QStringLiteral("local");
+            m_shown = QStringLiteral("local");
+            m_requestId = 0;
+            apply(s);
+            return;
+        }
     }
     if (Text::notASong(t, p->url())) {
         m_requestId = 0;
@@ -571,8 +603,9 @@ void LyricsController::apply(const StoredLyrics &s)
                                       [](const LyricLine &l) { return isCredit(l.text); }),
                        m_srcLrc.end());
         // "Artist - Title" banners some providers put first, at 0:00: not part of the song
-        for (int i = 0; i < 3 && !m_srcLrc.isEmpty() && m_srcLrc.first().timeMs <= 2500
-                        && isBannerLine(m_srcLrc.first().text); ++i)
+        // (at 0:00, or later when it is "title - names": some providers stamp it a few seconds in)
+        for (int i = 0; i < 3 && !m_srcLrc.isEmpty()
+                        && isBannerLine(m_srcLrc.first().text, m_srcLrc.first().timeMs > 2500); ++i)
             m_srcLrc.removeFirst();
         if (Text::incompleteLrc(s.synced))
             m_filled = GapFill::fill(m_srcLrc, s.plain);
@@ -850,6 +883,46 @@ QVariantList LyricsController::lineWords() const
     return src >= 0 && src < m_srcText.size() ? m_words.value(m_srcText[src].trimmed()) : QVariantList();
 }
 
+QString LyricsController::playerName() const
+{
+    const MprisPlayer *p = m_watcher.active();
+    if (!p)
+        return {};
+    QString n = p->service().section(QLatin1Char('.'), 3);          // after org.mpris.MediaPlayer2.
+    n = n.section(QLatin1String(".instance"), 0, 0);
+    if (n.startsWith(QLatin1String("plasma-browser-integration")))
+        return QStringLiteral("Browser");
+    return n.isEmpty() ? QString() : n.left(1).toUpper() + n.mid(1);
+}
+
+// a YouTube video's own picture, for when the player gives no cover
+QString LyricsController::thumbUrl() const
+{
+    const MprisPlayer *p = m_watcher.active();
+    if (!p || !p->url().contains(QLatin1String("youtube")))
+        return {};
+    const QString id = Keys::trackId(p->url());
+    return id.size() == 11 ? QStringLiteral("https://i.ytimg.com/vi/%1/hqdefault.jpg").arg(id) : QString();
+}
+
+void LyricsController::setLocalLyrics(bool on)
+{
+    if (on == m_localLyrics)
+        return;
+    m_localLyrics = on;
+    emit localLyricsChanged();
+    if (!m_key.isEmpty()) { m_key.clear(); onTrackChanged(); }   // look again with the new setting
+}
+
+void LyricsController::setLocalLyricsFolder(const QString &f)
+{
+    if (f == m_localFolder)
+        return;
+    m_localFolder = f;
+    emit localLyricsChanged();
+    if (m_localLyrics && !m_key.isEmpty()) { m_key.clear(); onTrackChanged(); }
+}
+
 void LyricsController::setKaraoke(bool on)
 {
     if (on == m_karaoke)
@@ -903,6 +976,7 @@ void LyricsController::updateArt(const QString &url, int tries)
     if (url == m_artUrl)
         return;
     m_artUrl = url;
+    emit artChanged();
     auto set = [this](const QList<QColor> &p) {
         if (p != m_palette) {
             m_palette = p;
@@ -1026,35 +1100,10 @@ void LyricsController::persistRoman()
     m_store.put(m_key, *cur);
 }
 
-// A line that only says the song's title (or "artist - title"), in any script: a banner, not a lyric.
-bool LyricsController::isBannerLine(const QString &line) const
+// A line that only says the song's title (or "artist - title"), in any script: a banner, not a lyric (rules in Text::isBanner).
+bool LyricsController::isBannerLine(const QString &line, bool dashedOnly) const
 {
-    const QString t = line.trimmed();
-    if (Text::norm(t).isEmpty())
-        return false;
-    static const QRegularExpression sep(QStringLiteral(R"(\s+[-–—－:：|｜]\s+)"));
-    const QStringList parts = t.split(sep, Qt::SkipEmptyParts);
-    auto isTitle = [this](const QString &p) {
-        return Text::similarity(p, m_title) >= 0.85 || Text::similarity(p, m_track.title) >= 0.85;
-    };
-    auto isArtist = [this](const QString &p) {
-        return !m_artist.isEmpty() && (Text::similarity(p, m_artist) >= 0.6 || Text::similarity(p, m_track.artist) >= 0.6);
-    };
-    if (parts.size() == 1) {
-        // alone on a line it must be the title itself (a lyric that merely contains the title is a lyric)
-        static const QRegularExpression extra(QStringLiteral(R"(\s*[\(（\[].*[\)）\]]\s*)"));
-        QString bare = parts[0];
-        bare.remove(extra);
-        const QString n = Text::norm(bare);
-        return !n.isEmpty() && (n == Text::norm(m_title) || n == Text::norm(m_track.title)
-                                || (!m_artist.isEmpty() && n == Text::norm(m_artist)));
-    }
-    bool title = false, artist = false;
-    for (const QString &p : parts) {
-        title |= isTitle(p);
-        artist |= isArtist(p);
-    }
-    return title && artist;
+    return Text::isBanner(line, {m_title, m_track.title}, {m_artist, m_track.artist}, dashedOnly);
 }
 
 // Lyrics from the Spotify app come without romanization. Ask NetEase for it in the background, once per song.

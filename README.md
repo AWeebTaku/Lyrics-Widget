@@ -22,10 +22,32 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
   survive rebuilds. Searching from the page understands edits: "Alright by Kendrick Lamar, but ..." finds the original
   song and stretches its timing to the length of the song that is playing (then fine-tune with Fit). The table keeps
   title, artist, length, language and source, so a shared catalogue could be added later.
-- **Karaoke effect** (Settings, Behavior; off by default): the words of the current line light up one by one as they are
+- **Karaoke effect** (Settings, Lyrics, What to show; off by default): the words of the current line light up one by one as they are
   sung, the rest of the line dimmed. Word times come from NetEase, QQ Music and Kugou when they have them (fetched only
   while it is on), else the words are spread over the line. Japanese and Chinese light up one character at a time. The
   library's **Word timing** tab edits the times of any line (stamp each word as it is sung) and they win over the providers.
+- **Media card** (Show: Card on the General page, next to Lyrics and Visualizer; off by default; Settings, **Card** has its look): the cover (sharp,
+  rounded, squircle, circle, vinyl record or CD, with border, glow, tilt, reflection, gray while paused and a spin), title,
+  artist and album (plain, shadow or frosted; long titles scroll), previous / play-pause / next / shuffle / repeat in six button
+  looks, and eleven seek-bar styles with time labels, a hover time, dragging, wheel and double-click seeking. Ten arrangements (classic, mirrored, inline, hero wave, stacked, orbit, poster, slim strip, compact, icon; the layout also places the visualizer behind the text), seven surfaces (color,
+  art backdrop, glass, a liquid-glass shader, atmosphere, solid, with grain, shade and edge), details as a tooltip, a drawer or
+  a flip of the cover, optional online facts (MusicBrainz and Wikipedia, off by default), scroll-to-change-volume, and a pill for
+  Plasma panels. About thirty built-in looks combine them with the visualizer.
+- **Panel pill and popup:** in a Plasma panel the widget can be the card, a small pill that opens the card, or either by
+  the panel's thickness. The pill has its own look (cover shape, border, glow, text, buttons), a small visualizer (moving
+  bars or the live thing), a progress line or ring, buttons, a scrolling title, and opens on click, hover or both; the
+  opened card can be pinned. A card on a vertical panel turns on its side. Copy the card's look to the pill or back with
+  one button.
+- **Lyrics from your own files:** a `.lrc` beside the song file, an optional folder of `.lrc` files, and lyrics stored in
+  MP3 and FLAC files, used before any online lookup (Settings, Sources). A `.romaji.lrc` beside it gives the
+  pronunciation. A `.chapters` or `.cue` file beside the song puts chapter marks on the seek bar.
+- **Your own styles:** visualizers, seek bars and buttons written as QML files, loaded from
+  `~/.local/share/lyric-widget/` (opt-in, not sandboxed; see [docs/custom-styles.md](docs/custom-styles.md)).
+- **Gallery and doctor:** [docs/gallery.md](docs/gallery.md) shows all 36 built-in looks; `bash /usr/share/lyric-widget/doctor.sh`
+  checks cava, the sound server, players, the widget's own files and its recent messages.
+- **More visualizer styles:** terrain, tunnel and plasma (GPU shaders), orbit ring, stereo scope, a style you write yourself as
+  a QML file (opt-in, not sandboxed), mel or linear frequency axis, color by level, glow color, simple rendering, and
+  a live preview in the settings, a CRT oscilloscope and a silk ribbon.
 - **Quiet when there is nothing to show:** "No lyrics found" and similar messages fade away after a few seconds.
 - **Language versions:** when a song exists in several languages under one title (English and Japanese singles), the
   language named in the track or in YouTube's own video title ("-English version-") picks the matching lyrics; a
@@ -36,10 +58,15 @@ A native Plasma widget: QML for the interface, a C++ plugin for everything else.
 - **Text styles:** weights, italic, underline, letter spacing, caps, shadow, outline and a highlight bar.
 - **Other lyrics:** hover buttons (top right) look for the next-best lyrics, kept in your library, and open the library.
 - **Audio visualizer:** a 1:1 embed of *Plasma Audio Visualizer* by Luis Bocanegra with all its settings.
+- **Visualizer styles and effects:** twelve more styles (peak bars, LED meter, mountain, oscilloscope, pixel matrix, floating
+  dots, tech line, radial burst, pulse orb, ribbon, sparkles, gravity sparks) and a GPU "Plasma" style; smoothing, falling peak
+  caps, bass and treble weighting; color modes (palettes, rainbow, rainbow pushed by the treble); a glow; lyrics that swell on
+  the beat, an edge glow with the bass and a glow around the widget; presets (built in and your own, shared as text, random or
+  of the day); reduced motion and a battery saver. Settings, **Visualizer**.
 - **Look-ahead:** lyrics of the next songs in the (shuffled) queue are fetched in advance (Spotify app,
   YouTube Music through a small Chrome extension).
-- **Dynamic:** up to four colours from the album cover, exactly as they are (current line, other lines, and a gradient in
-  the visualizer; black, white and grey covers give those greys), one colour or several; hides the neighbouring lines
+- **Dynamic:** up to four colors from the album cover, exactly as they are (current line, other lines, and a gradient in
+  the visualizer; black, white and gray covers give those greys), one color or several; hides the neighbouring lines
   when the widget is small, fades out when nothing plays or after a set time of pause (the lyrics and visualizer stop with it), pauses all work when a window is full screen, and hides (still following the song) when one is maximized.
 - Per-song sync offsets, layered/overlapping lyrics, size modes (free, fixed, full screen width).
 
@@ -102,14 +129,31 @@ It keeps this source folder. Remove the Chrome extension yourself at `chrome://e
 
 ## Settings
 
-Right-click the widget, **Configure**. Six pages; where a page has both, a **Lyrics | Visualizer** tab splits the two:
+Right-click the widget, **Configure**. Seven pages, one per part of the widget. Every page is a stack of cards (open one to see
+its settings, **Reset** puts a card back to its defaults), has a search box, and shows only the options that apply to what you
+chose (pick the Wave style and the Block options disappear). Each setting has a short line under it saying what it does.
 
-- **General**: show lyrics and the visualizer (side by side), widget size and background, when the widget hides or pauses.
-- **Appearance**: lyric font, sizes, weights, effects (shadow, outline, highlight), colors, cover colors and how they flow (left/right, top/bottom, from or to the center, fill) for lyrics and visualizer; the visualizer's style.
-- **Layout**: lyric position and offset; visualizer size, position, hide when silent.
-- **Behavior**: which lines to show, shift in time, hover buttons; the visualizer's audio input.
-- **Sources**: next songs, Spotify app, YouTube Music (browser menu + extension), other players (any MPRIS player, allowed websites such as Apple Music's web player).
+- **General**: what to show (lyrics, visualizer, card), the widget's size on the desktop, when it hides or pauses, and *Motion and
+  power* (reduced motion, battery saver, simple rendering, dim while paused) for all of it at once.
+- **Lyrics**: what is shown (previous and next lines, romanization, karaoke, swell on the beat), the text, the colors (including
+  colors from the album cover), the effects (shadow, outline, highlight bar), timing and the hover buttons, and the position.
+- **Visualizer**: *Looks* first (36 ready-made, favorites, your own, sharing as text), then the style, the circle, the colors
+  (a palette, a rainbow, or your own color setup), how it reacts to the music, its size in a panel, and its position. A live
+  preview is there when you ask for it. The audio capture (cava) settings are on the next page.
+- **Audio input**: where the sound comes from, what is drawn (frame rate, channels), the level and pitch range, and the equalizer.
+- **Card**: the layout, the background and glow, the cover, the buttons, the seek bar, the title and details, the Poster and Orbit
+  arrangements, the pointer, and (for a panel) the pill. A live preview of the whole card is there when you ask for it. The card
+  places the lyrics and the visualizer; how they look is set on their own pages. With a card on, the hover buttons (other lyrics,
+  lyrics library) and the sync row (−1s … +1s) move to where the layout leaves room, and the page says when the chosen arrangement is
+  too big for the widget's size (Poster and Orbit need roughly 440 x 220 and 340 x 380 px; Slim strip and Inline fit a low widget).
+- **Sources**: lyric files beside your songs, next songs, the Spotify app, YouTube Music (browser extension), other players, and the
+  websites a browser may play music from.
 - **Lyrics library**: get (press again for the next result), edit, retime and save lyrics.
+
+*How the pages are made:* `plasmoid/contents/ui/settings/model.js` lists every setting once (page, card, label, range, when it
+applies). `settings/SettingsPage.qml` draws a page from it, and `node tools/gen-settings.js` writes the thin page files
+(`configGeneral.qml` ...) that Plasma needs. `tests/settings.test.js` checks the model against `config/main.xml` and the generated
+pages, so a setting cannot exist in one place only.
 
 ## How it works
 
@@ -175,7 +219,7 @@ been tested against a live YouTube Music tab yet.
 | No lyrics for a song | `touch ~/.cache/lyric-widget/debug`, restart plasmashell, replay; then `journalctl --user -u plasma-plasmashell -n 300 \| grep -E "netease\|kugou\|publish"` shows each provider's pick |
 | Chrome shows `Song \| YouTube Music` with no artist | install/enable **Plasma Browser Integration** |
 | Wrong Japanese readings | make sure `./setup-romaji.sh` finished (`romanization: ready`); readings come from UtaTen when it has the song |
-| Visualizer blank | check `cava` is installed and audio plays; Settings, Behavior, Visualizer tab |
+| Visualizer blank | check `cava` is installed and audio plays; Settings, Audio input page |
 | See errors | `journalctl --user -b \| grep -i -E "lyric\|org.lyricwidget"` |
 
 ## Known limits

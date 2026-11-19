@@ -7,6 +7,7 @@ import org.kde.plasma.plasmoid
 import "../code/utils.js" as Utils
 import "../code/enum.js" as Enum
 import "../code/drawCanvas.js" as DrawCanvas
+import "../../viz/styles.js" as Styles
 
 Item {
     id: root
@@ -30,6 +31,15 @@ Item {
     required property bool circleModeFill
     required property bool waveform
     property list<int> values
+    property list<int> peaks       // falling caps, same scale as values (VizAnalysis)
+    property real bass: 0          // 0..1
+    property real beat: 0          // 1 at a beat, then falling
+    property bool reduced: false   // no motion that is not the music itself
+    property bool byLevel: false   // colour each bar by how loud it is
+    property bool spin: true        // the orbit ring turns
+    property real ribbonCurve: 1    // how much the ribbons sway
+    property real ribbonFull: 1     // how full they are
+    property bool slow: false      // long silence: repaint twice a second instead of every frame
     property bool debugMode: false
 
     Rectangle {
@@ -66,11 +76,19 @@ Item {
         property int blockHeight: root.blockHeight
         property int blockSpacing: root.blockSpacing
         property int spacing: {
-            if (visualizerStyle === Enum.VisualizerStyles.Wave) {
+            if (Enum.isLineStyle(visualizerStyle)) {
                 return Math.max(1, root.barGap);
             }
             return root.barGap;
         }
+        property var peaks: root.peaks
+        property real bass: root.bass
+        property real beat: root.beat
+        property bool reduced: root.reduced
+        property bool byLevel: root.byLevel
+        property bool spin: root.spin
+        property real ribbonCurve: root.ribbonCurve
+        property real ribbonFull: root.ribbonFull
         property int barCount: root.values.length
         property bool centeredBars: root.centeredBars
         property int waveMode: root.waveMode
@@ -132,7 +150,8 @@ Item {
         width: {
             if (visualizerStyle === Enum.VisualizerStyles.Wave && waveMode === Enum.WaveMode.Square) {
                 return barCount * spacing;
-            } else if (visualizerStyle === Enum.VisualizerStyles.Wave && (waveMode === Enum.WaveMode.Curve || waveMode === Enum.WaveMode.Triangle)) {
+            } else if (Enum.isLineStyle(visualizerStyle) && (visualizerStyle !== Enum.VisualizerStyles.Wave
+                                                          || waveMode === Enum.WaveMode.Curve || waveMode === Enum.WaveMode.Triangle)) {
                 return (barCount - 1) * spacing;
             }
             return barCount * barWidth + ((barCount - 1) * spacing);
@@ -140,7 +159,10 @@ Item {
         height: parent.height
         property bool fixAlign: barWidth % 2 === 0 && centeredBars && visualizerStyle === Enum.VisualizerStyles.Wave && !root.fixVertical
 
-        onValuesChanged: canvas.requestPaint()
+        onValuesChanged: { if (root.slow) slowPaint.start(); else canvas.requestPaint() }
+        Timer { id: slowPaint; interval: 500; onTriggered: canvas.requestPaint() }
+        onVisualizerStyleChanged: canvas.requestPaint()
+        onPeaksChanged: canvas.requestPaint()
 
         onPaint: {
             const ctx = getContext("2d");
@@ -169,6 +191,22 @@ Item {
                 // fill is done per block
                 DrawCanvas.blocks(ctx, canvas, circleMode);
                 break;
+            case Enum.VisualizerStyles.PeakBars: Styles.peakBars(ctx, canvas); break;
+            case Enum.VisualizerStyles.LedMeter: Styles.ledMeter(ctx, canvas); break;
+            case Enum.VisualizerStyles.Mountain: Styles.mountain(ctx, canvas); break;
+            case Enum.VisualizerStyles.Scope: Styles.scope(ctx, canvas); break;
+            case Enum.VisualizerStyles.PixelMatrix: Styles.pixelMatrix(ctx, canvas); break;
+            case Enum.VisualizerStyles.FloatingDots: Styles.floatingDots(ctx, canvas); break;
+            case Enum.VisualizerStyles.TechLine: Styles.techLine(ctx, canvas); break;
+            case Enum.VisualizerStyles.RadialBurst: Styles.radialBurst(ctx, canvas); break;
+            case Enum.VisualizerStyles.PulseOrb: Styles.pulseOrb(ctx, canvas); break;
+            case Enum.VisualizerStyles.Ribbon: Styles.ribbon(ctx, canvas); break;
+            case Enum.VisualizerStyles.Sparkles: Styles.sparkles(ctx, canvas); break;
+            case Enum.VisualizerStyles.GravitySparks: Styles.gravitySparks(ctx, canvas); break;
+            case Enum.VisualizerStyles.OrbitRing: Styles.orbitRing(ctx, canvas); break;
+            case Enum.VisualizerStyles.StereoScope: Styles.stereoScope(ctx, canvas); break;
+            case Enum.VisualizerStyles.CrtScope: Styles.crtScope(ctx, canvas); break;
+            case Enum.VisualizerStyles.SilkRibbon: Styles.silkRibbon(ctx, canvas); break;
             default:
                 ctx.fillStyle = waveFillGradient;
                 ctx.strokeStyle = gradient;

@@ -14,12 +14,12 @@ Item {
     property int gapMs: 2000           // how long the current line stays on screen
     property bool animate: true
     property bool showSides: true
-    property int hAlign: 1             // 0 left, 1 centre, 2 right
+    property int hAlign: 1             // 0 left, 1 center, 2 right
     property int vAlign: 1             // 0 top, 1 middle, 2 bottom
     readonly property int textAlign: hAlign === 0 ? Text.AlignLeft : hAlign === 2 ? Text.AlignRight : Text.AlignHCenter
     property color curColor: cfg.textColor
     property color sideColor: cfg.dimColor
-    property var curColors: []   // several colours for the current line (see StyledText)
+    property var curColors: []   // several colors for the current line (see StyledText)
     property int curFlow: 5
     property real elapsed: -1          // karaoke: ms into the current line, -1 = off
     property int durMs: 3000

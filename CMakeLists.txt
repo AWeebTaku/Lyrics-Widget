@@ -37,6 +37,9 @@ qt_add_qml_module(lyricbackend
     src/ReadingFetcher.h   src/ReadingFetcher.cpp
     src/BrowserQueue.h     src/BrowserQueue.cpp
     src/LyricsController.h src/LyricsController.cpp
+    src/VizCore.h
+    src/VizAnalysis.h      src/VizAnalysis.cpp
+    src/TrackDetails.h     src/TrackDetails.cpp
 )
 target_include_directories(lyricbackend PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_options(lyricbackend PRIVATE -Wall -Wextra)
@@ -53,6 +56,10 @@ install(FILES
 
 # ---- Japanese romanization helper (run by the widget with the Python environment from setup-romaji.sh)
 install(FILES romaji/romaji.py DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget)
+
+# ---- the doctor script (checks what the widget needs) and examples of your own visualizers, seek bars and buttons
+install(PROGRAMS tools/doctor.sh DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget)
+install(DIRECTORY examples/ DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget/examples)
 
 # ---- Chrome extension for the YouTube Music queue (load it unpacked)
 install(DIRECTORY extension/ DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget/extension)
@@ -74,4 +81,17 @@ if(BUILD_TESTS)
   target_include_directories(wordtiming_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
   target_link_libraries(wordtiming_tests PRIVATE Qt6::Core)
   add_test(NAME wordtiming COMMAND wordtiming_tests)
+  add_executable(viz_tests tests/vizanalysis.cpp)
+  target_include_directories(viz_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  add_test(NAME viz COMMAND viz_tests)
+  add_executable(localfiles_tests tests/localfiles.cpp)
+  target_include_directories(localfiles_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  target_link_libraries(localfiles_tests PRIVATE Qt6::Core)
+  add_test(NAME localfiles COMMAND localfiles_tests)
+  find_program(NODE_EXECUTABLE node)
+  if(NODE_EXECUTABLE)
+    add_test(NAME presets COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/presets.test.js)
+    add_test(NAME layouts COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/layouts.test.js)
+    add_test(NAME settings COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/settings.test.js)
+  endif()
 endif()

@@ -237,7 +237,7 @@ Item {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                     opacity: 0.7
-                    text: i18n("When each word of a line lights up in the karaoke effect (Settings, Behavior). Pick a line, then play the song and press Stamp word as each word is sung, or type the times. Kept with the lyrics when you press Save.")
+                    text: i18n("When each word of a line lights up in the karaoke effect (Settings, Lyrics, Lines and timing). Pick a line, then play the song and press Stamp word as each word is sung, or type the times. Kept with the lyrics when you press Save.")
                 }
                 QQC2.ScrollView { // the lines: click one to edit its words
                     Layout.fillWidth: true
