@@ -2,6 +2,7 @@
 // Build and run:  cmake -B build -S . -G Ninja -DBUILD_TESTS=ON && cmake --build build && ctest --test-dir build --output-on-failure
 #include "LrcParser.h"
 #include "Text.h"
+#include "Palette.h"
 
 #include <cstdio>
 
@@ -154,6 +155,22 @@ int main()
         CHECK(!isBanner(QStringLiteral("Anh \u0111\u1EE3i em m\u00E3i - nh\u01B0ng em \u0111\u00E3 ra \u0111i r\u1ED3i"), titles, noArtist)); // a lyric with a dash
         CHECK(!isBanner(QStringLiteral("Ai \u0110\u01B0a Em V\u1EC1, anh \u0111\u1EE3i em ngay \u0111\u00E2y"), titles, noArtist));         // a lyric that contains the title
         CHECK(isBanner(QStringLiteral("Loco Papi - Sevenn"), {QStringLiteral("Loco Papi")}, {QStringLiteral("Sevenn")}));
+    }
+
+    // the cover colors do not depend on one picture: the shown one first, the other as a fallback, nothing twice
+    {
+        const QString art = QStringLiteral("file:///tmp/plasma-browser-integration_artwork_X.jpg"), thumb = QStringLiteral("https://i.ytimg.com/vi/ID/hqdefault.jpg");
+        CHECK(Palette::sources(art, thumb, false) == QStringList({art, thumb}));
+        CHECK(Palette::sources(art, thumb, true) == QStringList({thumb, art}));          // the widget shows the video's own picture
+        CHECK(Palette::sources(QString(), thumb, false) == QStringList({thumb}));        // the player gave no cover
+        CHECK(Palette::sources(art, QString(), true) == QStringList({art}));             // not a video: the player's cover
+        CHECK(Palette::sources(art, art, false) == QStringList({art}) && Palette::sources(QString(), QString(), true).isEmpty());
+        // the colors of a picture: a plain red cover gives red, and a cover with no hue gives its greys
+        QImage red(32, 32, QImage::Format_RGB32); red.fill(QColor(210, 30, 40));
+        const auto pr = Palette::of(red);
+        CHECK(!pr.isEmpty() && pr.first().hue() < 20 || pr.first().hue() > 340);
+        QImage grey(32, 32, QImage::Format_RGB32); grey.fill(QColor(128, 128, 128));
+        CHECK(!Palette::of(grey).isEmpty());
     }
 
     std::printf(failures ? "%d check(s) failed\n" : "all checks passed\n", failures);

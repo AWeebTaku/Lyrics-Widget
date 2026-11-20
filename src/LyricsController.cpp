@@ -971,46 +971,86 @@ void LyricsController::noteWin(const Track &t, const LyricsResult &r)
         m_store.addWin(Text::norm(cands.first().artist), r.provider);
 }
 
-void LyricsController::updateArt(const QString &url, int tries)
+void LyricsController::updateArt(const QString &url)
 {
-    if (url == m_artUrl)
-        return;
-    m_artUrl = url;
-    emit artChanged();
-    auto set = [this](const QList<QColor> &p) {
-        if (p != m_palette) {
-            m_palette = p;
-            emit accentChanged();
-        }
-    };
-    if (url.isEmpty()) {
-        set({});
+    if (url != m_artUrl) {
+        m_artUrl = url;
+        emit artChanged();
+    }
+    refreshPalette();   // also for the same cover: the video's picture changes with the song
+}
+
+void LyricsController::setPalette(const QList<QColor> &p)
+{
+    if (p != m_palette) {
+        m_palette = p;
+        emit accentChanged();
+    }
+}
+
+// The colors of the cover. They come from the picture the widget shows (see Palette::sources), and from the other one when that
+// cannot be read, with patient retries: the browser may announce its cover file before it has written it, so one failed look
+// must not leave the song without colors until the next pause.
+void LyricsController::refreshPalette()
+{
+    if (m_idle || (m_artUrl.isEmpty() && thumbUrl().isEmpty())) {
+        m_paletteKey.clear();
+        m_paletteBusy = false;
+        ++m_paletteGen;
+        setPalette({});
         return;
     }
+    const QStringList sources = Palette::sources(m_artUrl, thumbUrl(), m_preferThumb);
+    const QString key = sources.join(QLatin1Char('|'));
+    if (key == m_paletteKey && (!m_palette.isEmpty() || m_paletteBusy))
+        return;   // the same pictures: the colors are there, or being looked for
+    m_paletteKey = key;
+    m_paletteBusy = true;
+    tryPalette(sources, 0, 0, ++m_paletteGen);
+}
+
+void LyricsController::tryPalette(const QStringList &sources, int index, int round, quint64 gen)
+{
+    if (gen != m_paletteGen)
+        return;   // another song started meanwhile
+    auto failed = [this, sources, index, round, gen] {
+        if (gen != m_paletteGen)
+            return;
+        if (index + 1 < sources.size()) {
+            tryPalette(sources, index + 1, round, gen);   // the other picture
+        } else if (round < 10) {
+            QTimer::singleShot(400 + 300 * round, this, [this, sources, round, gen] { tryPalette(sources, 0, round + 1, gen); });
+        } else {
+            m_paletteBusy = false;
+            setPalette({});
+        }
+    };
+    const QString url = sources.at(index);
     if (url.startsWith(QLatin1String("file:"))) {
         const QImage img(QUrl(url).toLocalFile());
-        // the browser may still be writing the file when it announces it: look again shortly instead of
-        // settling on "no colours" (which shows the visualizer's fallback colours) for the whole song
-        if (img.isNull() && tries < 8)
-            QTimer::singleShot(300, this, [this, url, tries] {
-                if (url == m_artUrl) {
-                    m_artUrl.clear();
-                    updateArt(url, tries + 1);
-                }
-            });
-        set(img.isNull() ? QList<QColor>() : Palette::of(img));
+        if (img.isNull()) {
+            failed();
+        } else {
+            m_paletteBusy = false;
+            setPalette(Palette::of(img));
+        }
         return;
     }
     QNetworkReply *rep = m_artNam.get(QNetworkRequest(QUrl(url)));
     rep->setProperty("url", url);
-    connect(rep, &QNetworkReply::finished, this, [this, rep, set, url] {
+    connect(rep, &QNetworkReply::finished, this, [this, rep, gen, failed] {
         rep->deleteLater();
-        if (url != m_artUrl) // another song started meanwhile
+        if (gen != m_paletteGen)
             return;
         QImage img;
         if (rep->error() == QNetworkReply::NoError)
             img.loadFromData(rep->readAll());
-        set(img.isNull() ? QList<QColor>() : Palette::of(img));
+        if (img.isNull()) {
+            failed();
+        } else {
+            m_paletteBusy = false;
+            setPalette(Palette::of(img));
+        }
     });
 }
 

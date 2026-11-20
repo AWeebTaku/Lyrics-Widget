@@ -39,6 +39,8 @@ class LyricsController : public QObject
     Q_PROPERTY(bool localLyrics READ localLyrics WRITE setLocalLyrics NOTIFY localLyricsChanged)   // read lyric files and song tags
     Q_PROPERTY(QString localLyricsFolder READ localLyricsFolder WRITE setLocalLyricsFolder NOTIFY localLyricsChanged)
     Q_PROPERTY(QString artUrl READ artUrl NOTIFY artChanged)
+    // take the colors from the video's own picture first (the widget shows that one instead of the player's cover)
+    Q_PROPERTY(bool preferThumbnail READ preferThumbnail WRITE setPreferThumbnail NOTIFY preferThumbnailChanged)
     Q_PROPERTY(double lengthSec READ lengthSec NOTIFY trackInfoChanged)
     Q_PROPERTY(bool hasPlayer READ hasPlayer NOTIFY trackInfoChanged)
     Q_PROPERTY(double volume READ volume WRITE setVolume NOTIFY controlsChanged)   // 0..1
@@ -88,6 +90,8 @@ public:
     QString artist() const { return m_artist; }
     QString album() const { const MprisPlayer *p = m_watcher.active(); return p ? p->album() : QString(); }
     QString artUrl() const { return m_artUrl; }
+    bool preferThumbnail() const { return m_preferThumb; }
+    void setPreferThumbnail(bool on) { if (on == m_preferThumb) return; m_preferThumb = on; emit preferThumbnailChanged(); refreshPalette(); }
     QString playerName() const;
     int playerCount() const { return m_watcher.count(); }
     QString thumbUrl() const;
@@ -156,6 +160,7 @@ public:
 signals:
     void trackInfoChanged();
     void artChanged();
+    void preferThumbnailChanged();
     void chaptersChanged();
     void localLyricsChanged();
     void controlsChanged();
@@ -186,7 +191,10 @@ private:
     void schedulePrefetch();
     void prefetchNext();
     void romanizeKanji(bool force = false);
-    void updateArt(const QString &url, int tries = 0);
+    void updateArt(const QString &url);
+    void refreshPalette();
+    void tryPalette(const QStringList &sources, int index, int round, quint64 gen);
+    void setPalette(const QList<QColor> &p);
     void startLookup();
     void watchDb();
     void checkLibrary();
@@ -246,6 +254,10 @@ private:
     QString m_artUrl;
     QHash<QString, QString> m_videoTitles; // YouTube video id -> its title
     QList<QColor> m_palette;
+    QString m_paletteKey;          // the pictures the colors were asked for
+    quint64 m_paletteGen = 0;      // a newer request makes older answers obsolete
+    bool m_paletteBusy = false;
+    bool m_preferThumb = false;
     double m_timeScale = 1; // playing length / matched length, only for sped-up / slowed uploads
     bool m_synced = false;
     int m_index = -1;
