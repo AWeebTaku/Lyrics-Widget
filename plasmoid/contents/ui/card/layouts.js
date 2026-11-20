@@ -222,11 +222,20 @@ function parseEdits(text) {
 }
 function editsFor(edits, mode) { return parseEdits(edits)[String(mode === 1 ? 0 : mode)] || {} }
 
+// where the corner buttons and the sync row go when a layout leaves them out and the user turns them on
+function cornerRects(W, H) { return { tools: r(W - 32, 4, 26, 56), nudge: r(0, H - 26, W, 22) } }
+// where a part sits in a layout before any edit, at the layout's own size: the origin the editor measures from
+function baseRect(mode, id) {
+    const n = naturalSize(mode), p = parts.find(q => q.id === id)
+    if (!p || !p.key) return null
+    return layout(mode, n[0], n[1], 96, 14, {})[p.key] || cornerRects(n[0], n[1])[id] || null
+}
+
 function applyEdits(o, e, W, H) {
     o.hidden = {}
     o.opacity = {}
     o.infoSize = 0
-    const corner = { tools: r(W - 32, 4, 26, 56), nudge: r(0, H - 26, W, 22) }
+    const corner = cornerRects(W, H)
     for (const part of parts) {
         const ed = e[part.id]
         if (!ed) continue

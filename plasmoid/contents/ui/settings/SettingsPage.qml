@@ -113,11 +113,6 @@ Item {
             opacity: T.muted
             Layout.alignment: Qt.AlignHCenter
         }
-        QQC2.Label {
-            text: i18n("Applies to this widget only.")
-            opacity: T.muted; font.pixelSize: Math.round(Kirigami.Theme.defaultFont.pixelSize * T.smallScale)
-            wrapMode: Text.WordWrap; Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.largeSpacing
-        }
     }
     // is anything shown while searching? (the sections hide themselves when nothing in them matches)
     readonly property bool hasAny: {

@@ -6,8 +6,10 @@ import "tokens.js" as T
 import "../card/layouts.js" as Layouts
 
 // Edit a layout: every part of it (the background, the cover, the title, the buttons, the seek bar, the clock, the lyrics, the
-// visualizer, the corner buttons and the sync row) can be turned off, moved, resized and made see-through. The edits belong to
-// the layout being edited, are stored in cfg_layoutEdits (JSON text) and are differences from where the layout puts the part.
+// visualizer, the corner buttons and the sync row) can be turned off, moved, resized and made see-through. The page shows each
+// part's X, Y, Width and Height in pixels on the card's own grid (snapped to the grid step). The edits belong to the layout
+// being edited, are stored in cfg_layoutEdits (JSON text) and are differences from where the layout puts the part, so a part
+// keeps its place relative to the layout when the card is resized.
 ColumnLayout {
     id: ed
     required property var kcm
@@ -15,6 +17,22 @@ ColumnLayout {
     readonly property var layoutIds: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     readonly property var list: Layouts.partsFor(mode)
     spacing: Kirigami.Units.largeSpacing
+    property int snap: 4                       // the grid step in px: typed and stepped values land on multiples of it
+    readonly property var snaps: [1, 2, 4, 8, 16]
+
+    // a number box in px (or another unit) with the unit in the text, so no value is ambiguous
+    component PxBox: QQC2.SpinBox {
+        property string unit: " px"
+        editable: true
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+        textFromValue: (v) => String(v) + unit
+        valueFromText: (t) => { const n = parseInt(t); return isNaN(n) ? 0 : n }
+    }
+    // a small name above the unit for one number
+    component Cap: QQC2.Label {
+        opacity: T.muted
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+    }
 
     function edit(id, field, value) { kcm.cfg_layoutEdits = Layouts.setEdit(kcm.cfg_layoutEdits, mode, id, field, value) }
     function layoutName(m) {
@@ -33,8 +51,17 @@ ColumnLayout {
             onActivated: ed.mode = ed.layoutIds[currentIndex]
         }
     }
+    RowLayout {
+        QQC2.Label { text: i18n("Grid step"); Layout.preferredWidth: Kirigami.Units.gridUnit * T.labelUnits }
+        QQC2.ComboBox {
+            implicitContentWidthPolicy: QQC2.ComboBox.WidestText
+            model: ed.snaps.map(v => v + " px")
+            currentIndex: Math.max(0, ed.snaps.indexOf(ed.snap))
+            onActivated: ed.snap = ed.snaps[currentIndex]
+        }
+    }
     QQC2.Label {
-        text: i18n("Moves and sizes are in pixels.")
+        text: i18n("Pixels from the card's top left. Values snap to the grid step.")
         opacity: T.muted; wrapMode: Text.WordWrap; font: Kirigami.Theme.smallFont
         Layout.fillWidth: true; Layout.maximumWidth: Kirigami.Units.gridUnit * 36
     }
@@ -65,6 +92,10 @@ ColumnLayout {
             readonly property var n: Layouts.naturalSize(ed.mode)
             readonly property var rect: modelData.key ? Layouts.layout(ed.mode, n[0], n[1], 96, 14, { edits: ed.kcm.cfg_layoutEdits })[modelData.key] : null
             // a part the layout leaves out starts off; it can be turned on (the corner buttons, say)
+            readonly property var base: Layouts.baseRect(ed.mode, modelData.id)
+            // absolute edits: the stored value is the difference from the layout's own place for the part
+            function snapped(v) { return Math.round(v / ed.snap) * ed.snap }
+            function move(field, abs, from) { ed.edit(modelData.id, field, snapped(abs) - from) }
             readonly property bool hasBase: modelData.flag || !!Layouts.layout(ed.mode, n[0], n[1], 96, 14, {})[modelData.key]
             readonly property bool on: e.show === false ? false : (hasBase || e.show === true)
             Layout.fillWidth: true
@@ -85,34 +116,34 @@ ColumnLayout {
                     QQC2.Label { text: box.modelData.name; font.weight: Font.DemiBold; Layout.fillWidth: true }
                     QQC2.Button { text: i18n("Only this"); flat: true; font: Kirigami.Theme.smallFont; onClicked: ed.setAllShow(box.modelData.id)
                                   QQC2.ToolTip.text: i18n("Show this part and hide all the others"); QQC2.ToolTip.visible: hovered }
-                    QQC2.Label {
-                        visible: box.on && !!box.rect
-                        text: box.rect ? i18n("now at %1, %2 · %3 × %4", box.rect.x, box.rect.y, box.rect.w, box.rect.h) : ""
-                        opacity: T.muted; font: Kirigami.Theme.smallFont
-                    }
                 }
                 GridLayout {
-                    visible: box.on && !box.modelData.flag
+                    visible: box.on && !box.modelData.flag && !!box.rect
                     enabled: box.on
                     columns: 4
                     columnSpacing: Kirigami.Units.largeSpacing
                     rowSpacing: Kirigami.Units.smallSpacing
                     Layout.leftMargin: Kirigami.Units.gridUnit * 2.5
-                    QQC2.Label { text: i18n("Right (px)"); opacity: T.muted }
-                    QQC2.SpinBox { from: -3000; to: 3000; stepSize: 2; editable: true; value: box.e.dx ?? 0; onValueModified: ed.edit(box.modelData.id, "dx", value) }
-                    QQC2.Label { text: i18n("Down (px)"); opacity: T.muted }
-                    QQC2.SpinBox { from: -3000; to: 3000; stepSize: 2; editable: true; value: box.e.dy ?? 0; onValueModified: ed.edit(box.modelData.id, "dy", value) }
-                    QQC2.Label { visible: box.modelData.size; text: i18n("Wider (px)"); opacity: T.muted }
-                    QQC2.SpinBox { visible: box.modelData.size; from: -3000; to: 3000; stepSize: 2; editable: true; value: box.e.dw ?? 0; onValueModified: ed.edit(box.modelData.id, "dw", value) }
-                    QQC2.Label { visible: box.modelData.size; text: i18n("Taller (px)"); opacity: T.muted }
-                    QQC2.SpinBox { visible: box.modelData.size; from: -3000; to: 3000; stepSize: 2; editable: true; value: box.e.dh ?? 0; onValueModified: ed.edit(box.modelData.id, "dh", value) }
-                    QQC2.Label { visible: box.modelData.opacity; text: i18n("Opacity (%)"); opacity: T.muted }
-                    QQC2.SpinBox { visible: box.modelData.opacity; from: 0; to: 100; stepSize: 5; editable: true; value: box.e.opacity ?? 100; onValueModified: ed.edit(box.modelData.id, "opacity", value) }
-                    QQC2.Label { visible: !!box.modelData.text; text: i18n("Title size (px)"); opacity: T.muted }
-                    QQC2.SpinBox {
+                    Cap { text: i18n("X") }
+                    PxBox { from: -3000; to: 3000; stepSize: ed.snap; value: box.rect ? box.rect.x : 0
+                            onValueModified: box.move("dx", value, box.base ? box.base.x : 0) }
+                    Cap { text: i18n("Y") }
+                    PxBox { from: -3000; to: 3000; stepSize: ed.snap; value: box.rect ? box.rect.y : 0
+                            onValueModified: box.move("dy", value, box.base ? box.base.y : 0) }
+                    Cap { visible: box.modelData.size; text: i18n("Width") }
+                    PxBox { visible: box.modelData.size; from: 8; to: 6000; stepSize: ed.snap; value: box.rect ? box.rect.w : 0
+                            onValueModified: box.move("dw", value, box.base ? box.base.w : 0) }
+                    Cap { visible: box.modelData.size; text: i18n("Height") }
+                    PxBox { visible: box.modelData.size; from: 8; to: 6000; stepSize: ed.snap; value: box.rect ? box.rect.h : 0
+                            onValueModified: box.move("dh", value, box.base ? box.base.h : 0) }
+                    Cap { visible: box.modelData.opacity; text: i18n("Opacity") }
+                    PxBox { visible: box.modelData.opacity; unit: " %"; from: 0; to: 100; stepSize: 5; value: box.e.opacity ?? 100
+                            onValueModified: ed.edit(box.modelData.id, "opacity", value) }
+                    Cap { visible: !!box.modelData.text; text: i18n("Title size") }
+                    PxBox {
                         visible: !!box.modelData.text
-                        from: 0; to: 96; editable: true; value: box.e.size ?? 0
-                        textFromValue: v => v === 0 ? i18n("As set") : String(v)
+                        from: 0; to: 96; value: box.e.size ?? 0
+                        textFromValue: (v) => v === 0 ? i18n("As set") : v + " px"
                         onValueModified: ed.edit(box.modelData.id, "size", value)
                     }
                     QQC2.Button {

@@ -1,7 +1,7 @@
 // Checks for plasmoid/contents/ui/card/layouts.js. Run: node tests/layouts.test.js
 const fs = require("fs");
 const src = fs.readFileSync(__dirname + "/../plasmoid/contents/ui/card/layouts.js", "utf8").replace(".pragma library", "");
-const L = new Function(src + ";return {modes, layout, luminance, naturalSize, needsResize, minSize, sizeText, partsFor, setEdit, getEdit, resetEdits, editsFor, vizBase}")();
+const L = new Function(src + ";return {modes, layout, luminance, naturalSize, needsResize, minSize, sizeText, partsFor, setEdit, getEdit, resetEdits, editsFor, vizBase, baseRect}")();
 let failures = 0;
 function check(c, msg) { if (!c) { ++failures; console.log("FAIL", msg); } }
 const inside = (r, W, H) => !r || (r.x >= 0 && r.y >= 0 && r.w >= 0 && r.h >= 0 && r.x + r.w <= W && r.y + r.h <= H);
@@ -135,6 +135,17 @@ check(!L.needsResize(8, 0, 0), "a free widget is never too small");
     check(L.partsFor(11).map(p => p.id).join() === "surface,art,ring,viz,tools,nudge", "the icon offers its cover and its progress ring as separate parts");
     check(L.partsFor(2).some(p => p.id === "controls") && L.partsFor(2).some(p => p.id === "lyrics"), "classic offers its buttons and its lyrics");
     check(L.partsFor(8).some(p => p.id === "clock"), "poster offers its clock");
+    // the editor shows absolute positions: base rect + the stored difference is where the part now is
+    for (const m of [2, 6, 11]) {
+        const [w, h] = L.naturalSize(m);
+        for (const id of L.partsFor(m).filter(p => p.key && L.layout(m, w, h, 96, 14, {})[p.key]).map(p => p.id)) {
+            const b = L.baseRect(m, id), key = L.partsFor(m).find(p => p.id === id).key;
+            check(b && b.w > 0, `layout ${m}: ${id} has a base rect`);
+            const o = L.layout(m, w, h, 96, 14, { edits: L.setEdit(L.setEdit("{}", m, id, "dx", 12), m, id, "dy", -6) });
+            check(o[key].x === b.x + 12 && o[key].y === b.y - 6, `layout ${m}: ${id} moves by the stored difference from its base rect`);
+        }
+    }
+    check(L.baseRect(11, "tools") !== null, "the icon's corner buttons have a place to start from when turned on");
 }
 
 if (failures) process.exit(1);

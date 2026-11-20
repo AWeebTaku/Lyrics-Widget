@@ -17,6 +17,7 @@ ColumnLayout {
     required property var kcm
     readonly property real labelWidth: Kirigami.Units.gridUnit * T.labelUnits
     readonly property bool wide: ["presets", "colors", "eq", "spotify", "browser", "sites", "info", "layoutedit"].indexOf(row.type) >= 0
+    readonly property bool inlineHint: !wide && row.type !== "text"     // the hint follows the control on its line
     readonly property var value: row.key ? kcm["cfg_" + row.key] : undefined
     spacing: 2
 
@@ -57,6 +58,16 @@ ColumnLayout {
                 return null
             }
         }
+        QQC2.Label {
+            visible: !!f.row.hint && f.inlineHint
+            text: f.row.hint ?? ""
+            wrapMode: Text.WordWrap
+            opacity: T.muted
+            font: Kirigami.Theme.smallFont
+            Layout.alignment: Qt.AlignVCenter
+            Layout.fillWidth: true
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 24
+        }
     }
     // ---- the larger controls take the whole width, under their name
     QQC2.Label { visible: f.wide && !!f.row.label; text: f.row.label ?? ""; font.weight: Font.DemiBold }
@@ -79,7 +90,7 @@ ColumnLayout {
         }
     }
     QQC2.Label {
-        visible: !!f.row.hint
+        visible: !!f.row.hint && !f.inlineHint
         text: f.row.hint ?? ""
         wrapMode: Text.WordWrap
         opacity: T.muted
