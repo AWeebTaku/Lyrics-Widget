@@ -6,7 +6,8 @@ const units = 62
 function grow(win, gridUnit) {
     if (!win)
         return
-    const want = gridUnit * units
+    const screenW = win.screen ? win.screen.desktopAvailableWidth * 0.95 : 1e9
+    const want = Math.min(gridUnit * units, screenW)
     const root = win.contentItem && win.contentItem.children.length > 0 ? win.contentItem.children[0] : null
     if (root && root.implicitWidth < want)
         root.implicitWidth = want

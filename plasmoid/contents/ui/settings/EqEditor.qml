@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 
 // The equalizer: one slider per band, from the lowest pitch on the left to the highest on the right.
 // `bands` is a list of strings ("1.0" = unchanged); an edit is handed back as a new list (never edited in place).
@@ -36,7 +37,7 @@ ColumnLayout {
                     Layout.alignment: Qt.AlignHCenter
                     onMoved: eq.setBand(col.index, value)
                 }
-                QQC2.Label { text: eq.freqLabel(col.index); font: Kirigami.Theme.smallFont; opacity: 0.6; Layout.alignment: Qt.AlignHCenter }
+                QQC2.Label { text: eq.freqLabel(col.index); font: Kirigami.Theme.smallFont; opacity: T.muted; Layout.alignment: Qt.AlignHCenter }
             }
         }
     }

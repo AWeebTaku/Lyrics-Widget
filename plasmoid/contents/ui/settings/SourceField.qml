@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 import "../audioviz/components"
 
 // The audio capture source: type a name, or press the button to see what is available. The list is only fetched when asked
@@ -33,10 +34,10 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.maximumWidth: Kirigami.Units.gridUnit * 36
         implicitHeight: Kirigami.Units.gridUnit * 9
-        radius: 6
-        color: Qt.alpha(Kirigami.Theme.textColor, 0.05)
-        border.width: 1; border.color: Qt.alpha(Kirigami.Theme.textColor, 0.12)
-        QQC2.Label { visible: src.names.length === 0; anchors.centerIn: parent; text: i18n("Looking…"); opacity: 0.6 }
+        radius: T.radius
+        color: Qt.alpha(Kirigami.Theme.textColor, T.plate)
+        border.width: 1; border.color: Qt.alpha(Kirigami.Theme.textColor, T.hairline)
+        QQC2.Label { visible: src.names.length === 0; anchors.centerIn: parent; text: i18n("Looking…"); opacity: T.muted }
         ListView {
             anchors.fill: parent; anchors.margins: 4
             clip: true

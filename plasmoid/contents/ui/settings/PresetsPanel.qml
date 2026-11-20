@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 import org.kde.plasma.plasmoid
 import "../viz/presets.js" as Presets
 
@@ -23,7 +24,7 @@ ColumnLayout {
             Plasmoid.configuration[k] = v
         }
         Plasmoid.configuration.writeConfig()
-        note = i18n("Applied \"%1\". Close and reopen Settings to see every value on the other pages.", p.name)
+        note = i18n("Applied \"%1\".", p.name)
     }
     function currentSettings() {
         const o = {}
@@ -54,17 +55,12 @@ ColumnLayout {
     QQC2.Label {
         visible: text !== ""
         text: panel.current ? (panel.current.about ?? "") : ""
-        opacity: 0.75; wrapMode: Text.WordWrap
+        opacity: T.muted; wrapMode: Text.WordWrap
         Layout.fillWidth: true; Layout.maximumWidth: Kirigami.Units.gridUnit * 34
     }
     RowLayout {
         QQC2.Button { text: i18n("Random look"); icon.name: "roll"; onClicked: panel.apply(Presets.randomPick(panel.list, panel.current ? panel.current.name : "")) }
         QQC2.Button { text: i18n("Look of the day"); icon.name: "view-calendar-day"; onClicked: panel.apply(Presets.dailyPick(panel.list, new Date().toISOString().slice(0, 10))) }
-    }
-    QQC2.Label {
-        text: i18n("A look sets the style, sizes, reactions, color mode and effects together, and is applied to the widget right away.")
-        opacity: 0.6; wrapMode: Text.WordWrap; font: Kirigami.Theme.smallFont
-        Layout.fillWidth: true; Layout.maximumWidth: Kirigami.Units.gridUnit * 34
     }
     Kirigami.Separator { Layout.fillWidth: true }
     QQC2.Label { text: i18n("Save the current settings as a look"); font.weight: Font.DemiBold }
@@ -79,7 +75,7 @@ ColumnLayout {
             }
         }
     }
-    QQC2.Label { visible: panel.note !== ""; text: panel.note; wrapMode: Text.WordWrap; Layout.fillWidth: true; opacity: 0.85 }
+    QQC2.Label { visible: panel.note !== ""; text: panel.note; wrapMode: Text.WordWrap; Layout.fillWidth: true; opacity: T.muted }
     QQC2.Label { text: i18n("Share a look as text"); font.weight: Font.DemiBold }
     QQC2.TextArea {
         id: share
@@ -87,7 +83,7 @@ ColumnLayout {
         Layout.preferredHeight: Kirigami.Units.gridUnit * 5
         wrapMode: TextEdit.WrapAnywhere
         font.family: "monospace"
-        placeholderText: i18n("Export fills this box; paste someone else's look here and press Import.")
+        placeholderText: i18n("Paste a look here to import it")
     }
     RowLayout {
         QQC2.Button {

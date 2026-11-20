@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 import "../audioviz/code/globals.js" as Globals
 import "../audioviz/code/utils.js" as Utils
 
@@ -72,7 +73,7 @@ ColumnLayout {
                 required property string modelData
                 required property int index
                 width: Kirigami.Units.gridUnit * 2; height: width
-                radius: 5
+                radius: T.radiusSmall
                 color: modelData
                 border.width: 1; border.color: Qt.alpha(Kirigami.Theme.textColor, 0.35)
                 TapHandler { onTapped: pop.open() }

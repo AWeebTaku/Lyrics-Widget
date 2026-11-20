@@ -5,7 +5,7 @@ import org.kde.kcmutils as KCM
 import "wide.js" as Wide
 import "settings"
 
-// Audio input: Where the visualizer hears the music from, and how it reads it.
+// Audio input: Where the sound comes from.
 KCM.SimpleKCM {
     id: page
     // a wide settings window; the page may not be in its window yet when it is created

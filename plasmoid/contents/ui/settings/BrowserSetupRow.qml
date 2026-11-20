@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 import org.lyricwidget
 
 // Installing the small browser extension that sends the YouTube Music queue to this widget.
@@ -25,7 +26,7 @@ ColumnLayout {
         visible: false
         opacity: 0.8; wrapMode: Text.WordWrap
         Layout.fillWidth: true; Layout.maximumWidth: Kirigami.Units.gridUnit * 32
-        text: i18n("If the browser did not open its extensions page, paste this into its address bar (it is on your clipboard): %1", col.chosen ? col.chosen.scheme + "://extensions" : "")
+        text: i18n("Paste into the address bar: %1", col.chosen ? col.chosen.scheme + "://extensions" : "")
     }
     RowLayout {
         QQC2.Label { text: i18n("Then choose this folder:") }
@@ -33,8 +34,8 @@ ColumnLayout {
         QQC2.Button { text: i18n("Show the folder"); icon.name: "folder-open"; onClicked: setup.openFolder() }
     }
     QQC2.Label {
-        text: i18n("In the extensions page: turn on Developer mode, click Load unpacked, press Ctrl+L and paste the path.")
-        opacity: 0.6; wrapMode: Text.WordWrap; font: Kirigami.Theme.smallFont
+        text: i18n("Developer mode, Load unpacked, paste the path.")
+        opacity: T.muted; wrapMode: Text.WordWrap; font: Kirigami.Theme.smallFont
         Layout.fillWidth: true; Layout.maximumWidth: Kirigami.Units.gridUnit * 32
     }
 }

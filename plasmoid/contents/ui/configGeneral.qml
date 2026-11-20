@@ -5,7 +5,7 @@ import org.kde.kcmutils as KCM
 import "wide.js" as Wide
 import "settings"
 
-// General: What the widget shows, its size, and when it rests.
+// General: What shows, its size, when it rests.
 KCM.SimpleKCM {
     id: page
     // a wide settings window; the page may not be in its window yet when it is created

@@ -2,13 +2,17 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.plasmoid
 import "model.js" as Model
+import "tokens.js" as T
 
-// A group of settings on a rounded card with a heading. It opens and closes; while searching it shows what matches.
-Rectangle {
+// A group of settings: a title with a line of what it is for, then the rows. It opens and closes; while searching it shows what
+// matches. Groups are told apart by a hairline, not boxed.
+Item {
     id: card
     required property var section
     required property var kcm
+    property bool first: false
     property string query: ""
     property bool open: section.open === true
     readonly property bool searching: query !== ""
@@ -36,47 +40,64 @@ Rectangle {
 
     visible: count > 0
     Layout.fillWidth: true
-    implicitHeight: col.implicitHeight + 2 * Kirigami.Units.largeSpacing
-    radius: Kirigami.Units.gridUnit * 0.8
-    color: Qt.alpha(Kirigami.Theme.textColor, 0.045)
-    border.width: 1
-    border.color: Qt.alpha(Kirigami.Theme.textColor, 0.09)
+    implicitHeight: col.implicitHeight
 
+    Rectangle {     // the hairline between groups
+        visible: !card.first
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        height: 1
+        color: Qt.alpha(Kirigami.Theme.textColor, T.hairline)
+    }
     ColumnLayout {
         id: col
-        anchors { left: parent.left; right: parent.right; top: parent.top; margins: Kirigami.Units.largeSpacing }
+        anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: card.first ? 0 : Kirigami.Units.largeSpacing }
         spacing: Kirigami.Units.largeSpacing
 
-        RowLayout {
+        // ---- the heading
+        Item {
             Layout.fillWidth: true
-            spacing: Kirigami.Units.largeSpacing
-            Kirigami.Icon {
-                source: card.open || card.searching ? "arrow-down" : "arrow-right"
-                implicitWidth: Kirigami.Units.iconSizes.small; implicitHeight: implicitWidth
-                opacity: 0.7
+            implicitHeight: head.implicitHeight + Kirigami.Units.smallSpacing
+            Rectangle {
+                anchors.fill: parent
+                radius: T.radiusSmall
+                color: Qt.alpha(Kirigami.Theme.textColor, T.plateHover)
+                visible: headHover.hovered
             }
-            ColumnLayout {
-                spacing: 0
-                Layout.fillWidth: true
-                QQC2.Label { text: card.section.title; font.weight: Font.DemiBold; font.pixelSize: Math.round(Kirigami.Theme.defaultFont.pixelSize * 1.15) }
-                QQC2.Label { text: card.section.desc ?? ""; visible: text !== ""; opacity: 0.62; wrapMode: Text.WordWrap; Layout.fillWidth: true; font: Kirigami.Theme.smallFont }
-            }
-            QQC2.ToolButton {
-                visible: (card.open || card.searching) && card.resettable
-                icon.name: "edit-undo"
-                text: i18n("Reset")
-                display: QQC2.AbstractButton.TextBesideIcon
-                font: Kirigami.Theme.smallFont
-                QQC2.ToolTip.text: i18n("Put every setting in this group back to its default")
-                QQC2.ToolTip.visible: hovered
-                onClicked: card.reset()
-            }
+            HoverHandler { id: headHover }
             TapHandler { onTapped: card.open = !card.open }
+            RowLayout {
+                id: head
+                anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+                spacing: Kirigami.Units.largeSpacing
+                Kirigami.Icon {
+                    source: card.open || card.searching ? "arrow-down" : "arrow-right"
+                    implicitWidth: Kirigami.Units.iconSizes.small; implicitHeight: implicitWidth
+                    Layout.leftMargin: Kirigami.Units.smallSpacing
+                }
+                ColumnLayout {
+                    spacing: 0
+                    Layout.fillWidth: true
+                    QQC2.Label { text: card.section.title; font.weight: Font.DemiBold; font.pixelSize: Math.round(Kirigami.Theme.defaultFont.pixelSize * T.sectionScale) }
+                    QQC2.Label { text: card.section.desc ?? ""; visible: text !== ""; opacity: T.muted; wrapMode: Text.WordWrap; Layout.fillWidth: true
+                                 font.pixelSize: Math.round(Kirigami.Theme.defaultFont.pixelSize * T.smallScale) }
+                }
+                QQC2.ToolButton {
+                    visible: (card.open || card.searching) && card.resettable
+                    icon.name: "edit-undo"
+                    text: i18n("Reset")
+                    display: QQC2.AbstractButton.TextBesideIcon
+                    QQC2.ToolTip.text: i18n("Put every setting in this group back to its default")
+                    QQC2.ToolTip.visible: hovered
+                    onClicked: card.reset()
+                }
+            }
         }
+        // ---- the rows
         Loader {
             active: card.open || card.searching
             visible: active
             Layout.fillWidth: true
+            Layout.bottomMargin: Kirigami.Units.largeSpacing
             sourceComponent: ColumnLayout {
                 spacing: Kirigami.Units.largeSpacing
                 Repeater {

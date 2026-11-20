@@ -5,6 +5,7 @@ import QtQuick.Dialogs
 import QtCore
 import Qt.labs.folderlistmodel
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 import "../viz/palettes.js" as Palettes
 import "model.js" as Model
 
@@ -14,8 +15,8 @@ ColumnLayout {
     id: f
     required property var row
     required property var kcm
-    readonly property real labelWidth: Kirigami.Units.gridUnit * 14
-    readonly property bool wide: ["presets", "colors", "eq", "spotify", "browser", "sites", "info", "align2"].indexOf(row.type) >= 0
+    readonly property real labelWidth: Kirigami.Units.gridUnit * T.labelUnits
+    readonly property bool wide: ["presets", "colors", "eq", "spotify", "browser", "sites", "info", "layoutedit"].indexOf(row.type) >= 0
     readonly property var value: row.key ? kcm["cfg_" + row.key] : undefined
     spacing: 2
 
@@ -72,6 +73,7 @@ ColumnLayout {
             case "browser": return browserC
             case "sites": return sitesC
             case "info": return infoC
+            case "layoutedit": return layoutEditC
             }
             return null
         }
@@ -80,7 +82,7 @@ ColumnLayout {
         visible: !!f.row.hint
         text: f.row.hint ?? ""
         wrapMode: Text.WordWrap
-        opacity: 0.62
+        opacity: T.muted
         font: Kirigami.Theme.smallFont
         Layout.leftMargin: f.wide ? 0 : f.labelWidth + Kirigami.Units.largeSpacing
         Layout.fillWidth: true
@@ -218,7 +220,7 @@ ColumnLayout {
                 }
                 onActivated: f.put(f.row.key, files.get(currentIndex, "filePath"))
             }
-            QQC2.Label { text: i18n("Put .qml files in ~/.local/share/lyric-widget/%1/", f.row.folder ?? "visualizers"); opacity: 0.6; font: Kirigami.Theme.smallFont }
+            QQC2.Label { text: i18n("Put .qml files in ~/.local/share/lyric-widget/%1/", f.row.folder ?? "visualizers"); opacity: T.muted; font: Kirigami.Theme.smallFont }
         }
     }
     Component { id: sourceC; SourceField { value: f.value ?? ""; onPicked: v => f.put(f.row.key, v) } }
@@ -233,6 +235,7 @@ ColumnLayout {
         }
     }
     Component { id: presetsC; PresetsPanel { kcm: f.kcm } }
+    Component { id: layoutEditC; LayoutEditor { kcm: f.kcm } }
     Component { id: spotifyC; SpotifyCheck { kcm: f.kcm } }
     Component { id: browserC; BrowserSetupRow {} }
     Component { id: sitesC; SitesList { kcm: f.kcm } }

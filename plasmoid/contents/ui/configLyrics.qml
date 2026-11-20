@@ -5,7 +5,7 @@ import org.kde.kcmutils as KCM
 import "wide.js" as Wide
 import "settings"
 
-// Lyrics: How the lines look, what is shown and when, and where it sits.
+// Lyrics: The lines of the song.
 KCM.SimpleKCM {
     id: page
     // a wide settings window; the page may not be in its window yet when it is created

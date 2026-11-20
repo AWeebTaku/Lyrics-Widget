@@ -5,7 +5,7 @@ import org.kde.kcmutils as KCM
 import "wide.js" as Wide
 import "settings"
 
-// Visualizer: The bars, waves and effects that follow the music.
+// Visualizer: Bars and waves for the music.
 KCM.SimpleKCM {
     id: page
     // a wide settings window; the page may not be in its window yet when it is created

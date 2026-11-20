@@ -5,7 +5,7 @@ import org.kde.kcmutils as KCM
 import "wide.js" as Wide
 import "settings"
 
-// Card: The cover, title, buttons and seek bar around the lyrics.
+// Card: Cover, title, buttons, seek bar.
 KCM.SimpleKCM {
     id: page
     // a wide settings window; the page may not be in its window yet when it is created
@@ -18,6 +18,8 @@ KCM.SimpleKCM {
     property int cfg_cardAccentSourceDefault
     property string cfg_customAccent
     property string cfg_customAccentDefault
+    property string cfg_layoutEdits
+    property string cfg_layoutEditsDefault
     property int cfg_cardSurface
     property int cfg_cardSurfaceDefault
     property string cfg_panelColor
@@ -48,6 +50,12 @@ KCM.SimpleKCM {
     property int cfg_artFormatDefault
     property int cfg_artSize
     property int cfg_artSizeDefault
+    property int cfg_artFit
+    property int cfg_artFitDefault
+    property int cfg_artFocusH
+    property int cfg_artFocusHDefault
+    property int cfg_artFocusV
+    property int cfg_artFocusVDefault
     property int cfg_artBorder
     property int cfg_artBorderDefault
     property int cfg_artGlow

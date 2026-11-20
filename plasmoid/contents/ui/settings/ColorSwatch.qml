@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 
 // A color: a swatch that opens the color dialog, and the hex code to type or paste.
 RowLayout {
@@ -16,7 +17,7 @@ RowLayout {
         implicitWidth: Kirigami.Units.gridUnit * 3
         onClicked: dialog.active = true
         contentItem: Rectangle {
-            radius: 4
+            radius: T.radiusSmall
             color: sw.value
             border.width: 1
             border.color: Qt.alpha(Kirigami.Theme.textColor, 0.35)
