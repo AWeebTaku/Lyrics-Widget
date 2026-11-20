@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lyric Widget: synced lyrics for KDE Plasma</title>
-<meta name="description" content="A KDE Plasma 6 widget with timed lyrics for Spotify and YouTube Music, romanization, album-cover colors and an audio visualizer.">
+<meta name="description" content="A KDE Plasma 6 widget with timed lyrics for Spotify and YouTube Music, an audio visualizer, a media card, romanization and album-cover colors.">
 <meta name="color-scheme" content="dark light">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <script>
@@ -80,7 +80,7 @@
           min-height: calc(100dvh - 64px); padding: 24px 0 48px; }
   .hero h1 { font-size: clamp(2.5rem, 4.5vw, 4.1rem); font-weight: 700; }
   .hero h1 em { display: block; font-style: normal; color: var(--accent); transition: color .5s; }
-  .hero .sub { color: var(--muted); font-size: 18px; max-width: 30ch; margin: 22px 0 32px; }
+  .hero .sub { color: var(--muted); font-size: 18px; max-width: 34ch; margin: 22px 0 32px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; }
 
   /* ---- the live demo: a working miniature of the widget on a desktop ---- */
@@ -148,6 +148,18 @@
   .logos span { color: var(--muted); font-size: 14px; margin-right: 8px; }
   .logos img { height: 28px; width: auto; opacity: .9; transition: transform .3s var(--spring), opacity .3s; }
   .logos img:hover { transform: translateY(-3px) scale(1.08); opacity: 1; }
+
+  /* ---- looks: real renders from the widget ---- */
+  .looks { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 48px; align-items: start; }
+  .looks .g { color: var(--muted); font-size: 14px; margin: 28px 0 10px; }
+  .looks .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .shot { border-radius: var(--r-card); border: 1px solid var(--line); background: var(--surface); overflow: hidden;
+          height: clamp(320px, 52vh, 500px); display: grid; place-items: center; padding: 14px; position: relative;
+          background-image: radial-gradient(color-mix(in srgb, var(--text) 14%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
+  .shot img { max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 12px;
+              box-shadow: 0 24px 60px rgb(0 0 0 / .35); transition: opacity .3s var(--ease), transform .5s var(--ease); }
+  .shot img.sw { opacity: 0; transform: scale(.97); }
+  .looks .note { min-height: 0; margin-top: 14px; font-size: 14px; }
 
   /* ---- features: a bento of working miniatures ---- */
   section { padding: 96px 0 0; }
@@ -240,6 +252,8 @@
   @media (max-width: 960px) {
     .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 40px; gap: 36px; }
     .hero .sub { max-width: 40ch; }
+    .looks { grid-template-columns: 1fr; gap: 28px; }
+    .shot { height: auto; min-height: 220px; }
     .bento { grid-template-columns: 1fr; }
     .c1, .c2, .c3, .c4, .c5 { grid-column: auto; }
     .inst { grid-template-columns: 1fr; gap: 36px; }
@@ -270,6 +284,7 @@
   <div class="wrap">
     <b>Lyric Widget</b>
     <div class="r">
+      <a href="#looks">Looks</a>
       <a href="#features">Features</a>
       <a href="#install">Install</a>
       <button class="btn sm" id="theme" type="button" aria-label="Switch between dark and light">Light</button>
@@ -282,7 +297,7 @@
   <header class="hero">
     <div>
       <h1>Synced lyrics <em>for your desktop</em></h1>
-      <p class="sub">A KDE Plasma 6 widget with timed lyrics for Spotify and YouTube Music. No accounts, no keys.</p>
+      <p class="sub">Timed lyrics, a visualizer and a media card for Spotify and YouTube Music on Plasma 6. No accounts.</p>
       <div class="row">
         <a class="btn main" id="mag" href="#install">Install</a>
         <a class="btn" href="https://github.com/AWeebTaku/Lyrics-Widget">GitHub</a>
@@ -319,6 +334,23 @@
     <img src="https://cdn.simpleicons.org/kde/1D99F3" alt="KDE Plasma" height="28">
     <img src="https://cdn.simpleicons.org/googlechrome/4285F4" alt="Google Chrome" height="28">
   </div>
+
+  <section id="looks">
+    <div class="looks">
+      <div class="rv">
+        <h2>Pick a look, or build your own</h2>
+        <p class="lead">36 built-in looks for the visualizer and the media card. Each picture is a real render from the widget.</p>
+        <p class="g">Visualizer</p>
+        <div class="pills" id="vizPills" role="group" aria-label="Visualizer looks"></div>
+        <p class="g">Media card</p>
+        <div class="pills" id="cardPills" role="group" aria-label="Media card looks"></div>
+      </div>
+      <div class="rv" style="--d:.1s">
+        <div class="shot"><img id="shot" src="gallery/09.png" width="1152" height="342" alt="Ribbon visualizer"></div>
+        <p class="note" id="shotN" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
 
   <section id="features">
     <h2 class="rv">Everything around the lyrics</h2>
@@ -496,6 +528,36 @@
   });
   const drop = () => { if (!drag) return; drag = false; w.classList.remove("drag"); tx = ty = 0; w.style.transform = ""; };
   w.addEventListener("pointerup", drop); w.addEventListener("pointercancel", drop);
+
+  // ---------- looks gallery ----------
+  const LOOKS = [
+    ["viz", "Ribbon", "09", 1152, 342, "A flowing ribbon in sunset colors."],
+    ["viz", "LED meter", "04", 1152, 342, "A stereo-rack meter of lit segments."],
+    ["viz", "Pulse orb", "06", 1152, 342, "An orb that breathes with the bass."],
+    ["viz", "Terrain", "13", 732, 312, "A GPU landscape that moves with the music."],
+    ["viz", "Tunnel", "14", 732, 312, "A GPU tunnel that speeds up on the beat."],
+    ["card", "Cover wash", "19", 642, 252, "Cover, title, buttons and seek bar over a blurred cover."],
+    ["card", "Vinyl record", "21", 642, 252, "The cover as a spinning record."],
+    ["card", "Poster", "24", 492, 552, "A tall card with the cover as a sun and lyrics over the wave."],
+    ["card", "Halo", "32", 522, 582, "A cover in a ring that follows the music."],
+  ];
+  const shot = $("shot"), shotN = $("shotN"), lp = [];
+  function look(i) {
+    const [, name, id, w, h, text] = LOOKS[i];
+    lp.forEach((b, k) => b.setAttribute("aria-pressed", String(k === i)));
+    shot.classList.add("sw");
+    setTimeout(() => {
+      shot.src = "gallery/" + id + ".png"; shot.width = w; shot.height = h; shot.alt = name + ": " + text;
+      shotN.textContent = name + ". " + text;
+      shot.classList.remove("sw");
+    }, reduce ? 0 : 220);
+  }
+  LOOKS.forEach((l, i) => {
+    const b = document.createElement("button");
+    b.className = "pill"; b.type = "button"; b.textContent = l[1]; b.onclick = () => look(i);
+    $(l[0] === "viz" ? "vizPills" : "cardPills").appendChild(b); lp.push(b);
+  });
+  look(0);
 
   // ---------- magnetic install button ----------
   const mag = $("mag");
