@@ -18,6 +18,10 @@ Item {
     // the preview is drawn at the layout's own size (so it looks as it will), scaled down to fit when it is wider
     readonly property real scaleFit: Math.min(1, width / natural[0])
     implicitHeight: natural[1] * scaleFit + 8
+    // the layout with the user's edits: the background and the visualizer follow them, like in the widget
+    readonly property var g: Layouts.layout(mode, natural[0], natural[1], s.artSize ?? 96, 14, {
+        posterLines: s.posterLines, posterClock: s.posterClock, orbitCenter: s.orbitCenter, edits: s.layoutEdits,
+        viz: { widthPct: s.vizWidthPct ?? 100, heightPct: s.vizHeightPct ?? 60, hAlign: s.vizHAlign ?? 1, vAlign: s.vizVAlign ?? 2, offX: s.vizOffsetX ?? 0, offY: s.vizOffsetY ?? 0 } })
 
     QtObject {
         id: sample
@@ -55,7 +59,10 @@ Item {
 
         Rectangle { anchors.fill: parent; radius: 6; gradient: Gradient { GradientStop { position: 0; color: "#2f4a78" } GradientStop { position: 1; color: "#7a4a6a" } } }   // a stand-in wallpaper
         CardSurface {
-            anchors.fill: parent
+            x: root.g.surface ? root.g.surface.x : 0; y: root.g.surface ? root.g.surface.y : 0
+            width: root.g.surface ? root.g.surface.w : 0; height: root.g.surface ? root.g.surface.h : 0
+            visible: root.g.surface !== null
+            opacity: root.g.opacity.surface ?? 1
             type: root.s.cardSurface ?? 0
             source: sample.artUrl
             coverColors: ["#ff7a59", "#7a3fb0"]
@@ -65,16 +72,15 @@ Item {
             grain: root.s.surfaceGrain ?? 0; shadow: root.s.surfaceShadow ?? false; edge: root.s.surfaceEdge ?? true
         }
         VizPreview {
-            readonly property var g: Layouts.layout(root.mode, stage.width, stage.height, root.s.artSize ?? 96, 14, { posterLines: root.s.posterLines, posterClock: root.s.posterClock, orbitCenter: root.s.orbitCenter })
-            visible: root.viz.showVisualizer || g.vizForced
+            visible: (root.viz.showVisualizer || root.g.vizForced) && root.g.vizPlace !== null
             color: "transparent"
-            x: g.vizFill ? 0 : g.vizRect ? g.vizRect.x : 0
-            y: g.vizFill ? 0 : g.vizRect ? g.vizRect.y : stage.height * 0.4
-            width: g.vizFill ? stage.width : g.vizRect ? g.vizRect.w : stage.width
-            height: g.vizFill ? stage.height : g.vizRect ? g.vizRect.h : stage.height * 0.6
-            s: Object.assign({}, root.viz, g.orbit ? { visualizerStyle: 16 } : {})
+            x: root.g.vizPlace ? root.g.vizPlace.x : 0
+            y: root.g.vizPlace ? root.g.vizPlace.y : 0
+            width: root.g.vizPlace ? root.g.vizPlace.w : 0
+            height: root.g.vizPlace ? root.g.vizPlace.h : 0
+            s: Object.assign({}, root.viz, root.g.orbit ? { visualizerStyle: 16 } : {})
             showToggle: false      // the card preview is one still picture
-            opacity: (root.mode === 8 && root.s.posterVizBehind ? (root.s.posterVizOpacity ?? 60) / 100 : 1)
+            opacity: (root.mode === 8 && root.s.posterVizBehind ? (root.s.posterVizOpacity ?? 60) / 100 : 1) * (root.g.opacity.viz ?? 1)
         }
         CardLayout {
             id: card

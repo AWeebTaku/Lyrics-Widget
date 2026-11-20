@@ -180,7 +180,104 @@ function layout(mode, W, H, art, pad, opts) {
     o.vizForced = mode === 5 || mode === 7 || mode === 8     // the music is the point of these: the visualizer is on even if Show: Visualizer is off
     fit(o, W, H)
     placeExtras(o, W, H)
+    // without a card the sync row sits a quarter of the way up, as it always did
+    if (mode < 2) o.nudge = o.lyrics ? r(0, H - Math.max(8, H * 0.25) - 22, W, 22) : null
+    // the background belongs to the card: it covers the whole widget unless the user edits it; the visualizer's place
+    o.surface = r(0, 0, W, H)
+    o.vizPlace = o.vizFill ? r(0, 0, W, H) : o.vizRect ? o.vizRect : vizBase(W, H, opts.viz)
+    applyEdits(o, editsFor(opts.edits, mode), W, H)
     return o
+}
+
+// ---- editing a layout: every part can be hidden, moved, resized and made see-through, per layout --------------------------
+// The edits are stored as JSON text, {"<layout>": {"<part>": {show, dx, dy, dw, dh, opacity, size}}}: moves and sizes are
+// differences from where the layout puts the part, so they follow the card when it is resized. (Layout 1 uses layout 0's.)
+const parts = [
+    { id: "surface", name: "Background", size: true, opacity: true, key: "surface" },
+    { id: "art", name: "Cover", size: true, opacity: true, key: "art", keep: true },     // hidden: the place stays (the ring may still be drawn there)
+    { id: "ring", name: "Progress ring round the cover", size: false, opacity: false, flag: true },
+    { id: "info", name: "Title and artist", size: true, opacity: true, text: true, key: "info" },
+    { id: "controls", name: "Buttons", size: true, opacity: true, key: "controls" },
+    { id: "progress", name: "Seek bar", size: true, opacity: true, key: "progress" },
+    { id: "clock", name: "Clock", size: true, opacity: true, key: "clock" },
+    { id: "lyrics", name: "Lyrics", size: true, opacity: true, key: "lyrics" },
+    { id: "viz", name: "Visualizer", size: true, opacity: true, key: "vizPlace" },
+    { id: "tools", name: "Corner buttons (other lyrics, library)", size: false, opacity: false, key: "tools" },
+    { id: "nudge", name: "Sync row (-1s ... +1s)", size: false, opacity: false, key: "nudge" }
+]
+
+// where the visualizer goes when the layout does not place it: a share of the widget on a 3 x 3 grid, plus an offset
+// v: {widthPct, heightPct, hAlign, vAlign, offX, offY} (the Position settings of the Visualizer page)
+function vizBase(W, H, v) {
+    v = v || { widthPct: 100, heightPct: 100, hAlign: 1, vAlign: 1, offX: 0, offY: 0 }
+    const w = W * v.widthPct / 100, h = H * v.heightPct / 100
+    return r((v.hAlign === 0 ? 0 : v.hAlign === 2 ? W - w : (W - w) / 2) + (v.offX || 0),
+             (v.vAlign === 0 ? 0 : v.vAlign === 2 ? H - h : (H - h) / 2) + (v.offY || 0), w, h)
+}
+
+function parseEdits(text) {
+    if (!text) return {}
+    if (typeof text !== "string") return text
+    try { const o = JSON.parse(text); return o && typeof o === "object" ? o : {} } catch (e) { return {} }
+}
+function editsFor(edits, mode) { return parseEdits(edits)[String(mode === 1 ? 0 : mode)] || {} }
+
+function applyEdits(o, e, W, H) {
+    o.hidden = {}
+    o.opacity = {}
+    o.infoSize = 0
+    const corner = { tools: r(W - 32, 4, 26, 56), nudge: r(0, H - 26, W, 22) }
+    for (const part of parts) {
+        const ed = e[part.id]
+        if (!ed) continue
+        if (part.flag) { if (ed.show === false) o.hidden[part.id] = true; continue }     // no place of its own: only on or off
+        if (ed.show === false) {
+            o.hidden[part.id] = true
+            if (!part.keep) o[part.key] = null
+            if (part.id === "viz") { o.vizRect = null; o.vizFill = false }
+            continue
+        }
+        let base = o[part.key]
+        if (!base && ed.show === true && corner[part.id]) base = corner[part.id]    // shown where the layout would hide it
+        if (base) {
+            const moved = (ed.dx || ed.dy || ed.dw || ed.dh)
+            const n = !moved && base === o[part.key] ? base
+                : r(base.x + (ed.dx || 0), base.y + (ed.dy || 0), Math.max(8, base.w + (part.size ? (ed.dw || 0) : 0)), Math.max(8, base.h + (part.size ? (ed.dh || 0) : 0)))
+            o[part.key] = n
+            if (part.id === "viz") { o.vizRect = n; o.vizFill = false }
+        }
+        if (part.opacity && ed.opacity !== undefined && ed.opacity !== 100) o.opacity[part.id] = Math.max(0, Math.min(100, ed.opacity)) / 100
+        if (part.text && ed.size) o.infoSize = ed.size
+    }
+    return o
+}
+
+// the parts a layout has (the ones the user can edit), with where they sit now; the corner buttons, the sync row, the
+// background and the visualizer can always be edited
+function partsFor(mode) {
+    const n = naturalSize(mode)
+    const o = layout(mode, n[0], n[1], 96, 14, {})
+    return parts.filter(p => p.flag ? (p.id === "ring" && o.ring) : (o[p.key] || ["tools", "nudge", "surface", "viz"].indexOf(p.id) >= 0))
+}
+function getEdit(edits, mode, id) { return editsFor(edits, mode)[id] || {} }
+// a new JSON text with one field of one part changed (a field at its default is dropped, so the text stays small)
+function setEdit(edits, mode, id, field, value) {
+    const all = parseEdits(edits)
+    const key = String(mode === 1 ? 0 : mode)
+    const m = all[key] = all[key] || {}
+    const e = m[id] = m[id] || {}
+    // undefined/null clears a field; `show: true` is kept (it turns on a part the layout leaves out, like the corner buttons of the icon)
+    const isDefault = value === undefined || value === null || (field === "show" ? false : field === "opacity" ? value === 100 : !value)
+    if (isDefault) delete e[field]; else e[field] = value
+    if (Object.keys(e).length === 0) delete m[id]
+    if (Object.keys(m).length === 0) delete all[key]
+    return JSON.stringify(all)
+}
+function resetEdits(edits, mode) {
+    const all = parseEdits(edits)
+    if (mode === undefined) return "{}"
+    delete all[String(mode === 1 ? 0 : mode)]
+    return JSON.stringify(all)
 }
 
 // a part that does not fit a small widget is cut to the widget, and dropped when too little of it is left

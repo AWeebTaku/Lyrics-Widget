@@ -24,6 +24,10 @@ Item {
     property bool wide: false      // a 4:3 picture for the flat shapes instead of a square
     property int fallback: 0       // with no picture: 0 a music note, 1 the song's first letter, 2 color only
     property string letter: ""     // the first letter, for fallback 1
+    property bool showCover: true  // false: only the progress ring is drawn (the cover is hidden)
+    property int fit: 0            // 0 fill the shape (the picture is cropped to it), 1 the whole picture (empty bars where it does not reach)
+    property int focusH: 1         // the part of a wide or tall picture that is kept when it is cropped: 0 left, 1 middle, 2 right
+    property int focusV: 1         // 0 top, 1 middle, 2 bottom
     signal clicked()
 
     readonly property bool disc: shape >= 4
@@ -33,36 +37,22 @@ Item {
     readonly property real sideW: wide && shape < 3 ? Math.min(width, side * 4 / 3) : side   // ... or 4:3
     readonly property real corner: shape === 0 ? 0 : shape === 1 ? side * 0.14 : shape === 2 ? side * 0.3 : side / 2
 
-    // ---- the picture, hidden; the shapes below use it. A wide picture (a video's 16:9 frame) is shown whole over a blurred copy of
-    // itself instead of being cut down to its middle.
-    Image { id: probe; source: root.source; visible: false; asynchronous: true; cache: true }   // only to learn the picture's shape
-    readonly property real aspect: probe.status === Image.Ready && probe.implicitHeight > 0 ? probe.implicitWidth / probe.implicitHeight : 1
-    readonly property bool letterbox: aspect > 1.35 && !(wide && shape < 3)
-    Item {
-        id: picture
+    // ---- the picture, hidden; the shapes below use it. It fills the shape (cropped to it, keeping the part chosen), or, with
+    // `fit` 1, is shown whole with empty bars where it does not reach. (It is fed to the effects as an Image, not through a
+    // wrapper item: a hidden layered wrapper made the effects draw it small and unmasked.)
+    readonly property int hAlign: focusH === 0 ? Image.AlignLeft : focusH === 2 ? Image.AlignRight : Image.AlignHCenter
+    readonly property int vAlign: focusV === 0 ? Image.AlignTop : focusV === 2 ? Image.AlignBottom : Image.AlignVCenter
+    Image {
+        id: img
+        source: root.source
         visible: false
-        layer.enabled: true
         width: root.sideW; height: root.side
-        Image {
-            id: fillImg
-            anchors.fill: parent
-            source: root.letterbox ? root.source : ""
-            visible: root.letterbox
-            sourceSize: Qt.size(Math.ceil(root.sideW), Math.ceil(root.side))
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            layer.enabled: root.letterbox
-            layer.effect: MultiEffect { blurEnabled: true; blurMax: 32; blur: 1.0; brightness: -0.25 }
-        }
-        Image {
-            id: img
-            anchors.fill: parent
-            source: root.source
-            sourceSize: Qt.size(Math.ceil(root.sideW * 2), Math.ceil(root.side * 2))
-            fillMode: root.letterbox ? Image.PreserveAspectFit : Image.PreserveAspectCrop
-            asynchronous: true
-            cache: true
-        }
+        sourceSize: Qt.size(Math.ceil(root.sideW * 2), Math.ceil(root.side * 2))
+        fillMode: root.fit === 1 ? Image.PreserveAspectFit : Image.PreserveAspectCrop
+        horizontalAlignment: root.hAlign
+        verticalAlignment: root.vAlign
+        asynchronous: true
+        cache: true
     }
 
     Item {
@@ -82,8 +72,8 @@ Item {
         MultiEffect {
             anchors.centerIn: parent
             width: parent.width * 1.12; height: parent.height * 1.12
-            source: picture
-            visible: root.glow > 0 && img.status === Image.Ready
+            source: img
+            visible: root.showCover && root.glow > 0 && img.status === Image.Ready
             blurEnabled: true; blurMax: 48; blur: 1.0
             opacity: root.glow / 100
             saturation: 0.3
@@ -93,6 +83,7 @@ Item {
         Item {
             id: turning
             anchors.fill: parent
+            visible: root.showCover
             RotationAnimator on rotation {
                 from: 0; to: 360; duration: 6000
                 loops: Animation.Infinite
@@ -131,7 +122,7 @@ Item {
             // the cover, for the flat shapes and the CD
             MultiEffect {
                 anchors.fill: parent
-                source: picture
+                source: img
                 visible: img.status === Image.Ready && root.shape !== 4
                 maskEnabled: true
                 maskSource: root.shape === 5 ? cdMask : maskRect
@@ -152,7 +143,7 @@ Item {
             MultiEffect {
                 anchors.centerIn: parent
                 width: parent.width * 0.42; height: width
-                source: picture
+                source: img
                 visible: img.status === Image.Ready && root.shape === 4
                 maskEnabled: true; maskSource: labelMask
                 saturation: root.gray ? -1 : 0
@@ -163,7 +154,7 @@ Item {
         // border and, for a record, its light sheen (does not turn)
         Rectangle {
             anchors.fill: parent; radius: root.corner
-            color: "transparent"; visible: root.borderWidth > 0
+            color: "transparent"; visible: root.showCover && root.borderWidth > 0
             border.width: root.borderWidth; border.color: root.borderColor
         }
         // the light on a disc (not turning): a soft bright band, cut to the circle
@@ -176,7 +167,7 @@ Item {
         }
         MultiEffect {
             anchors.fill: parent; source: sheenSrc
-            visible: root.disc
+            visible: root.showCover && root.disc
             maskEnabled: true; maskSource: maskRect
             opacity: root.shape === 4 ? 0.2 : 0.35
         }
@@ -199,7 +190,7 @@ Item {
     // reflection: the cover upside down below it, fading out
     Item {
         id: mirror
-        visible: root.reflect && img.status === Image.Ready
+        visible: root.showCover && root.reflect && img.status === Image.Ready
         width: root.side; height: root.height - root.face
         x: (root.width - width) / 2
         y: root.face + 1

@@ -22,7 +22,10 @@ Item {
     property color systemAccent: "#3daee9"      // the Plasma accent, for the color sources
     property bool previewMode: false            // the settings preview: no network lookups, no wheel changes
 
-    readonly property var geo: Layouts.layout(mode, width, height, cfg.artSize, 14, { posterLines: cfg.posterLines, posterClock: cfg.posterClock, orbitCenter: cfg.orbitCenter })
+    readonly property var geo: Layouts.layout(mode, width, height, cfg.artSize, 14, {
+        posterLines: cfg.posterLines, posterClock: cfg.posterClock, orbitCenter: cfg.orbitCenter,
+        edits: cfg.layoutEdits,      // the user's changes to this layout: hidden, moved, resized, see-through parts
+        viz: { widthPct: cfg.vizWidthPct, heightPct: cfg.vizHeightPct, hAlign: cfg.vizHAlign, vAlign: cfg.vizVAlign, offX: cfg.vizOffsetX, offY: cfg.vizOffsetY } })
     // where the cover comes from: the player's picture, or a YouTube video's own
     readonly property string artSource: player.thumbUrl !== "" && (cfg.artThumbnail === 1 || player.artUrl === "") ? player.thumbUrl : player.artUrl
     readonly property color controlsColor: CardColors.pick(cfg.controlsColorSource, accent, textColor, systemAccent, cfg.customControlColor)
@@ -39,6 +42,8 @@ Item {
     readonly property bool toolsRow: geo.toolsRow
     readonly property var nudgeRect: geo.nudge
     readonly property var vizRect: geo.vizRect ?? null
+    readonly property var vizPlace: geo.vizPlace         // where the visualizer is drawn (the layout's, or the Visualizer page's), null when hidden
+    readonly property var surfaceRect: geo.surface       // the card's background: a part of the card, null when hidden
     readonly property bool vizFill: geo.vizFill
     readonly property bool vizForced: geo.vizForced
     readonly property bool orbit: geo.orbit
@@ -93,7 +98,7 @@ Item {
         color: "transparent"; border.width: 2; border.color: Qt.alpha(root.accent, 0.55 + 0.4 * root.beat)
     }
     CoverSparks {
-        visible: root.cfg.artSparks && root.geo.art !== null
+        visible: root.cfg.artSparks && root.geo.art !== null && !root.geo.hidden.art
         x: root.geo.art ? root.geo.art.x - 40 : 0
         y: root.geo.art ? root.geo.art.y - 40 : 0
         width: root.geo.art ? root.geo.art.w + 80 : 0
@@ -107,7 +112,9 @@ Item {
     Flipable {
         id: flip
         z: 1
-        visible: root.geo.art !== null && root.orbitShowsCover
+        opacity: root.geo.opacity.art ?? 1
+        // the cover can be hidden while the progress ring round it stays (Edit the layout)
+        visible: root.geo.art !== null && root.orbitShowsCover && (!root.geo.hidden.art || (root.geo.ring && !root.geo.hidden.ring))
         x: root.geo.art ? root.geo.art.x : 0
         y: root.geo.art ? root.geo.art.y : 0
         width: root.geo.art ? (root.cfg.artFormat === 1 && root.cfg.artShape < 3 ? Math.min(root.geo.art.w * 4 / 3, root.width / 2) : root.geo.art.w) : 0
@@ -129,8 +136,12 @@ Item {
             playing: root.player.playing
             wide: root.cfg.artFormat === 1
             fallback: root.cfg.artFallback
+            fit: root.cfg.artFit
+            focusH: root.cfg.artFocusH
+            focusV: root.cfg.artFocusV
             letter: root.player.title
-            progress: (root.geo.ring || root.cfg.progressStyle === 11) && root.player.lengthSec > 0 ? root.position / root.player.lengthSec : -1
+            showCover: !root.geo.hidden.art
+            progress: (root.geo.ring || root.cfg.progressStyle === 11) && !root.geo.hidden.ring && root.player.lengthSec > 0 ? root.position / root.player.lengthSec : -1
             accent: root.accent
             beat: root.geo.orbit && !root.cfg.orbitCoverPulse ? 0 : root.beat
             calm: root.calm
@@ -165,7 +176,8 @@ Item {
         scroll: root.cfg.trackScroll
         calm: root.calm
         headline: root.geo.headline
-        titleSize: root.cfg.titleSize
+        titleSize: root.geo.infoSize > 0 ? root.geo.infoSize : root.cfg.titleSize
+        opacity: root.geo.opacity.info ?? 1
         maxHeadlineLines: root.mode === 8 ? root.cfg.posterLines : 2
         align: root.infoAlign
         visible: root.geo.info !== null && !root.orbitTitleInside
@@ -225,7 +237,7 @@ Item {
         id: dock
         z: 6
         visible: root.geo.controls !== null && root.cfg.controlsShow !== 0
-        opacity: root.cfg.controlsShow === 2 || root.hovered ? 1 : 0
+        opacity: (root.cfg.controlsShow === 2 || root.hovered ? 1 : 0) * (root.geo.opacity.controls ?? 1)
         Behavior on opacity { NumberAnimation { duration: 180 } }
         x: root.geo.controls ? root.geo.controls.x : 0
         y: root.geo.controls ? root.geo.controls.y : 0
@@ -269,6 +281,7 @@ Item {
     Item {
         id: seek
         z: 5
+        opacity: root.geo.opacity.progress ?? 1
         visible: root.geo.progress !== null && root.cfg.progressStyle !== 0 && root.cfg.progressStyle !== 11
         x: root.geo.progress ? root.geo.progress.x : 0
         y: root.geo.progress ? root.geo.progress.y : 0
@@ -321,7 +334,7 @@ Item {
         height: root.geo.clock ? root.geo.clock.h : 0
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-        color: root.textColor; opacity: 0.85
+        color: root.textColor; opacity: 0.85 * (root.geo.opacity.clock ?? 1)
         font.pixelSize: Math.max(18, height * 0.9)
         font.family: root.fontFamily
         text: Qt.formatTime(new Date(), "HH:mm")
