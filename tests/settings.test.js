@@ -14,7 +14,7 @@ for (const m of xml.matchAll(/<entry name="(\w+)" type="(\w+)">([\s\S]*?)<\/entr
 // which main.xml types a row type may store in
 const stores = { bool: ["Bool"], int: ["Int"], real: ["Double"], color: ["String"], text: ["String"], file: ["String"], font: ["String"],
                  flow: ["Int"], palette: ["Int"], pair: ["Int"], align: ["Int"], colors: ["String"], eq: ["StringList"], source: ["String"], sites: ["String"], layoutedit: ["String"] };
-const noKey = ["presets", "spotify", "browser", "info"];
+const noKey = ["presets", "spotify", "queuecheck", "browser", "info"];
 const seenKeys = {};
 const pageFiles = { general: "configGeneral.qml", lyrics: "configLyrics.qml", visualizer: "configVisualizer.qml", audio: "configAudio.qml",
                     card: "configCard.qml", sources: "configAccounts.qml" };
@@ -37,6 +37,10 @@ for (const p of M.pages) {
             if (r.type === "pair" || r.type === "align") check(Array.isArray(r.keys) && r.keys.length === 2, `${where}: needs two keys`);
             else check(!!r.key, `${where}: no key`);
             check(r.label || r.type === "layoutedit", `${where}: no label`);
+            // conventions: no unit in a label (it is in the box), no stray offText, a pair names its two boxes
+            check(!/\((px|%|s|ms|Hz)\)/.test(r.label || ""), `${where}: put the unit in unit.suffix, not in the label`);
+            check(r.offText === undefined, `${where}: use off, not offText`);
+            if (r.type === "pair") check(Array.isArray(r.names) && r.names.length === 2 && r.unit && r.unit.suffix, `${where}: a pair needs names and a unit`);
             for (const k of M.rowKeys(r)) {
                 (seenKeys[k] = seenKeys[k] || []).push(p.id);
                 const e = entries[k];

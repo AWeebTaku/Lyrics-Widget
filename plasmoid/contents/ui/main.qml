@@ -35,6 +35,7 @@ PlasmoidItem {
         source: "SettingsWindow.qml"
         onLoaded: {
             item.cfg = Plasmoid.configuration
+            item.live = lyrics
             item.widgetName = root.cardMode === 0 ? i18n("lyrics") : Layouts.modes[root.cardMode].name
             item.load()
             item.visible = true
@@ -280,7 +281,11 @@ PlasmoidItem {
             source: "AudioViz.qml"
             onLoaded: {
                 item.tintFlow = Qt.binding(() => root.cfg.vizColorFlow)
-                item.tintColors = Qt.binding(() => !root.tinted ? [] : (root.multiColor ? lyrics.palette.map(c => c.toString()) : [lyrics.palette[0].toString()]))
+                item.tintColors = Qt.binding(() => {
+                    const cover = root.cfg.vizColorMode === 4 && lyrics.palette.length > 0      // the visualizer's own "colors from the album cover"
+                    if (!root.tinted && !cover) return []
+                    return root.multiColor || cover ? lyrics.palette.map(c => c.toString()) : [lyrics.palette[0].toString()]
+                })
                 item.styleOverride = Qt.binding(() => card.orbit ? 16 : -1)   // 16 = the orbit ring
             }
             // size as a share of the widget, placed on a 3x3 grid plus a pixel offset; a layout may take over the place

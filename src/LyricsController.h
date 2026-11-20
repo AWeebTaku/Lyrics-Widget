@@ -62,6 +62,8 @@ class LyricsController : public QObject
     Q_PROPERTY(bool suspended READ suspended WRITE setSuspended NOTIFY suspendedChanged)
     // How many upcoming Spotify queue tracks to fetch lyrics for ahead of time (0 = off, max 5)
     Q_PROPERTY(int prefetchCount READ prefetchCount WRITE setPrefetchCount NOTIFY prefetchCountChanged)
+    // What "Check the next songs" (Settings, Sources) found: one line for the Spotify app, one for the browser extension
+    Q_PROPERTY(QString queueStatus READ queueStatus NOTIFY queueStatusChanged)
     Q_PROPERTY(bool spotifyAppQueue READ spotifyAppQueue WRITE setSpotifyAppQueue NOTIFY prefetchCountChanged)
     Q_PROPERTY(int spotifyDebugPort READ spotifyDebugPort WRITE setSpotifyDebugPort NOTIFY prefetchCountChanged)
     Q_PROPERTY(bool anyPlayer READ anyPlayer WRITE setAnyPlayer NOTIFY prefetchCountChanged)
@@ -134,6 +136,8 @@ public:
     QString allowedSites() const { return m_sites; }
     void setAllowedSites(const QString &s) { m_sites = s; m_watcher.setSites(s.split(QLatin1Char(','), Qt::SkipEmptyParts)); emit prefetchCountChanged(); }
     int prefetchCount() const { return m_prefetchCount; }
+    QString queueStatus() const { return m_queueStatus; }
+    Q_INVOKABLE void checkQueue();   // ask both queue sources for the upcoming songs and report in queueStatus
     void setPrefetchCount(int n);
     bool spotifyAppQueue() const { return m_spotify.appQueue(); }
     int spotifyDebugPort() const { return m_spotify.debugPort(); }
@@ -176,6 +180,7 @@ signals:
     void lineHiddenChanged();
     void karaokeChanged();
     void prefetchCountChanged();
+    void queueStatusChanged();
 
 private:
     friend struct LayersTest; // tests/layers.cpp
@@ -273,6 +278,7 @@ private:
     // prefetch of upcoming queue tracks (Spotify app, YouTube Music extension)
     SpotifyApp m_spotify;
     BrowserQueue m_browser;
+    QString m_queueSpotify, m_queueBrowser, m_queueStatus;
     bool m_browserOn = false;
     int m_browserPort = 8899;
     LyricsFetcher m_pre;

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import "../viz/presets.js" as Presets
@@ -8,7 +9,7 @@ import "model.js" as Model
 import "tokens.js" as T
 
 // One page of Settings, drawn from model.js: a title, an optional "it is off" notice, a search box, an optional live preview
-// (off until asked for) and the sections. The page file (generated) only declares the cfg_ properties and puts this inside.
+// (always on, animated) and the sections. The page file (generated) only declares the cfg_ properties and puts this inside.
 // The content is a centered column (tokens.js), so a wide window does not stretch the rows.
 Item {
     id: root
@@ -16,7 +17,6 @@ Item {
     required property string pageId
     readonly property var page: Model.pageById(pageId)
     property string query: ""
-    property bool previewOn: false     // the preview is what made the old pages slow: only when asked for
     implicitHeight: col.implicitHeight + 2 * Kirigami.Units.largeSpacing
     implicitWidth: Kirigami.Units.gridUnit * 30
 
@@ -60,7 +60,7 @@ Item {
             }
         }
 
-        // ---- search and preview
+        // ---- search, then the live preview
         RowLayout {
             Layout.fillWidth: true
             Kirigami.SearchField {
@@ -69,19 +69,13 @@ Item {
                 placeholderText: i18n("Search these settings")
                 onTextChanged: root.query = text.trim().toLowerCase()
             }
-            QQC2.Switch {
-                visible: !!root.page.preview
-                text: i18n("Live preview")
-                checked: root.previewOn
-                onToggled: root.previewOn = checked
-            }
         }
         Loader {
-            active: root.previewOn && !!root.page.preview
+            active: !!root.page.preview
             visible: active
             Layout.fillWidth: true
             Layout.preferredHeight: active ? (item ? item.implicitHeight : 0) : 0
-            source: active ? (root.page.preview === "viz" ? "../viz/VizPreview.qml" : "../card/CardPreview.qml") : ""
+            source: active ? ({ viz: "../viz/VizPreview.qml", card: "../card/CardPreview.qml", lyrics: "LyricsPreview.qml" })[root.page.preview] : ""
             onLoaded: {
                 item.s = Qt.binding(() => root.live())
                 if (root.page.preview === "card") {
@@ -90,6 +84,14 @@ Item {
                     item.accent = Qt.binding(() => Plasmoid.configuration.cardAccentSource === 1 ? Kirigami.Theme.highlightColor : "#e0875a")
                 } else {
                     item.still = Qt.binding(() => Plasmoid.configuration.reducedMotion)
+                }
+                if (root.page.preview === "card") {
+                    item.still = Qt.binding(() => Plasmoid.configuration.reducedMotion)
+                    item.live = Qt.binding(() => root.Window.window ? root.Window.window.live : null)     // the song playing now
+                }
+                if (root.page.preview === "lyrics") {
+                    item.s = Qt.binding(() => root.live())
+                    item.live = Qt.binding(() => root.Window.window ? root.Window.window.live : null)     // the song playing now
                 }
             }
         }

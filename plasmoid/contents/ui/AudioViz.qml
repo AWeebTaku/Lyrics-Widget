@@ -155,7 +155,7 @@ Item {
             ? Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.Custom, custom: tintColors[0]})
             : Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.List, list: tintColors, colorsOrientation: tintFlow})
     }
-    // Color modes (Settings, Visualizer, Reaction): a palette, or the color wheel turning, or the wheel pushed on by the
+    // Color modes (Settings, Visualizer, Colors): the cover, a palette, or the color wheel turning, or the wheel pushed on by the
     // treble. They replace the configured colors (and the cover colors) while one is chosen.
     property real hueOffset: 0
     Timer {
@@ -167,7 +167,7 @@ Item {
     }
     function moded(cfg) {
         const m = Plasmoid.configuration.vizColorMode
-        if (m === 0)
+        if (m === 0 || m === 4)      // 4: the album cover's colors, whatever the Lyrics page says
             return tinted(cfg)
         const list = m === 1 ? Palettes.paletteColors(Plasmoid.configuration.vizPalette) : Palettes.rainbow(hueOffset, 6)
         return Object.assign({}, cfg, {sourceType: Enum.ColorSourceType.List, list: list, colorsOrientation: tintFlow, reverseList: false})

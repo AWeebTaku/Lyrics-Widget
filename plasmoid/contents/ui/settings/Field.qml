@@ -16,7 +16,7 @@ ColumnLayout {
     required property var row
     required property var kcm
     readonly property real labelWidth: Kirigami.Units.gridUnit * T.labelUnits
-    readonly property bool wide: ["presets", "colors", "eq", "spotify", "browser", "sites", "info", "layoutedit"].indexOf(row.type) >= 0
+    readonly property bool wide: ["presets", "colors", "eq", "spotify", "queuecheck", "browser", "sites", "info", "layoutedit"].indexOf(row.type) >= 0
     readonly property bool inlineHint: !wide && row.type !== "text"     // the hint follows the control on its line
     readonly property var value: row.key ? kcm["cfg_" + row.key] : undefined
     spacing: 2
@@ -81,6 +81,7 @@ ColumnLayout {
             case "colors": return colorsC
             case "eq": return eqC
             case "spotify": return spotifyC
+            case "queuecheck": return queueCheckC
             case "browser": return browserC
             case "sites": return sitesC
             case "info": return infoC
@@ -185,20 +186,28 @@ ColumnLayout {
             }
         }
     }
+    // two numbers as a small grid: each box has its name (X / Y, Width / Height...) and its unit
     Component {
         id: pairC
-        RowLayout {
-            QQC2.SpinBox {
+        GridLayout {
+            columns: 4
+            columnSpacing: Kirigami.Units.largeSpacing
+            rowSpacing: Kirigami.Units.smallSpacing
+            readonly property var names: f.row.names ?? ["X", "Y"]
+            component Box: QQC2.SpinBox {
+                required property int which
+                readonly property string suffix: f.row.unit && f.row.unit.suffix ? f.row.unit.suffix : ""
                 from: f.row.min ?? 0; to: f.row.max ?? 9999; stepSize: f.row.step ?? 1; editable: true
-                value: f.get(f.row.keys[0]) ?? 0
-                onValueModified: f.put(f.row.keys[0], value)
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 8
+                value: f.get(f.row.keys[which]) ?? 0
+                textFromValue: v => v + suffix
+                valueFromText: t => { const n = parseInt(t); return isNaN(n) ? value : Math.max(from, Math.min(to, n)) }
+                onValueModified: f.put(f.row.keys[which], value)
             }
-            QQC2.Label { text: "×" }
-            QQC2.SpinBox {
-                from: f.row.min ?? 0; to: f.row.max ?? 9999; stepSize: f.row.step ?? 1; editable: true
-                value: f.get(f.row.keys[1]) ?? 0
-                onValueModified: f.put(f.row.keys[1], value)
-            }
+            QQC2.Label { text: parent.names[0]; opacity: T.muted }
+            Box { which: 0 }
+            QQC2.Label { text: parent.names[1]; opacity: T.muted }
+            Box { which: 1 }
         }
     }
     Component {
@@ -248,6 +257,7 @@ ColumnLayout {
     Component { id: presetsC; PresetsPanel { kcm: f.kcm } }
     Component { id: layoutEditC; LayoutEditor { kcm: f.kcm } }
     Component { id: spotifyC; SpotifyCheck { kcm: f.kcm } }
+    Component { id: queueCheckC; QueueCheck {} }
     Component { id: browserC; BrowserSetupRow {} }
     Component { id: sitesC; SitesList { kcm: f.kcm } }
     Component { id: infoC; QQC2.Label { text: f.row.text ?? ""; wrapMode: Text.WordWrap; opacity: 0.8 } }

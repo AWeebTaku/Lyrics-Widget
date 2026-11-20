@@ -24,6 +24,8 @@ public:
     // Upcoming tracks sent in the last `maxAgeSec` seconds (empty when stale).
     QList<Track> latest(int maxAgeSec = 90) const;
     QString currentVideoId() const { return m_currentId; }
+    bool hasReceived() const { return m_have; }
+    int ageSec() const { return m_have ? int(m_age.elapsed() / 1000) : -1; }  // since the last queue arrived
 
 signals:
     void received(); // a fresh queue arrived

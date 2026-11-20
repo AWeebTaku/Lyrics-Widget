@@ -15,7 +15,7 @@ const keys = {
     centeredBars: bool(false), roundedBars: bool(false), fillWave: bool(true), waveMode: num(0, 0, 2),
     vizSmoothing: num(0, 0, 100), vizReleaseMs: num(350, 50, 3000), vizPeakFall: num(40, 0, 100),
     vizBassWeight: num(100, 0, 300), vizTrebleWeight: num(100, 0, 300), vizTaper: bool(false),
-    vizColorMode: num(0, 0, 3), vizPalette: num(0, 0, 7), vizRainbowSpeed: num(30, 0, 100),
+    vizColorMode: num(0, 0, 4), vizPalette: num(0, 0, 7), vizRainbowSpeed: num(30, 0, 100),
     vizGlow: num(0, 0, 100), vizGlowColorMode: num(0, 0, 2), vizSpacing: num(0, 0, 2), vizColorByLevel: bool(false),
     showVisualizer: bool(false),
     // effects
@@ -136,7 +136,7 @@ const builtin = [
     { name: "Slim strip", settings: { layoutMode: 9, visualizerStyle: 0, barWidth: 3, barGap: 2, vizSmoothing: 40, progressStyle: 4, dockStyle: 4, artShape: 1 } },
     { name: "Mirrored minimal", settings: { layoutMode: 3, cardSurface: 0, progressStyle: 8, dockStyle: 4, controlsShow: 1, visualizerStyle: 1, centeredBars: true, vizSmoothing: 60 } },
     { name: "Compact", settings: { layoutMode: 10, cardSurface: 1, panelColor: "#d9141820", progressStyle: 4, visualizerStyle: 3, vizSmoothing: 40, barWidth: 3, barGap: 2 } }
-].map(p => ({ name: p.name, builtin: true, about: about[p.name] || "", settings: complete(Object.assign({ showVisualizer: true, showCard: p.settings.layoutMode !== undefined }, p.settings)) }))   // a look includes its visualizer, and the card when it names a layout
+].map((p, i) => ({ name: p.name, builtin: true, img: i, about: about[p.name] || "", settings: complete(Object.assign({ showVisualizer: true, showCard: p.settings.layoutMode !== undefined }, p.settings)) }))   // a look includes its visualizer, and the card when it names a layout
 
 // the user's presets are stored as a JSON array in one setting
 function parseUser(json) {

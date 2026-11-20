@@ -1255,3 +1255,42 @@ void LyricsController::checkLibrary()
         onTrackChanged();
     }
 }
+
+// "Check the next songs": reads the upcoming songs from the Spotify app and from the YouTube Music extension and says what
+// worked, so the settings can show which of the two is set up properly.
+void LyricsController::checkQueue()
+{
+    auto names = [](const QList<Track> &n) {
+        QStringList out;
+        for (const Track &t : n.mid(0, 3))
+            out << (t.artist.isEmpty() ? t.title : t.artist + QStringLiteral(" - ") + t.title);
+        return out.join(QStringLiteral(", "));
+    };
+    auto publish = [this] {
+        m_queueStatus = (m_queueSpotify + QLatin1Char('\n') + m_queueBrowser).trimmed();
+        emit queueStatusChanged();
+    };
+    if (m_browser.enabled()) {
+        const QList<Track> next = m_browser.latest();
+        if (!next.isEmpty())
+            m_queueBrowser = QStringLiteral("YouTube Music extension: working, %1 upcoming songs (%2)").arg(next.size()).arg(names(next));
+        else if (m_browser.hasReceived())
+            m_queueBrowser = QStringLiteral("YouTube Music extension: last queue came %1 s ago. Play a song in YouTube Music to refresh it.").arg(m_browser.ageSec());
+        else
+            m_queueBrowser = QStringLiteral("YouTube Music extension: listening on port %1, nothing received yet. Is the extension installed and set to this port?").arg(m_browser.port());
+    } else {
+        m_queueBrowser = QStringLiteral("YouTube Music extension: off");
+    }
+    if (m_spotify.appQueue()) {
+        m_queueSpotify = QStringLiteral("Spotify app: checking…");
+        m_spotify.fetchQueue([this, names, publish](bool ok, const QList<Track> &next) {
+            m_queueSpotify = !ok ? QStringLiteral("Spotify app: no answer on port %1. Start Spotify with Spicetify and the remote debugging port.").arg(m_spotify.debugPort())
+                : next.isEmpty() ? QStringLiteral("Spotify app: connected, but the queue is empty.")
+                : QStringLiteral("Spotify app: working, %1 upcoming songs (%2)").arg(next.size()).arg(names(next));
+            publish();
+        });
+    } else {
+        m_queueSpotify = QStringLiteral("Spotify app: off");
+    }
+    publish();
+}

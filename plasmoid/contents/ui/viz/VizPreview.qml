@@ -1,6 +1,7 @@
 import QtQuick
-import QtQuick.Controls as QQC2
+import org.kde.plasma.plasmoid
 import org.lyricwidget
+import "../audioviz"
 import "../audioviz/components"
 import "../audioviz/code/enum.js" as Enum
 import "../audioviz/code/globals.js" as Globals
@@ -14,9 +15,12 @@ Rectangle {
     id: root
     property var s: ({})
     property bool still: false
-    // Minimal by default: one still frame, redrawn when a setting changes. The checkbox (or `animate`) runs it live at 15 frames a second.
-    property bool animate: false
-    property bool showToggle: true
+    // Runs live at 15 frames a second; `still` (the reduced-motion setting) or animate: false shows one frame, redrawn when a setting changes.
+    property bool animate: true
+    // The pill on the preview: draw the sound that is playing now (cava, set up as in the Audio input page) instead of the made-up spectrum.
+    property bool showListen: true
+    property bool listening: false
+    readonly property var cava: capture.item
     readonly property bool frozen: still || !animate
     implicitHeight: 150
     color: "#181c26"
@@ -42,7 +46,9 @@ Rectangle {
         {
             const t = frozenFrame ? 0 : Date.now() - t0, ph = (t % 500) / 500, kick = Math.exp(-ph * 6)
             const out = []
-            for (let i = 0; i < root.bars; ++i) {
+            const heard = root.cava && !root.cava.hasError && root.cava.values.length === root.bars ? root.cava.values : null
+            if (heard) for (let i = 0; i < root.bars; ++i) out.push(heard[i])
+            else for (let i = 0; i < root.bars; ++i) {
                 const f = i / (root.bars - 1)
                 const base = 0.28 + 0.2 * Math.sin(i * 0.5 + t / 400) + 0.12 * Math.sin(t / 900 + f * 6)
                 out.push(Math.round(100 * Math.max(0, Math.min(1, base * (1 - f * 0.45) + (1 - f) * (1 - f) * kick * 0.8))))
@@ -66,7 +72,8 @@ Rectangle {
         const base = Utils.mergeConfigs(Globals.baseBarColors, {})
         const m = root.s.vizColorMode ?? 0
         if (m === 0) return base
-        const list = m === 1 ? Palettes.paletteColors(root.s.vizPalette ?? 0) : Palettes.rainbow(root.hue, 6)
+        const list = m === 4 ? ["#ff7a59", "#d6457f", "#7a3fb0"]      // a sample cover
+                   : m === 1 ? Palettes.paletteColors(root.s.vizPalette ?? 0) : Palettes.rainbow(root.hue, 6)
         return Object.assign({}, base, { sourceType: Enum.ColorSourceType.List, list: list, colorsOrientation: 0, reverseList: false })
     }
     readonly property var barCfg: { root.hue; root.s; return colorsCfg() }
@@ -126,17 +133,53 @@ Rectangle {
         }
     }
     }
+    Loader {
+        id: capture
+        active: root.listening && !root.still
+        sourceComponent: Cava {
+            framerate: 30
+            barCount: root.bars
+            asciiMaxRange: 100
+            noiseReduction: Plasmoid.configuration.noiseReduction
+            monstercat: Plasmoid.configuration.monstercat
+            waves: Plasmoid.configuration.waves
+            autoSensitivity: Plasmoid.configuration.autoSensitivity
+            sensitivityEnabled: Plasmoid.configuration.sensitivityEnabled
+            sensitivity: Plasmoid.configuration.sensitivity
+            lowerCutoffFreq: Plasmoid.configuration.lowerCutoffFreq
+            higherCutoffFreq: Plasmoid.configuration.higherCutoffFreq
+            inputMethod: Plasmoid.configuration.inputMethod
+            inputSource: Plasmoid.configuration.inputSource
+            sampleRate: Plasmoid.configuration.sampleRate
+            sampleBits: Plasmoid.configuration.sampleBits
+            inputChannels: Plasmoid.configuration.inputChannels
+            autoconnect: Plasmoid.configuration.autoconnect
+            active: Plasmoid.configuration.active
+            remix: Plasmoid.configuration.remix
+            virtual: Plasmoid.configuration.virtual
+            outputChannels: Plasmoid.configuration.outputChannels
+            monoOption: Plasmoid.configuration.monoOption
+            reverse: Plasmoid.configuration.reverse
+            waveform: 0
+            eqEnabled: Plasmoid.configuration.eqEnabled
+            eq: Plasmoid.configuration.eq
+            cavaSleepTimer: 60
+            Component.onDestruction: stop()
+        }
+    }
+    ListenPill {
+        visible: root.showListen && !root.still
+        anchors { right: parent.right; top: parent.top; margins: 6 }
+        idleText: qsTr("Listen to my music")
+        activeText: qsTr("Listening: stop")
+        active: root.listening
+        failed: !!root.cava && root.cava.hasError
+        onToggled: root.listening = !root.listening
+    }
     Text {
         visible: (root.s.visualizerStyle ?? 1) === Enum.VisualizerStyles.Custom
         anchors.centerIn: parent
         color: "white"; opacity: 0.6
         text: "Custom visualizer: shown in the widget"
-    }
-    QQC2.CheckBox {
-        visible: root.showToggle && !root.still
-        anchors { right: parent.right; bottom: parent.bottom; margins: 4 }
-        text: qsTr("Animate")
-        checked: root.animate
-        onToggled: root.animate = checked
     }
 }

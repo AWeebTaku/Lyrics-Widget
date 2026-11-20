@@ -14,6 +14,7 @@ import "settings/tokens.js" as T
 QQC2.ApplicationWindow {
     id: win
     property var cfg                      // the widget's configuration (Plasmoid.configuration)
+    property var live: null               // the widget's lyrics controller: the previews can show the song playing now
     property string widgetName: ""        // what this widget is set to show (its layout), so the windows can be told apart
     property int current: 0
     property var seen: [true, false, false, false, false, false]

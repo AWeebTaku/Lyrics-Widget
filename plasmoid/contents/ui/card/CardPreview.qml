@@ -13,6 +13,15 @@ Item {
     property color systemAccent: "#3daee9"
     // the Card page previews the arrangement chosen even while the card is off; the gallery shows what a look really does
     property bool forceCard: false
+    property bool listening: false       // the visualizer in the preview draws the sound playing now (the pill)
+    property bool still: false
+    // With the pill on, the preview takes everything it can from the song playing now: title, artist, cover, cover colors,
+    // position, controls state, the current lyric line, and the sound for the visualizer. `live` is the widget's controller.
+    property var live: null
+    readonly property bool useLive: listening && !!live && live.hasPlayer
+    readonly property var player: useLive ? live : sample
+    readonly property var coverCols: useLive && live.palette.length > 0 ? live.palette : ["#ff7a59", "#7a3fb0"]
+    readonly property string lyricLine: useLive && live.lines.length > 0 ? (live.lines[Math.max(0, live.currentIndex)] ?? "") : "A line of the lyrics"
     readonly property int mode: forceCard ? (s.layoutMode ?? 2) : Layouts.effectiveMode(s)
     readonly property var natural: Layouts.naturalSize(mode)
     // the preview is drawn at the layout's own size (so it looks as it will), scaled down to fit when it is wider
@@ -49,6 +58,12 @@ Item {
         function seekBySec(d) { clock = Math.max(0, clock + d) }
         function cyclePlayer() {}
     }
+    // the song plays: the seek bar and the clock move, and the layout's own animations run (unless motion is reduced)
+    Timer {
+        interval: 200; repeat: true
+        running: root.visible && !root.still && !root.useLive
+        onTriggered: sample.clock = (sample.clock + 0.2) % sample.lengthSec
+    }
 
     Item {
         id: stage
@@ -64,22 +79,24 @@ Item {
             visible: root.g.surface !== null
             opacity: root.g.opacity.surface ?? 1
             type: root.s.cardSurface ?? 0
-            source: sample.artUrl
-            coverColors: ["#ff7a59", "#7a3fb0"]
+            source: root.player.artUrl
+            coverColors: root.coverCols
             accent: root.accent
             tint: root.s.panelColor ?? "#a0101018"
             blur: root.s.surfaceBlur ?? 40; dim: root.s.surfaceDim ?? 35; radius: root.s.panelRadius ?? 20
             grain: root.s.surfaceGrain ?? 0; shadow: root.s.surfaceShadow ?? false; edge: root.s.surfaceEdge ?? true
         }
         VizPreview {
+            id: cardViz
             visible: (root.viz.showVisualizer || root.g.vizForced) && root.g.vizPlace !== null
             color: "transparent"
+            showListen: false
+            listening: root.listening
             x: root.g.vizPlace ? root.g.vizPlace.x : 0
             y: root.g.vizPlace ? root.g.vizPlace.y : 0
             width: root.g.vizPlace ? root.g.vizPlace.w : 0
             height: root.g.vizPlace ? root.g.vizPlace.h : 0
             s: Object.assign({}, root.viz, root.g.orbit ? { visualizerStyle: 16 } : {})
-            showToggle: false      // the card preview is one still picture
             opacity: (root.mode === 8 && root.s.posterVizBehind ? (root.s.posterVizOpacity ?? 60) / 100 : 1) * (root.g.opacity.viz ?? 1)
         }
         CardLayout {
@@ -87,15 +104,15 @@ Item {
             anchors.fill: parent
             cfg: root.s
             mode: root.mode
-            player: sample
+            player: root.player
             accent: root.accent
             systemAccent: root.systemAccent
-            coverColors: ["#ff7a59", "#7a3fb0"]
+            coverColors: root.coverCols
             textColor: "white"
             dimColor: "#b0ffffff"
             beat: 0.2
             previewMode: true
-            calm: true
+            calm: root.still
         }
         // the lyrics, where the layout leaves room for them
         Text {
@@ -105,8 +122,17 @@ Item {
             width: card.lyricsRect ? card.lyricsRect.w : 0
             height: card.lyricsRect ? card.lyricsRect.h : 0
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-            text: "A line of the lyrics"
+            text: root.lyricLine
             color: "white"; font.pixelSize: 18; elide: Text.ElideRight
         }
+    }
+    ListenPill {
+        visible: !root.still
+        anchors { right: parent.right; top: parent.top; margins: 6 }
+        idleText: qsTr("Listen to my music")
+        activeText: qsTr("Listening: stop")
+        active: root.listening
+        failed: !!cardViz.cava && cardViz.cava.hasError
+        onToggled: root.listening = !root.listening
     }
 }
