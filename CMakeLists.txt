@@ -40,6 +40,7 @@ qt_add_qml_module(lyricbackend
     src/VizCore.h
     src/VizAnalysis.h      src/VizAnalysis.cpp
     src/TrackDetails.h     src/TrackDetails.cpp
+    src/WindowPlacer.h     src/WindowPlacer.cpp
 )
 target_include_directories(lyricbackend PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_options(lyricbackend PRIVATE -Wall -Wextra)
@@ -75,7 +76,7 @@ if(BUILD_TESTS)
   enable_testing()
   add_executable(matching_tests tests/matching.cpp src/Romanizer.cpp)
   target_include_directories(matching_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-  target_link_libraries(matching_tests PRIVATE Qt6::Core ICU::uc ICU::i18n)
+  target_link_libraries(matching_tests PRIVATE Qt6::Core Qt6::Gui ICU::uc ICU::i18n)   # Gui: QColor and QImage for the cover colors
   add_test(NAME matching COMMAND matching_tests)
   add_executable(wordtiming_tests tests/wordtiming.cpp)
   target_include_directories(wordtiming_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
