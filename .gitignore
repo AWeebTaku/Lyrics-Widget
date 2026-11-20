@@ -1,20 +1,40 @@
 # build output
 build/
+build-*/
+cmake-build-*/
 *.o
 *.so
+*.a
 compile_commands.json
+CMakeUserPresets.json
+CMakeLists.txt.user
+.cache/
 
-# local data and tool state
+# local data and tool state (never part of the project)
 .claude/
 .claude_session
+.impeccable/
 *.db
 *.db-wal
 *.db-shm
 spotify.json
 
-# editors / python
+# scratch and test leftovers
+*.log
+*.orig
+*.rej
+*.tmp
+*.bak
+scratch/
+tmp/
+
+# editors, system and python
 __pycache__/
 *.pyc
+node_modules/
 .idea/
 .vscode/
 *.swp
+*~
+.directory
+.DS_Store

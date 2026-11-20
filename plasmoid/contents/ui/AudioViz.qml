@@ -1,7 +1,4 @@
-// Embeds the audio visualizer of "Plasma Audio Visualizer" by Luis Bocanegra
-// (https://github.com/luisbocanegra/plasma-audio-visualizer, GPL-3.0) in the lyric widget.
-// The files under audioviz/ are that widget's, copied as they are (process backend aside);
-// this item replaces its main.qml + CompactRepresentation.qml.
+// The audio visualizer: cava (the sound analysis) feeding the canvas renderer in audioviz/.
 // Created/destroyed by a Loader in main.qml, so cava only runs while it is needed.
 import QtQuick
 import QtQuick.Effects

@@ -1,87 +1,54 @@
 # Lyric Widget for KDE Plasma 6
 
-Synced lyrics on your desktop for **Spotify** and **YouTube / YouTube Music in Chrome**, with
-romanization, text styles, an embedded audio visualizer and look-ahead for shuffled queues.
-A native Plasma widget: QML for the interface, a C++ plugin for everything else.
-
-> Status: personal project, developed and tested on Arch Linux with Plasma 6.8 and Qt 6.12. The lyric matching has a
-> table-driven test program (see [Tests](#tests)); the rest was checked against real songs. Issues and patches welcome.
+Synced lyrics on your desktop for **Spotify** and for **YouTube / YouTube Music in a browser**, with romanization,
+text styles, an audio visualizer, a media card and look-ahead for shuffled queues. A native Plasma widget: QML for the
+interface, a C++ plugin for everything else.
 
 ## Features
 
-- **Timed lyrics** for the song playing, switching line by line from the player's position (one precise
-  timer per line; while synced lyrics play the real position is checked twice a second, so seeks are never missed), with a
-  smooth swipe-and-fade between lines scaled to the song's pace.
-- **Many sources, matched carefully.** (YouTube Music's own plain text is the last resort.) Spotify songs are first asked of the Spotify app itself (exact, by
-  track id). Otherwise LRCLIB, NetEase, QQ Music and Kugou are searched in parallel and scored on title,
-  artist, length and album, with cross-script matching (`ヨルシカ` = `Yorushika`). No accounts or keys.
-- **Romanization replaces the original line** (Japanese, Korean, Chinese) when available: provider
-  romanization, human-made furigana from UtaTen, or a local MeCab/UniDic converter.
-- **Lyrics library:** a settings page to fetch the lyrics of the playing song, edit them, stretch or thin out the timing
-  (percent, shift, or "first line at / last line at") and save them. Saved lyrics win over every provider and
-  survive rebuilds. Searching from the page understands edits: "Alright by Kendrick Lamar, but ..." finds the original
-  song and stretches its timing to the length of the song that is playing (then fine-tune with Fit). The table keeps
-  title, artist, length, language and source, so a shared catalogue could be added later.
-- **Karaoke effect** (Settings, Lyrics, What to show; off by default): the words of the current line light up one by one as they are
-  sung, the rest of the line dimmed. Word times come from NetEase, QQ Music and Kugou when they have them (fetched only
-  while it is on), else the words are spread over the line. Japanese and Chinese light up one character at a time. The
-  library's **Word timing** tab edits the times of any line (stamp each word as it is sung) and they win over the providers.
-- **Media card** (Show: Card on the General page, next to Lyrics and Visualizer; off by default; Settings, **Card** has its look): the cover (sharp,
-  rounded, squircle, circle, vinyl record or CD, with border, glow, tilt, reflection, gray while paused and a spin), title,
-  artist and album (plain, shadow or frosted; long titles scroll), previous / play-pause / next / shuffle / repeat in six button
-  looks, and eleven seek-bar styles with time labels, a hover time, dragging, wheel and double-click seeking. Ten arrangements (classic, mirrored, inline, hero wave, stacked, orbit, poster, slim strip, compact, icon; the layout also places the visualizer behind the text), seven surfaces (color,
-  art backdrop, glass, a liquid-glass shader, atmosphere, solid, with grain, shade and edge), details as a tooltip, a drawer or
-  a flip of the cover, optional online facts (MusicBrainz and Wikipedia, off by default), scroll-to-change-volume, and a pill for
-  Plasma panels. About thirty built-in looks combine them with the visualizer.
-- **Panel pill and popup:** in a Plasma panel the widget can be the card, a small pill that opens the card, or either by
-  the panel's thickness. The pill has its own look (cover shape, border, glow, text, buttons), a small visualizer (moving
-  bars or the live thing), a progress line or ring, buttons, a scrolling title, and opens on click, hover or both; the
-  opened card can be pinned. A card on a vertical panel turns on its side. Copy the card's look to the pill or back with
-  one button.
+- **Timed lyrics** for the song playing, switching line by line from the player's position, with a smooth swipe and fade
+  between lines scaled to the song's pace. Seeks are never missed.
+- **Many sources, matched carefully.** Spotify songs are first asked of the Spotify app itself (exact, by track id).
+  Otherwise LRCLIB, NetEase, QQ Music and Kugou are searched in parallel and scored on title, artist, length and album,
+  with cross-script matching (`ヨルシカ` = `Yorushika`). No accounts or keys. Songs in several languages, sped-up or
+  slowed uploads, TV-size cuts and extended mixes are recognized and matched to the right lyrics.
 - **Lyrics from your own files:** a `.lrc` beside the song file, an optional folder of `.lrc` files, and lyrics stored in
-  MP3 and FLAC files, used before any online lookup (Settings, Sources). A `.romaji.lrc` beside it gives the
-  pronunciation. A `.chapters` or `.cue` file beside the song puts chapter marks on the seek bar.
-- **Your own styles:** visualizers, seek bars and buttons written as QML files, loaded from
-  `~/.local/share/lyric-widget/` (opt-in, not sandboxed; see [docs/custom-styles.md](docs/custom-styles.md)).
-- **Gallery and doctor:** [docs/gallery.md](docs/gallery.md) shows all 36 built-in looks; `bash /usr/share/lyric-widget/doctor.sh`
-  checks cava, the sound server, players, the widget's own files and its recent messages.
-- **More visualizer styles:** terrain, tunnel and plasma (GPU shaders), orbit ring, stereo scope, a style you write yourself as
-  a QML file (opt-in, not sandboxed), mel or linear frequency axis, color by level, glow color, simple rendering, and
-  a live preview in the settings, a CRT oscilloscope and a silk ribbon.
-- **Quiet when there is nothing to show:** "No lyrics found" and similar messages fade away after a few seconds.
-- **Language versions:** when a song exists in several languages under one title (English and Japanese singles), the
-  language named in the track or in YouTube's own video title ("-English version-") picks the matching lyrics; a
-  Japanese version may contain English lines.
-- **Songs vs. videos:** podcasts, episodes and long videos get no lookup; sped-up/slowed uploads have their
-  timestamps stretched; incomplete synced lyrics are replaced by a complete copy or filled in from plain text.
-- **Instrumental breaks:** a line fades out a few seconds after it has been sung when a long break follows, and returns with the next one.
-- **Text styles:** weights, italic, underline, letter spacing, caps, shadow, outline and a highlight bar.
-- **Other lyrics:** hover buttons (top right) look for the next-best lyrics, kept in your library, and open the library.
-- **Audio visualizer:** a 1:1 embed of *Plasma Audio Visualizer* by Luis Bocanegra with all its settings.
-- **Visualizer styles and effects:** twelve more styles (peak bars, LED meter, mountain, oscilloscope, pixel matrix, floating
-  dots, tech line, radial burst, pulse orb, ribbon, sparkles, gravity sparks) and a GPU "Plasma" style; smoothing, falling peak
-  caps, bass and treble weighting; color modes (palettes, rainbow, rainbow pushed by the treble); a glow; lyrics that swell on
-  the beat, an edge glow with the bass and a glow around the widget; presets (built in and your own, shared as text, random or
-  of the day); reduced motion and a battery saver. Settings, **Visualizer**.
-- **Look-ahead:** lyrics of the next songs in the (shuffled) queue are fetched in advance (Spotify app,
-  YouTube Music through a small Chrome extension).
-- **Dynamic:** up to four colors from the album cover, exactly as they are (current line, other lines, and a gradient in
-  the visualizer; black, white and gray covers give those greys), one color or several; hides the neighbouring lines
-  when the widget is small, fades out when nothing plays or after a set time of pause (the lyrics and visualizer stop with it), pauses all work when a window is full screen, and hides (still following the song) when one is maximized.
-- Per-song sync offsets, layered/overlapping lyrics, size modes (free, fixed, full screen width).
+  MP3 and FLAC tags, used before any online lookup. A `.romaji.lrc` beside it gives the pronunciation; a `.chapters` or
+  `.cue` file puts chapter marks on the seek bar.
+- **Romanization** of Japanese, Korean and Chinese lines, replacing the original line: the provider's, human-made
+  furigana, or a local MeCab/UniDic converter.
+- **Karaoke effect** (off by default): the words of the current line light up one by one as they are sung, from word-timed
+  lyrics where a provider has them. The library's **Word timing** tab edits the times of any line.
+- **Lyrics library:** fetch the lyrics of the playing song, edit them, stretch or thin out the timing and save them.
+  Saved lyrics win over every provider. Searching understands edits: "Alright by Kendrick Lamar, but ..." finds the
+  original and stretches it to the length of the song that is playing.
+- **Audio visualizer:** bars, wave, blocks, peak bars, LED meter, mountain, oscilloscope, pixel matrix, floating dots, tech
+  line, radial burst, pulse orb, ribbon, sparkles, gravity sparks, and GPU styles (plasma, terrain, tunnel). Smoothing,
+  bass and treble weighting, color modes (palette, rainbow, cover colors), glow, 36 built-in looks you can save, share
+  as text and randomize, and a battery saver.
+- **Media card:** the cover (sharp, rounded, squircle, circle, vinyl record or CD), title and details, buttons, eleven seek-bar
+  styles, ten layouts, seven backgrounds, a pill for Plasma panels. Every part of every layout can be hidden, moved,
+  resized and faded.
+- **Dynamic colors:** up to four colors from the album cover for the lyrics, the visualizer and the card accent.
+- **Your own styles:** visualizers, seek bars and buttons written as QML files (opt-in, not sandboxed; see
+  [docs/custom-styles.md](docs/custom-styles.md)).
+- **Look-ahead:** lyrics of the next songs in the (shuffled) queue are fetched in advance (Spotify app, YouTube Music
+  through a small browser extension).
+- **Several copies:** each copy of the widget has its own settings and its own settings window; several can be open at once.
+
+[docs/gallery.md](docs/gallery.md) shows the built-in looks.
 
 ## Requirements
 
-Versions: KDE **Plasma 6** (tested on 6.8), **Qt 6.4 or newer** (tested on 6.12), CMake 3.21+, a C++20 compiler (tested with GCC 16),
-ICU (tested with 78). Plasma 5 is not supported.
-
-| For | Packages |
+| For | You need |
 |---|---|
-| Build and run | KDE Plasma 6, `base-devel`, `cmake`, `ninja`, `qt6-base`, `qt6-declarative`, `qt6-websockets`, `icu` |
-| Chrome / YouTube | the **Plasma Browser Integration** extension in your browser (for clean title and artist) |
-| Accurate Japanese romanization | `python` (the setup script does the rest) |
-| Visualizer (optional) | `cava` |
-| Spotify lyrics and look-ahead (optional) | Spotify started with a DevTools port (Spicetify enables **8088**) |
+| Building | KDE Plasma 6 (with its development files), Qt 6.4 or newer (base, declarative, websockets), CMake 3.21+, Ninja, a C++20 compiler, ICU |
+| Chrome or YouTube Music | the **Plasma Browser Integration** extension and the `plasma-browser-integration` host package |
+| Accurate Japanese romanization (optional) | Python 3 |
+| Audio visualizer (optional) | `cava` |
+| Spotify lyrics and look-ahead (optional) | Spotify with [Spicetify](https://spicetify.app), started with a remote debugging port |
+
+Packages (names differ between distributions). On Arch Linux:
 
 ```
 sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
@@ -94,19 +61,14 @@ git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget
 ./build.sh
 ```
 
-`build.sh` does a clean cycle each time: sets up the romanization helper (first run only, about 30 s and
-270 MB in `~/.local/share/lyric-widget/venv`), wipes the build folder, the cached lyrics and plasmashell's QML
-cache, builds, installs into `/usr` with `sudo`, and restarts plasmashell. Your widget settings and your
-per-song sync offsets are kept (offsets live in `lyrics.db` next to the cache, which only loses its lyrics table;
-`uninstall.sh` removes everything).
+`build.sh` sets up the romanization helper (first run only, about 30 seconds and 270 MB), builds, installs into `/usr` with
+`sudo`, clears the cached lyrics table and plasmashell's QML cache, and restarts plasmashell. Your widget settings and your
+per-song sync offsets are kept.
 
 Then right-click the desktop, **Add or Manage Widgets**, drag **Lyric Widget** onto it, and play something.
-Right-click the widget, **Configure**, for the settings.
+Right-click the widget and choose **Configure…** for the settings.
 
-On Arch Linux you can also build a package: `cd packaging/arch && makepkg -si` (the `PKGBUILD` builds the latest commit from
-GitHub; it is not on the AUR yet).
-
-Manual build, if you prefer:
+Manual build:
 
 ```
 cmake -B build -S . -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
@@ -115,50 +77,120 @@ sudo cmake --install build
 systemctl --user restart plasma-plasmashell
 ```
 
-Installed files: `/usr/lib/qt6/qml/org/lyricwidget/` (C++ plugin), `/usr/share/plasma/plasmoids/org.lyricwidget/`
-(the widget), `/usr/share/lyric-widget/` (Chrome extension and the romanization script).
+On Arch Linux you can also build a package: `cd packaging/arch && makepkg -si`.
 
-### Uninstall
+Installed files: `/usr/lib/qt6/qml/org/lyricwidget/` (the C++ plugin), `/usr/share/plasma/plasmoids/org.lyricwidget/` (the
+widget), `/usr/share/lyric-widget/` (the browser extension, the romanization script, the doctor script, examples).
 
-```
-./uninstall.sh --dry-run    # shows what it would do
-./uninstall.sh              # asks for confirmation: removes the widget, installed files, caches and data
-```
+To remove everything: `./uninstall.sh --dry-run` shows what it would do, `./uninstall.sh` asks first. It keeps the source
+folder. Remove the browser extension yourself in the browser.
 
-It keeps this source folder. Remove the Chrome extension yourself at `chrome://extensions`.
+To check what is missing on a system: `bash /usr/share/lyric-widget/doctor.sh` (it only reads and prints).
+
+## Setting up the sources
+
+Each of these is optional. The widget works with just a player that reports what it plays (see "Players").
+
+### The audio visualizer (cava)
+
+The visualizer draws what **cava** hears. cava is a separate program that analyses the sound your computer plays.
+
+1. Install `cava` with your package manager.
+2. Turn the visualizer on: **Configure, General, Visualizer**.
+3. That is all in the usual case. By default the widget captures the **monitor** of your default sound output, which is
+   everything you hear.
+
+A *monitor* is the sound server's copy of what an output device is playing. To capture something else, or if the visualizer
+stays flat:
+
+- List the sources: `pactl list sources short` (works with PipeWire and PulseAudio). Monitors end in `.monitor`.
+- On PipeWire you can also use `wpctl status` to see the devices and their names.
+- Open **Configure, Audio input**. Set **Method** to PipeWire or PulseAudio (or leave it on Default) and put the source's
+  name in **Source**, or press **Choose from the list** and click one. Leave **Source** empty for "the default output".
+- To react to a microphone or line-in instead, pick that device's source (not a monitor).
+- Press **Apply**. The widget restarts cava by itself.
+
+If nothing moves: check that `cava` is installed (`cava -v`), that sound is actually playing, and that the source is not muted.
+
+### Spotify (lyrics from the Spotify app, and look-ahead)
+
+Without this the widget reads Spotify like any other player and searches the online providers. With it, lyrics are asked
+of the Spotify app itself (exact, by track id) and the shuffled queue is known in advance. The widget connects to a local
+debugging port of the Spotify app and only reads (queue, lyrics); nothing in Spotify is changed.
+
+1. Install **Spicetify** by following its own installation guide, then run `spicetify backup apply`.
+2. Start Spotify with a remote debugging port, for example `spotify --remote-debugging-port=8088`. To make that permanent,
+   copy Spotify's launcher to `~/.local/share/applications/` and add the flag to its `Exec=` line, or put the flag in
+   Spicetify's launch flags (see its documentation for the exact setting name in your version).
+3. Check that the port answers: `curl -s http://127.0.0.1:8088/json` should print a list that mentions Spotify.
+4. **Configure, Sources**: turn on *Get lyrics and the queue from the Spotify app*, keep the port at 8088 (or enter yours),
+   and press **Test the connection**.
+
+A debugging port is powerful for any program running as you. Keep it only on `127.0.0.1` (the default for this flag) and
+turn the setting off when you do not want it.
+
+### YouTube and YouTube Music in a browser
+
+1. Install the **Plasma Browser Integration** package (`plasma-browser-integration`) and its extension in your browser,
+   and enable media controls in the extension's settings. Without it the browser shows `Song | YouTube Music` and no artist.
+2. **Configure, Sources, Players**: the websites the widget follows are listed there; tick the ones you use.
+
+To know the *Up next* list ahead of time (look-ahead for YouTube Music), install the small extension from this project.
+It talks only to `127.0.0.1` and runs only on `music.youtube.com`:
+
+1. **Configure, Sources**: turn on *Get the queue from YouTube Music* and Apply. Check with
+   `curl -i http://127.0.0.1:8899/ping`.
+2. On the same page choose your browser and press **Install the extension**, turn on **Developer mode**, **Load unpacked**,
+   and pick the folder shown (use **Copy the path**; press `Ctrl+L` in the dialog).
+3. Open music.youtube.com, reload the tab, play from a playlist and open **Up next** once. Then
+   `curl -s http://127.0.0.1:8899/status` lists the queue.
+
+If it stays empty, look at the extension's service worker console. YouTube changes its page now and then, so
+`extension/page.js` may need a small update. If you change the port in the widget, change `PORT` in
+`extension/background.js` too.
+
+### Other players
+
+By default the widget follows Spotify and the websites listed above. Turn on **Follow any media player** (Sources, Players)
+to follow VLC, mpv, Strawberry, Elisa and any other player that reports what it plays through the standard media interface
+(MPRIS). Lyrics are then found online by title and artist.
+
+### Lyrics from your own files
+
+For a song played from a file the widget looks, before any online lookup, for `Song.lrc` beside it (or `Song.ext.lrc`), for
+`Artist - Title.lrc` or `Title.lrc` in the folder you set in **Sources**, and for lyrics stored inside the file (MP3 and FLAC).
+
+### Japanese romanization
+
+`./setup-romaji.sh` (run by `build.sh`) makes a private Python environment with MeCab and UniDic. Nothing is installed
+system-wide and no root is needed. Without it the widget falls back to a simpler converter.
 
 ## Settings
 
-Right-click the widget, **Configure**. Seven pages, one per part of the widget. Every page is a stack of cards (open one to see
-its settings, **Reset** puts a card back to its defaults), has a search box, and shows only the options that apply to what you
-chose (pick the Wave style and the Block options disappear). Each setting has a short line under it saying what it does.
+Right-click the widget and choose **Configure…**. Seven pages, one per part of the widget. Each page is a list of groups
+(open one to see its settings; **Reset** puts a group back to its defaults), has a search box, and shows only the options that
+apply to what you chose. Each setting has a short line under it saying what it does.
 
-- **General**: what to show (lyrics, visualizer, card), the widget's size on the desktop, when it hides or pauses, and *Motion and
-  power* (reduced motion, battery saver, simple rendering, dim while paused) for all of it at once.
-- **Lyrics**: what is shown (previous and next lines, romanization, karaoke, swell on the beat), the text, the colors (including
-  colors from the album cover), the effects (shadow, outline, highlight bar), timing and the hover buttons, and the position.
-- **Visualizer**: *Looks* first (36 ready-made, favorites, your own, sharing as text), then the style, the circle, the colors
-  (a palette, a rainbow, or your own color setup), how it reacts to the music, its size in a panel, and its position. A live
-  preview is there when you ask for it. The audio capture (cava) settings are on the next page.
-- **Audio input**: where the sound comes from, what is drawn (frame rate, channels), the level and pitch range, and the equalizer.
-- **Card**: the layout, the background and glow, the cover, the buttons, the seek bar, the title and details, the Poster and Orbit
-  arrangements, the pointer, and (for a panel) the pill. A live preview of the whole card is there when you ask for it. The card
-  places the lyrics and the visualizer; how they look is set on their own pages. With a card on, the hover buttons (other lyrics,
-  lyrics library) and the sync row (−1s … +1s) move to where the layout leaves room, and the page says when the chosen arrangement is
-  too big for the widget's size (Poster and Orbit need roughly 440 x 220 and 340 x 380 px; Slim strip and Inline fit a low widget).
-- **Sources**: lyric files beside your songs, next songs, the Spotify app, YouTube Music (browser extension), other players, and the
-  websites a browser may play music from.
-- **Lyrics library**: get (press again for the next result), edit, retime and save lyrics.
+- **General:** what to show (lyrics, visualizer, card), the widget's size on the desktop, when it hides or pauses, and power
+  saving.
+- **Lyrics:** what is shown, the text, the colors, the effects (shadow, outline, highlight bar), timing, the hover buttons and
+  the position.
+- **Visualizer:** looks first (built in and your own), then the style, colors, how it reacts to the music, and its position.
+- **Audio input:** where the sound comes from, what is drawn, the level and pitch range, and the equalizer.
+- **Card:** the layout, the background and glow, the cover, buttons, seek bar, title and details, and the pill for panels.
+  **Edit the layout** lets you turn any part of a layout on or off, move it, resize it and fade it, for each layout on its
+  own, with quick choices such as "Only this".
+- **Sources:** lyric files, next songs, the Spotify app, YouTube Music, other players and websites.
+- **Lyrics library:** get, edit, retime and save lyrics.
 
-*How the pages are made:* `plasmoid/contents/ui/settings/model.js` lists every setting once (page, card, label, range, when it
-applies). `settings/SettingsPage.qml` draws a page from it, and `node tools/gen-settings.js` writes the thin page files
-(`configGeneral.qml` ...) that Plasma needs. `tests/settings.test.js` checks the model against `config/main.xml` and the generated
-pages, so a setting cannot exist in one place only.
+Plasma shows only one settings dialog at a time, so **Configure…** opens the settings in a window that belongs to that
+widget. With several copies of the widget on the desktop, each has its own settings and its own window, and they can all be
+open together. On KDE's window manager the windows open in the middle of the screen.
 
 ## How it works
 
 ```
- MPRIS players (Spotify, Plasma Browser Integration)
+ MPRIS players (Spotify, browsers, any player)
         |  D-Bus, event driven
         v
  PlayerWatcher --> LyricsController <--> LyricsStore (SQLite cache, per-song offsets, learned sources)
@@ -166,106 +198,86 @@ pages, so a setting cannot exist in one place only.
    Spotify app ------+   |   +---- timer per line, layered lines, word timing
    (exact lyrics)        |
                          +---- LyricsFetcher: LRCLIB | NetEase | QQ | Kugou  (parallel, scored, merged)
-                         +---- ReadingFetcher: UtaTen furigana -> romaji helper (MeCab + UniDic)
- QML: LyricStage (transition), AudioViz (cava + canvas), settings pages
+                         +---- ReadingFetcher: furigana -> romaji helper (MeCab + UniDic)
+ QML: LyricStage (transition), AudioViz (cava + canvas), card, settings pages
 ```
 
-- **Matching.** Candidate titles are derived from the player's text (artist「Song」, dash splits, variant
-  tags). Each provider result is scored on title, artist, duration and album; weak results are rejected
-  (instrumental, karaoke, placeholders, wrong artist). The best-scoring synced result wins, complete copies
-  beat copies with a missing verse, and the first answer is shown and upgraded when better data
-  (romanization, word timing) arrives. A provider silent for 7 s is left out.
-- **Caching.** Settled answers are saved; provider failures and unsynced-only answers are not, and are retried
-  quietly. A Japanese/Chinese song saved without provider romanization is looked up again after an hour.
-- **Romanization order.** Provider romanization (NetEase, Spotify) first; otherwise UtaTen furigana run
-  through MeCab; otherwise MeCab alone. Korean (Revised Romanization) and Chinese (pinyin) are local.
-- **Look-ahead.** Up to 5 upcoming songs, one at a time, 5 s apart, never while a window covers the widget.
-
-## YouTube Music queue (Chrome extension)
-
-Browsers do not expose their queue, so a tiny extension (`extension/`, no store listing, talks only to
-`127.0.0.1`, runs only on `music.youtube.com`) passes the "Up next" list to the widget.
-
-1. **Configure, Sources**: tick *Receive the YouTube Music queue*, Apply. Check with
-   `curl -i http://127.0.0.1:8899/ping`.
-2. On the same page click *Open <your browser>'s extensions page*, turn on **Developer mode**, **Load unpacked**,
-   and pick `/usr/share/lyric-widget/extension` (use *Copy folder path*; press `Ctrl+L` in the dialog).
-3. Open music.youtube.com, reload the tab, play from a playlist, open **Up next** once, then
-   `curl -s http://127.0.0.1:8899/status` should list the queue.
-
-If it stays empty: check the extension's service worker console, and on the page run
-`document.querySelector('ytmusic-player-queue-item').data` (the extension expects `videoId`, `title`,
-`longBylineText`, `lengthText`; YouTube changes its page now and then, so `extension/page.js` may need a tweak).
-If you change the port in the widget, change `PORT` in `extension/background.js` too. This extension has not
-been tested against a live YouTube Music tab yet.
+- **Matching.** Candidate titles are derived from the player's text (`Artist「Song」`, dash splits, variant tags). Each result
+  is scored on title, artist, duration and album; weak results are rejected (instrumental, karaoke, placeholders, wrong
+  artist). The best synced result wins, complete copies beat copies with a missing verse, and the first answer is shown
+  and upgraded when better data arrives. A provider silent for a few seconds is left out.
+- **Caching.** Settled answers are saved; failures and unsynced-only answers are not, and are retried quietly.
+- **Look-ahead.** Up to five upcoming songs, one at a time, never while a window covers the widget.
+- **Cover colors.** Taken from the picture the widget shows, falling back to the player's own cover, with patient retries.
 
 ## Privacy and security
 
-- **Leaves your computer:** lyric searches to LRCLIB, NetEase, QQ Music and Kugou (song title, artist, album,
-  length), the video id to YouTube Music (its own lyrics, only when no timed lyrics exist), the song title to UtaTen for Japanese readings, the YouTube video id to YouTube (for the video's title), and the album-art image request to the player's own
-  CDN. No account, identifier or telemetry. Kugou is queried over plain HTTP (its certificate does not validate).
-- **Local listeners, `127.0.0.1` only:** `8899` (extension receiver, off unless enabled; accepts `POST /queue`
-  only from a browser-extension origin with the widget's marker header).
-- **Spotify app route:** connects to the app's existing local debug port and runs read-only queries (queue,
-  lyrics). A DevTools port is powerful for any local program; keeping it open is your choice.
-- **Files:** `~/.local/share/plasmashell/lyrics.db` (cache, offsets and your lyrics library), `~/.local/share/lyric-widget/venv`
-  (romanization helper).
+- **Leaves your computer:** lyric searches to LRCLIB, NetEase, QQ Music and Kugou (title, artist, album, length), the video id
+  to YouTube (for its own lyrics and the video's title), the song title to UtaTen for Japanese readings (furigana), and
+  the album-art request to the player's own CDN. Optional online facts about a song (MusicBrainz, Wikipedia) are off by
+  default. No account, identifier or telemetry. Kugou is queried over plain HTTP.
+- **Local listeners, `127.0.0.1` only:** port `8899` for the browser extension (off unless enabled).
+- **Files:** `~/.local/share/plasmashell/lyrics.db` (cache, offsets and your lyrics library) and
+  `~/.local/share/lyric-widget/` (the romanization environment and your own styles).
 - Lyrics belong to their owners and come from third-party services under their own terms.
 
 ## Troubleshooting
 
 | Problem | Try |
 |---|---|
-| No lyrics for a song | `touch ~/.cache/lyric-widget/debug`, restart plasmashell, replay; then `journalctl --user -u plasma-plasmashell -n 300 \| grep -E "netease\|kugou\|publish"` shows each provider's pick |
-| Chrome shows `Song \| YouTube Music` with no artist | install/enable **Plasma Browser Integration** |
-| Wrong Japanese readings | make sure `./setup-romaji.sh` finished (`romanization: ready`); readings come from UtaTen when it has the song |
-| Visualizer blank | check `cava` is installed and audio plays; Settings, Audio input page |
+| No lyrics for a song | `mkdir -p ~/.cache/lyric-widget && touch ~/.cache/lyric-widget/debug`, restart plasmashell, replay; then `journalctl --user -u plasma-plasmashell -n 300 \| grep -E "netease\|kugou\|publish"` shows each provider's pick |
+| Browser shows `Song \| YouTube Music` with no artist | install and enable **Plasma Browser Integration** |
+| Wrong Japanese readings | make sure `./setup-romaji.sh` finished; readings come from the furigana service when it has the song |
+| Visualizer blank | see "The audio visualizer (cava)" above; `bash /usr/share/lyric-widget/doctor.sh` |
+| Spotify route does not connect | see "Spotify" above; the port must answer `curl http://127.0.0.1:8088/json` |
 | See errors | `journalctl --user -b \| grep -i -E "lyric\|org.lyricwidget"` |
 
 ## Known limits
 
 - Some songs have no synced lyrics anywhere; unsynced text is shown as a static block.
-- Provider APIs are unofficial and can change or rate-limit without notice.
+- Provider interfaces are unofficial and can change or rate-limit without notice.
 
 ## Project layout
 
 ```
 CMakeLists.txt  build.sh  uninstall.sh  setup-romaji.sh
-src/        C++ plugin (QML module org.lyricwidget): PlayerWatcher, LyricsController, LyricsFetcher, Text.h
-            (matching), LyricsStore, ReadingFetcher, SpotifyApp, BrowserQueue, Process, ...
-plasmoid/   the widget: metadata.json, contents/ui (main.qml, LyricStage.qml, settings pages, audioviz/),
-            contents/config (main.xml settings schema, config.qml pages)
-romaji/     romaji.py: MeCab + UniDic helper run in the private Python environment
-extension/  Chrome extension (Manifest V3) for the YouTube Music queue
-tests/      matching.cpp: table-driven checks of the lyric matching (see Tests)
+src/        C++ plugin (QML module org.lyricwidget): player watching, lyric lookup and matching, cache, library,
+            visualizer analysis, window placement
+plasmoid/   the widget: metadata.json, contents/ui (the widget, the card, the visualizer, the settings),
+            contents/config (main.xml: the settings schema), contents/kwin (the window-centering script)
+romaji/     the MeCab + UniDic helper run in the private Python environment
+extension/  browser extension (Manifest V3) for the YouTube Music queue
+examples/   example visualizers, seek bars and buttons you can copy
+tools/      doctor.sh (checks a system), gen-settings.js (writes the settings pages), gallery/ (renders the gallery)
+tests/      table-driven checks of the lyric matching, the layouts and the settings
+docs/       the gallery and the guide to writing your own styles
 packaging/  arch/PKGBUILD for Arch Linux
 ```
 
-## Tests
+The settings are defined once, in `plasmoid/contents/ui/settings/model.js`. `node tools/gen-settings.js` writes the page files
+Plasma needs from it, and `tests/settings.test.js` checks the model against `config/main.xml` and those files.
 
-The lyric matching (which names are searched, how a provider's hit is scored) and the timestamp helpers are checked by one
-table-driven program, `tests/matching.cpp`. It needs no framework and no network:
+## Tests
 
 ```
 cmake -B build -S . -G Ninja -DBUILD_TESTS=ON
-cmake --build build --target matching_tests
+cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
+They need no framework and no network. Node is needed for the settings, layout and preset checks.
+
 ## Lyric sources and terms
 
-Lyrics are fetched while you listen and are not part of this repository; they belong to their rights holders. The cache and your
-library keep copies on your own machine for your own use. LRCLIB is a community-run open database. NetEase Cloud Music, QQ Music and
-Kugou are asked through their public web endpoints without accounts or keys: these are unofficial, can change or stop at any
-time, and their terms may not allow automated use, so check them before relying on this. With the karaoke effect on, the same three also give word-timed lyrics (NetEase's and Kugou's formats are plain; QQ's is
-encrypted, and the cipher in `src/QqDes.h` is ported from [QQMusicDES](https://github.com/wangqr/QQMusicDES), MIT). Spotify's lyrics are read from the
-Spotify app on your own computer with your own session. This project is not affiliated with any of these services. When a
-provider is slow or down the widget waits at most 5 s for it, retries throttled requests, and leaves a provider that fails three
-times in a row alone for a minute, so the others answer without delay.
+Lyrics are fetched while you listen and are not part of this repository; they belong to their rights holders. The cache and
+your library keep copies on your own machine for your own use. LRCLIB is a community-run open database. NetEase Cloud Music,
+QQ Music and Kugou are asked through their public web endpoints without accounts or keys: these are unofficial, can change
+or stop at any time, and their terms may not allow automated use, so check them before relying on this. With the karaoke
+effect on, the same three also give word-timed lyrics. Spotify's lyrics are read from the Spotify app on your own computer
+with your own session. This project is not affiliated with any of these services. When a provider is slow or down the
+widget waits a few seconds for it, retries throttled requests, and leaves a provider that fails repeatedly alone for a
+minute, so the others answer without delay.
 
-## Credits and license
+## License
 
-GPL-3.0 (see `LICENSE`). The visualizer files under `plasmoid/contents/ui/audioviz/` are copied from
-[Plasma Audio Visualizer](https://github.com/luisbocanegra/plasma-audio-visualizer) by Luis Bocanegra
-(GPL-3.0), which is why this project is GPL-3.0 too; see `NOTICE`. Lyric data: LRCLIB, NetEase Cloud Music,
-QQ Music, Kugou, YouTube Music, Spotify (Musixmatch), UtaTen (readings). Romanization: MeCab, UniDic, fugashi, cutlet, ICU.
+GPL-3.0 (see `LICENSE` and `NOTICE`).
