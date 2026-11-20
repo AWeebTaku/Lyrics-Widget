@@ -30,6 +30,22 @@ class LyricsController : public QObject
     Q_PROPERTY(bool karaoke READ karaoke WRITE setKaraoke NOTIFY karaokeChanged)
     Q_PROPERTY(QString title READ title NOTIFY trackInfoChanged)
     Q_PROPERTY(QString artist READ artist NOTIFY trackInfoChanged)
+    // the player behind the lyrics: what it plays and what the widget's controls do to it
+    Q_PROPERTY(QString album READ album NOTIFY trackInfoChanged)
+    Q_PROPERTY(QString playerName READ playerName NOTIFY trackInfoChanged)       // "Spotify", "Chromium"...
+    Q_PROPERTY(int playerCount READ playerCount NOTIFY trackInfoChanged)        // players with a song, for the switch
+    Q_PROPERTY(QString thumbUrl READ thumbUrl NOTIFY trackInfoChanged)          // a YouTube video's own picture
+    Q_PROPERTY(QVariantList chapters READ chapters NOTIFY chaptersChanged)      // [{start (s), title}] from a .chapters / .cue file
+    Q_PROPERTY(bool localLyrics READ localLyrics WRITE setLocalLyrics NOTIFY localLyricsChanged)   // read lyric files and song tags
+    Q_PROPERTY(QString localLyricsFolder READ localLyricsFolder WRITE setLocalLyricsFolder NOTIFY localLyricsChanged)
+    Q_PROPERTY(QString artUrl READ artUrl NOTIFY artChanged)
+    // take the colors from the video's own picture first (the widget shows that one instead of the player's cover)
+    Q_PROPERTY(bool preferThumbnail READ preferThumbnail WRITE setPreferThumbnail NOTIFY preferThumbnailChanged)
+    Q_PROPERTY(double lengthSec READ lengthSec NOTIFY trackInfoChanged)
+    Q_PROPERTY(bool hasPlayer READ hasPlayer NOTIFY trackInfoChanged)
+    Q_PROPERTY(double volume READ volume WRITE setVolume NOTIFY controlsChanged)   // 0..1
+    Q_PROPERTY(bool shuffle READ shuffle WRITE setShuffle NOTIFY controlsChanged)
+    Q_PROPERTY(QString loopStatus READ loopStatus WRITE setLoopStatus NOTIFY controlsChanged) // None, Track, Playlist
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
     Q_PROPERTY(QStringList lines READ lines NOTIFY linesChanged)
     Q_PROPERTY(QStringList roman READ roman NOTIFY linesChanged) // parallel to lines, "" = none
@@ -72,6 +88,33 @@ public:
 
     QString title() const { return m_title; }
     QString artist() const { return m_artist; }
+    QString album() const { const MprisPlayer *p = m_watcher.active(); return p ? p->album() : QString(); }
+    QString artUrl() const { return m_artUrl; }
+    bool preferThumbnail() const { return m_preferThumb; }
+    void setPreferThumbnail(bool on) { if (on == m_preferThumb) return; m_preferThumb = on; emit preferThumbnailChanged(); refreshPalette(); }
+    QString playerName() const;
+    int playerCount() const { return m_watcher.count(); }
+    QString thumbUrl() const;
+    QVariantList chapters() const { return m_chapters; }
+    bool localLyrics() const { return m_localLyrics; }
+    void setLocalLyrics(bool on);
+    QString localLyricsFolder() const { return m_localFolder; }
+    void setLocalLyricsFolder(const QString &f);
+    Q_INVOKABLE void cyclePlayer() { m_watcher.cycle(); }
+    double lengthSec() const { const MprisPlayer *p = m_watcher.active(); return p ? p->lengthUs() / 1e6 : 0; }
+    bool hasPlayer() const { return m_watcher.active() != nullptr; }
+    double volume() const { const MprisPlayer *p = m_watcher.active(); return p ? p->volume() : 1; }
+    void setVolume(double v) { if (MprisPlayer *p = m_watcher.active()) p->setVolume(v); }
+    bool shuffle() const { const MprisPlayer *p = m_watcher.active(); return p && p->shuffle(); }
+    void setShuffle(bool on) { if (MprisPlayer *p = m_watcher.active()) p->setShuffle(on); }
+    QString loopStatus() const { const MprisPlayer *p = m_watcher.active(); return p ? p->loop() : QStringLiteral("None"); }
+    void setLoopStatus(const QString &m) { if (MprisPlayer *p = m_watcher.active()) p->setLoop(m); }
+    Q_INVOKABLE void playPause() { if (MprisPlayer *p = m_watcher.active()) p->playPause(); }
+    Q_INVOKABLE void nextTrack() { if (MprisPlayer *p = m_watcher.active()) p->next(); }
+    Q_INVOKABLE void previousTrack() { if (MprisPlayer *p = m_watcher.active()) p->previous(); }
+    Q_INVOKABLE void seekToSec(double sec) { if (MprisPlayer *p = m_watcher.active()) p->setPositionUs(qint64(sec * 1e6)); }
+    Q_INVOKABLE void seekBySec(double sec) { if (MprisPlayer *p = m_watcher.active()) p->seekRelativeUs(qint64(sec * 1e6)); }
+    Q_INVOKABLE double positionSec() const { const MprisPlayer *p = m_watcher.active(); return p ? p->positionUs() / 1e6 : 0; } // the song's own clock
     QString status() const { return m_status; }
     QStringList lines() const { return m_lines; }
     QStringList roman() const { return m_roman; }
@@ -116,6 +159,11 @@ public:
 
 signals:
     void trackInfoChanged();
+    void artChanged();
+    void preferThumbnailChanged();
+    void chaptersChanged();
+    void localLyricsChanged();
+    void controlsChanged();
     void statusChanged();
     void linesChanged();
     void currentIndexChanged();
@@ -143,7 +191,10 @@ private:
     void schedulePrefetch();
     void prefetchNext();
     void romanizeKanji(bool force = false);
-    void updateArt(const QString &url, int tries = 0);
+    void updateArt(const QString &url);
+    void refreshPalette();
+    void tryPalette(const QStringList &sources, int index, int round, quint64 gen);
+    void setPalette(const QList<QColor> &p);
     void startLookup();
     void watchDb();
     void checkLibrary();
@@ -153,7 +204,7 @@ private:
     QHash<QString, QStringList> m_altTitles; // YouTube Music video id -> its other names
     void fetchVideoTitle(const QString &videoId, std::function<void(const QString &)> done);
     void maybeFetchExtras(const StoredLyrics &s);
-    bool isBannerLine(const QString &line) const;
+    bool isBannerLine(const QString &line, bool dashedOnly = false) const;
     void maybeFetchReading(const StoredLyrics &s);
     void persistRoman();
     qint64 positionMs(const MprisPlayer *p) const;
@@ -175,6 +226,9 @@ private:
     QString m_title, m_artist, m_status, m_key;
     QStringList m_lines, m_roman;
     bool m_karaoke = false;
+    bool m_localLyrics = true;
+    QString m_localFolder;
+    QVariantList m_chapters;
     QHash<QString, QVariantList> m_words; // saved karaoke word times by line text (library)
     QVector<LyricLine> m_lrc;     // timeline actually shown (layered lines merged)
     QVector<LyricLine> m_srcLrc;  // one entry per lyric line as provided
@@ -200,6 +254,10 @@ private:
     QString m_artUrl;
     QHash<QString, QString> m_videoTitles; // YouTube video id -> its title
     QList<QColor> m_palette;
+    QString m_paletteKey;          // the pictures the colors were asked for
+    quint64 m_paletteGen = 0;      // a newer request makes older answers obsolete
+    bool m_paletteBusy = false;
+    bool m_preferThumb = false;
     double m_timeScale = 1; // playing length / matched length, only for sped-up / slowed uploads
     bool m_synced = false;
     int m_index = -1;

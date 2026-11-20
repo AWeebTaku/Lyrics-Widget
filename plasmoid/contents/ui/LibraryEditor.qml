@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.lyricwidget
 import "words.js" as Words
+import "settings"
+import "settings/tokens.js" as T
 
 // The lyrics library editor: get, edit, retime and save the lyrics of the song that is playing. Used by the
 // settings page and by the widget's library window. Saved lyrics win over everything the widget looks up.
@@ -147,15 +149,22 @@ Item {
         onAccepted: root.searchNow()
     }
 
+    PageTitle {
+        id: pageTitle
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        icon: "document-edit"
+        title: i18n("Lyrics library")
+        subtitle: i18n("Get, edit and save lyrics.")
+    }
     RowLayout {
-        anchors.fill: parent
+        anchors { fill: parent; topMargin: pageTitle.height + Kirigami.Units.largeSpacing }
         spacing: Kirigami.Units.largeSpacing
 
         // ---- left: the lyrics, and the word timing for the karaoke effect, as two tabs
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.minimumWidth: Kirigami.Units.gridUnit * 16
+            Layout.minimumWidth: Kirigami.Units.gridUnit * 12
             Layout.preferredWidth: Kirigami.Units.gridUnit * 30
             QQC2.TabBar {
                 id: leftTabs
@@ -171,20 +180,20 @@ Item {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.minimumWidth: Kirigami.Units.gridUnit * 16
+                Layout.minimumWidth: Kirigami.Units.gridUnit * 12
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 30
                 spacing: Kirigami.Units.smallSpacing
 
-                QQC2.Label { text: i18n("Lyrics"); font.bold: true }
+                QQC2.Label { text: i18n("Lyrics"); font.weight: Font.DemiBold; font.pixelSize: Math.round(Kirigami.Theme.defaultFont.pixelSize * T.sectionScale) }
                 Item { // a fixed frame: a bare ScrollView takes the height of its text and grows over the rest
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Rectangle {
                         anchors.fill: parent
-                        radius: 4
+                        radius: T.radiusSmall
                         color: Kirigami.Theme.backgroundColor
                         border.width: 1
-                        border.color: Kirigami.Theme.disabledTextColor
+                        border.color: Qt.alpha(Kirigami.Theme.textColor, 0.3)
                     }
                     QQC2.ScrollView {
                         anchors.fill: parent
@@ -208,7 +217,7 @@ Item {
                 QQC2.Label {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
-                    opacity: 0.7
+                    opacity: T.muted
                     text: (root.timing.lines > 0
                            ? i18np("%1 timed line, %2 s to %3 s", "%1 timed lines, %2 s to %3 s", root.timing.lines,
                                    Math.round(root.timing.first), Math.round(root.timing.last))
@@ -226,7 +235,7 @@ Item {
                         enabled: editor.text.length > 0
                         onClicked: root.stampNow()
                     }
-                    QQC2.Label { text: i18n("Ctrl+Enter"); opacity: 0.6 }
+                    QQC2.Label { text: i18n("Ctrl+Enter"); opacity: T.muted }
                 }
                 Shortcut { sequence: "Ctrl+Return"; onActivated: root.stampNow() }
 
@@ -236,8 +245,8 @@ Item {
                 QQC2.Label {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
-                    opacity: 0.7
-                    text: i18n("When each word of a line lights up in the karaoke effect (Settings, Behavior). Pick a line, then play the song and press Stamp word as each word is sung, or type the times. Kept with the lyrics when you press Save.")
+                    opacity: T.muted
+                    text: i18n("When each word of a line lights up in the karaoke effect (Settings, Lyrics, Lines and timing). Pick a line, then play the song and press Stamp word as each word is sung, or type the times. Kept with the lyrics when you press Save.")
                 }
                 QQC2.ScrollView { // the lines: click one to edit its words
                     Layout.fillWidth: true
@@ -269,7 +278,7 @@ Item {
                 QQC2.Label {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
-                    opacity: 0.7
+                    opacity: T.muted
                     text: root.curWords.length > 0 ? root.curText : i18n("Select a line with text")
                 }
                 QQC2.ScrollView {
@@ -312,7 +321,7 @@ Item {
                         enabled: root.curWords.length > 0
                         onClicked: root.spreadWords()
                     }
-                    QQC2.Label { text: i18n("Ctrl+Space"); opacity: 0.6 }
+                    QQC2.Label { text: i18n("Ctrl+Space"); opacity: T.muted }
                 }
                 Shortcut { sequence: "Ctrl+Space"; onActivated: root.stampWord() }
             }
@@ -321,16 +330,18 @@ Item {
 
         // ---- right: song, timing, library
         ColumnLayout {
-            Layout.preferredWidth: Kirigami.Units.gridUnit * 20
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+            // wide enough for its widest row (the time boxes with their buttons): at 20 units the right edge was cut off
+            Layout.minimumWidth: Kirigami.Units.gridUnit * 25
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 26
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 30
             Layout.fillHeight: true
             spacing: Kirigami.Units.smallSpacing
 
-            QQC2.Label { text: i18n("Song"); font.bold: true }
+            QQC2.Label { text: i18n("Song"); font.weight: Font.DemiBold; font.pixelSize: Math.round(Kirigami.Theme.defaultFont.pixelSize * T.sectionScale) }
             QQC2.Label {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                text: lib.hasSong ? lib.artist + " — " + lib.title + "  (" + Math.floor(lib.durationSec / 60) + ":"
+                text: lib.hasSong ? lib.artist + " - " + lib.title + "  (" + Math.floor(lib.durationSec / 60) + ":"
                                     + String(lib.durationSec % 60).padStart(2, "0") + ")"
                                   : i18n("Nothing is playing")
             }
@@ -368,7 +379,7 @@ Item {
                 Layout.fillWidth: true
                 text: lib.status
                 visible: lib.status !== ""
-                opacity: 0.8
+                opacity: T.muted
                 wrapMode: Text.WordWrap
                 maximumLineCount: 3
                 elide: Text.ElideRight
@@ -465,7 +476,7 @@ Item {
             }
             QQC2.Label {
                 Layout.fillWidth: true
-                opacity: 0.8
+                opacity: T.muted
                 elide: Text.ElideRight
                 text: lib.ignored ? i18n("Lyrics are off for this song") : lib.saved ? i18n("This song is in your library") : i18n("Not in your library")
             }

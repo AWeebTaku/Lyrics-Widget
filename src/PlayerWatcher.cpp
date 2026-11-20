@@ -4,6 +4,7 @@
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
+#include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QDBusVariant>
@@ -153,6 +154,8 @@ void MprisPlayer::applyProps(const QVariantMap &p)
         const QString url = md.value(QStringLiteral("xesam:url")).toString();
         const qint64 len = md.value(QStringLiteral("mpris:length")).toLongLong();
 
+        const QVariant tid = md.value(QStringLiteral("mpris:trackid"));
+        m_trackId = tid.canConvert<QDBusObjectPath>() ? tid.value<QDBusObjectPath>().path() : tid.toString();
         const QString art = md.value(QStringLiteral("mpris:artUrl")).toString();
         if (art != m_artUrl) {
             m_artUrl = art;
@@ -188,6 +191,22 @@ void MprisPlayer::applyProps(const QVariantMap &p)
         m_clock.restart();
     }
 
+    bool controls = false;
+    if (p.contains(QStringLiteral("Volume"))) {
+        m_volume = p.value(QStringLiteral("Volume")).toDouble();
+        controls = true;
+    }
+    if (p.contains(QStringLiteral("Shuffle"))) {
+        m_shuffle = p.value(QStringLiteral("Shuffle")).toBool();
+        controls = true;
+    }
+    if (p.contains(QStringLiteral("LoopStatus"))) {
+        m_loop = p.value(QStringLiteral("LoopStatus")).toString();
+        controls = true;
+    }
+    if (controls)
+        emit controlsChanged();
+
     if (metaChanged)
         emit metadataChanged();
     if (stateFlipped)
@@ -201,6 +220,66 @@ void MprisPlayer::onPropertiesChanged(const QString &iface, const QVariantMap &c
 {
     if (iface == kPlayerIface)
         applyProps(changed);
+}
+
+void MprisPlayer::callPlayer(const QString &method, const QVariantList &args)
+{
+    auto msg = QDBusMessage::createMethodCall(m_service, kPath, kPlayerIface, method);
+    msg.setArguments(args);
+    QDBusConnection::sessionBus().asyncCall(msg); // fire and forget: players that cannot do it just ignore it
+}
+
+void MprisPlayer::setPlayerProp(const QString &name, const QVariant &value)
+{
+    auto msg = QDBusMessage::createMethodCall(m_service, kPath, kPropsIface, QStringLiteral("Set"));
+    msg << kPlayerIface << name << QVariant::fromValue(QDBusVariant(value));
+    QDBusConnection::sessionBus().asyncCall(msg);
+}
+
+void MprisPlayer::playPause() { callPlayer(QStringLiteral("PlayPause")); }
+void MprisPlayer::next() { callPlayer(QStringLiteral("Next")); }
+void MprisPlayer::previous() { callPlayer(QStringLiteral("Previous")); }
+
+void MprisPlayer::seekRelativeUs(qint64 offsetUs)
+{
+    callPlayer(QStringLiteral("Seek"), {QVariant::fromValue(qlonglong(offsetUs))});
+    m_basePosUs = std::max<qint64>(0, positionUs() + offsetUs); // show it at once; the player's answer corrects it
+    m_clock.restart();
+    emit positionChanged();
+}
+
+void MprisPlayer::setPositionUs(qint64 pos)
+{
+    pos = std::clamp<qint64>(pos, 0, m_lengthUs > 0 ? m_lengthUs : pos);
+    if (m_trackId.isEmpty()) {
+        seekRelativeUs(pos - positionUs());
+        return;
+    }
+    callPlayer(QStringLiteral("SetPosition"), {QVariant::fromValue(QDBusObjectPath(m_trackId)), QVariant::fromValue(qlonglong(pos))});
+    m_basePosUs = pos;
+    m_clock.restart();
+    emit positionChanged();
+}
+
+void MprisPlayer::setVolume(double v)
+{
+    m_volume = std::clamp(v, 0.0, 1.0);
+    setPlayerProp(QStringLiteral("Volume"), m_volume);
+    emit controlsChanged();
+}
+
+void MprisPlayer::setShuffle(bool on)
+{
+    m_shuffle = on;
+    setPlayerProp(QStringLiteral("Shuffle"), on);
+    emit controlsChanged();
+}
+
+void MprisPlayer::setLoop(const QString &mode)
+{
+    m_loop = mode;
+    setPlayerProp(QStringLiteral("LoopStatus"), mode);
+    emit controlsChanged();
 }
 
 void MprisPlayer::onSeeked(qlonglong positionUs)
@@ -318,6 +397,10 @@ void PlayerWatcher::add(const QString &name)
     p->setWatchPosition(m_watchPosition);
     m_players.insert(name, p);
 
+    connect(p, &MprisPlayer::controlsChanged, this, [this, p] {
+        if (m_active == p)
+            emit controlsChanged();
+    });
     connect(p, &MprisPlayer::metadataChanged, this, [this, p] {
         const auto prev = m_active;
         elect();
@@ -365,8 +448,36 @@ void PlayerWatcher::remove(const QString &name)
     }
 }
 
+int PlayerWatcher::count() const
+{
+    int n = 0;
+    for (const MprisPlayer *p : std::as_const(m_players))
+        n += eligible(p) && !p->title().isEmpty();
+    return n;
+}
+
+void PlayerWatcher::cycle()
+{
+    QList<MprisPlayer *> list;
+    for (MprisPlayer *p : std::as_const(m_players))
+        if (eligible(p) && !p->title().isEmpty())
+            list << p;
+    if (list.size() < 2)
+        return;
+    const qsizetype at = list.indexOf(m_active.data());
+    m_forced = list[(at + 1) % list.size()];
+    elect();
+    emit trackChanged();
+    emit timingChanged();
+}
+
 void PlayerWatcher::elect()
 {
+    if (m_forced && eligible(m_forced) && m_players.values().contains(m_forced.data())) {
+        m_active = m_forced;   // chosen with the player switch
+        return;
+    }
+    m_forced = nullptr;
     MprisPlayer *next = nullptr;
     if (m_lastStarted && m_lastStarted->playing() && eligible(m_lastStarted))
         next = m_lastStarted;

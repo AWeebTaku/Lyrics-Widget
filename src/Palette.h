@@ -2,6 +2,7 @@
 #include <QColor>
 #include <QImage>
 #include <QList>
+#include <QStringList>
 #include <algorithm>
 
 // Up to four distinct, readable colours of a cover. A 24x24 thumbnail is sorted into 12 hue buckets
@@ -10,6 +11,18 @@
 // tone that reads on a dark background. Black-and-white or washed-out covers have no hues, so their exact shades
 // of grey (black and white included) are used instead.
 namespace Palette {
+
+// The pictures to take the colors from, best first: the one the widget shows (the video's own picture when the widget is set to
+// use it, else the player's cover), then the other as a fallback. The player's cover file may be written late or never (a
+// browser announces it before the file exists), and the video's picture may be the only one there is: so colors must not
+// depend on a single source. Empty names and duplicates are dropped.
+inline QStringList sources(const QString &art, const QString &thumb, bool preferThumb)
+{
+    QStringList l = preferThumb ? QStringList{thumb, art} : QStringList{art, thumb};
+    l.removeAll(QString());
+    l.removeDuplicates();
+    return l;
+}
 
 inline QList<QColor> of(const QImage &src, int maxColors = 4)
 {

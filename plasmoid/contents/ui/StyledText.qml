@@ -5,7 +5,7 @@ import "words.js" as Words
 
 // One line of lyric text with the user's text style: font weight / italic / underline / spacing / case, a
 // shadow (optionally blurred), an outline and a highlight bar behind the line. All the style comes from
-// `cfg` (Plasmoid.configuration); the caller gives the size, colour and layout of the line.
+// `cfg` (Plasmoid.configuration); the caller gives the size, color and layout of the line.
 Item {
     id: root
 
@@ -13,8 +13,8 @@ Item {
     property bool isCurrent: false          // the line being sung: weight and highlight differ
     property string text
     property color color: "white"
-    // Several colours spread over the text: flow 0 left to right, 1 bottom to top, 2 right to left,
-    // 3 top to bottom, 4 from the centre outwards, 6 from the edges inwards, 5 fill (just `color`)
+    // Several colors spread over the text: flow 0 left to right, 1 bottom to top, 2 right to left,
+    // 3 top to bottom, 4 from the center outwards, 6 from the edges inwards, 5 fill (just `color`)
     property var colors: []
     property int flow: 5
     readonly property bool gradientOn: colors.length > 1 && flow !== 5
@@ -26,7 +26,7 @@ Item {
         : verticalAlignment === Text.AlignBottom ? height - contentHeight : 0
     readonly property real spanStart: vertical ? (height > 0 ? textTop / height : 0) : (width > 0 ? textLeft / width : 0)
     readonly property real span: vertical ? (height > 0 ? contentHeight / height : 1) : (width > 0 ? contentWidth / width : 1)
-    // [{pos, color}] for the gradient, at most 7 entries (4 colours from the centre outwards)
+    // [{pos, color}] for the gradient, at most 7 entries (4 colors from the center outwards)
     readonly property var stops: {
         const n = colors.length, out = []
         if (n < 2) return out
@@ -78,7 +78,7 @@ Item {
             : root.verticalAlignment === Text.AlignBottom ? root.height - root.contentHeight : 0) - root.cfg.highlightPadY
     }
 
-    // one copy of the text; the shadow and the outline are more copies, drawn behind in other colours
+    // one copy of the text; the shadow and the outline are more copies, drawn behind in other colors
     component Face: Text {
         property real dx: 0
         property real dy: 0
@@ -135,7 +135,7 @@ Item {
 
     Face { id: face; visible: !root.gradientOn; opacity: root.unsungOpacity }
 
-    // ---- colours spread over the text: a gradient seen through the text's shape
+    // ---- colors spread over the text: a gradient seen through the text's shape
     Face { id: maskFace; color: "white"; visible: false; layer.enabled: root.isCurrent } // always on for the current line: a layer switched on later stays empty
     Rectangle {
         id: fillRect

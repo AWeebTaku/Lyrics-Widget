@@ -570,6 +570,48 @@ inline qint64 firstVocalMs(const QString &lrc)
     return -1;
 }
 
+// A line that only says the song's title or "title - artist" (any order, any script): a banner some providers put first, not a
+// lyric. The player often gives no artist (a video's title says it all), so a title next to short name-like parts is a banner
+// too. `dashedOnly`: only the "a - b" form (for a line that is not at the very start).
+inline bool isBanner(const QString &line, const QStringList &titles, const QStringList &artists, bool dashedOnly = false)
+{
+    const QString t = line.trimmed();
+    if (norm(t).isEmpty())
+        return false;
+    static const QRegularExpression sep(QStringLiteral(R"(\s+[-–—－:：|｜]\s+)"));
+    const QStringList parts = t.split(sep, Qt::SkipEmptyParts);
+    auto matches = [](const QString &p, const QStringList &names, double min) {
+        for (const QString &n : names)
+            if (!n.isEmpty() && similarity(p, n) >= min)
+                return true;
+        return false;
+    };
+    if (parts.size() == 1) {
+        if (dashedOnly)
+            return false;
+        // alone on a line it must be the title itself (a lyric that merely contains the title is a lyric)
+        static const QRegularExpression extra(QStringLiteral(R"(\s*[\(（\[].*[\)）\]]\s*)"));
+        QString bare = parts[0];
+        bare.remove(extra);
+        const QString n = norm(bare);
+        if (n.isEmpty())
+            return false;
+        for (const QString &x : titles + artists)
+            if (!x.isEmpty() && n == norm(x))
+                return true;
+        return false;
+    }
+    bool title = false, artist = false, shortOthers = true;
+    for (const QString &p : parts) {
+        const bool isTitle = matches(p, titles, 0.85);
+        title |= isTitle;
+        artist |= matches(p, artists, 0.6);
+        if (!isTitle && p.size() > 60)
+            shortOthers = false;
+    }
+    return title && (artist || (parts.size() <= 3 && shortOthers));
+}
+
 // Mostly Japanese / Chinese / Korean text (not just an emoji or a fullwidth punctuation mark).
 inline bool isCjk(const QString &s)
 {
