@@ -15,6 +15,40 @@ import "card/colors.js" as CardColors
 PlasmoidItem {
     id: root
 
+    // Plasma shows one settings dialog at a time (opening a second widget's settings closes the first). So the menu's "Configure…"
+    // opens this widget's settings in a window of its own instead (Plasma's own entry is taken out, so there is one), and the
+    // settings of several widgets can be open together.
+    Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            text: i18n("Configure %1…", Plasmoid.title)
+            icon.name: "configure"
+            onTriggered: root.openSettingsWindow()
+        }
+    ]
+    function openSettingsWindow() {
+        if (settingsWindow.item) { settingsWindow.item.raise(); settingsWindow.item.requestActivate() }
+        else settingsWindow.active = true
+    }
+    Loader {
+        id: settingsWindow
+        active: false
+        source: "SettingsWindow.qml"
+        onLoaded: {
+            item.cfg = Plasmoid.configuration
+            item.widgetName = root.cardMode === 0 ? i18n("lyrics") : Layouts.modes[root.cardMode].name
+            item.load()
+            item.visible = true
+            item.closing.connect(() => settingsWindow.active = false)
+            item.libraryRequested.connect(() => settingsLibrary.active = true)
+        }
+    }
+    Loader {
+        id: settingsLibrary      // the lyrics library, from the settings window (the widget's hover button opens the same window)
+        active: false
+        source: "LibraryWindow.qml"
+        onLoaded: { item.visible = true; item.closing.connect(() => settingsLibrary.active = false) }
+    }
+
     // On the desktop the widget is the card. In a panel it is the card, a small pill that opens the card, or (adaptive)
     // the card when the panel is thick enough for it and the pill when it is not.
     readonly property bool inPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal || Plasmoid.formFactor === PlasmaCore.Types.Vertical
@@ -67,6 +101,7 @@ PlasmoidItem {
 
     // The old "Background" setting (a plain colored panel) is now the Color surface of the card: carry it over once.
     Component.onCompleted: {
+        Plasmoid.removeInternalAction("configure")      // replaced by the entry above
         if (cfg.showPanel) {
             if (cfg.cardSurface === 0)
                 cfg.cardSurface = 1
@@ -127,6 +162,7 @@ PlasmoidItem {
         suspended: root.suspended
         lyricsEnabled: root.cfg.showLyrics
         karaoke: root.cfg.karaoke
+        preferThumbnail: root.cfg.artThumbnail === 1      // the colors come from the picture that is shown
         localLyrics: root.cfg.localLyrics
         localLyricsFolder: root.cfg.localLyricsFolder
         offsetMs: root.cfg.offsetMs
@@ -180,8 +216,12 @@ PlasmoidItem {
             id: gf
             property real amount: 0   // 0..1
             property real width_: 10
-            anchors.fill: parent
-            visible: amount > 0.01
+            // the glow runs along the edge of the card's background (a part of the card, see layouts.js)
+            x: card.surfaceRect ? card.surfaceRect.x : 0
+            y: card.surfaceRect ? card.surfaceRect.y : 0
+            width: card.surfaceRect ? card.surfaceRect.w : 0
+            height: card.surfaceRect ? card.surfaceRect.h : 0
+            visible: amount > 0.01 && card.surfaceRect !== null
             Rectangle {
                 id: gfSrc
                 anchors.fill: parent
@@ -211,7 +251,12 @@ PlasmoidItem {
 
         // the card's background (the layouts, Settings > Card); under the visualizer
         CardSurface {
-            anchors.fill: parent
+            x: card.surfaceRect ? card.surfaceRect.x : 0
+            y: card.surfaceRect ? card.surfaceRect.y : 0
+            width: card.surfaceRect ? card.surfaceRect.w : 0
+            height: card.surfaceRect ? card.surfaceRect.h : 0
+            visible: card.surfaceRect !== null
+            opacity: card.geo.opacity.surface ?? 1
             type: root.cfg.cardSurface
             source: lyrics.artUrl
             coverColors: lyrics.palette
@@ -226,12 +271,12 @@ PlasmoidItem {
             calm: view.calm
         }
 
-        // audio visualizer (Plasma Audio Visualizer's renderer + cava), behind the lyrics;
+        // the audio visualizer (the canvas renderer + cava), behind the lyrics;
         // the Loader keeps cava off unless it is wanted and music is playing. Layouts built around the music
         // (visualizer only, hero wave, orbit, poster) turn it on by themselves.
         Loader {
             id: vizLoader
-            active: (root.cfg.showVisualizer || card.vizForced) && !lyrics.idle && (lyrics.playing || root.cfg.hideAfterSec > 0) && !root.suspended && !root.covered
+            active: (root.cfg.showVisualizer || card.vizForced) && card.vizPlace !== null && !lyrics.idle && (lyrics.playing || root.cfg.hideAfterSec > 0) && !root.suspended && !root.covered
             source: "AudioViz.qml"
             onLoaded: {
                 item.tintFlow = Qt.binding(() => root.cfg.vizColorFlow)
@@ -239,15 +284,13 @@ PlasmoidItem {
                 item.styleOverride = Qt.binding(() => card.orbit ? 16 : -1)   // 16 = the orbit ring
             }
             // size as a share of the widget, placed on a 3x3 grid plus a pixel offset; a layout may take over the place
-            width: card.vizFill ? parent.width : card.vizRect ? card.vizRect.w : parent.width * root.cfg.vizWidthPct / 100
-            height: card.vizFill ? parent.height : card.vizRect ? card.vizRect.h : parent.height * root.cfg.vizHeightPct / 100
-            x: card.vizFill ? 0 : card.vizRect ? card.vizRect.x
-               : (root.cfg.vizHAlign === 0 ? 0 : root.cfg.vizHAlign === 2 ? parent.width - width : (parent.width - width) / 2) + root.cfg.vizOffsetX
-            y: card.vizFill ? 0 : card.vizRect ? card.vizRect.y
-               : (root.cfg.vizVAlign === 0 ? 0 : root.cfg.vizVAlign === 2 ? parent.height - height : (parent.height - height) / 2) + root.cfg.vizOffsetY
+            width: card.vizPlace ? card.vizPlace.w : 0
+            height: card.vizPlace ? card.vizPlace.h : 0
+            x: card.vizPlace ? card.vizPlace.x : 0
+            y: card.vizPlace ? card.vizPlace.y : 0
             // the poster lays the music behind the title at a set strength; the music can also fade while paused
             opacity: (root.cardMode === 8 && root.cfg.posterVizBehind ? root.cfg.posterVizOpacity / 100 : 1)
-                     * (root.cfg.fadeVizWhenPaused && !lyrics.playing ? 0.25 : 1)
+                     * (root.cfg.fadeVizWhenPaused && !lyrics.playing ? 0.25 : 1) * (card.geo.opacity.viz ?? 1)
             Behavior on opacity { NumberAnimation { duration: 300 } }
         }
 
@@ -336,6 +379,7 @@ PlasmoidItem {
         LyricStage {
             x: view.lx + 20 + view.offX
             y: view.ly + view.offY
+            opacity: card.geo.opacity.lyrics ?? 1
             // the lyrics swell a little with each beat (off by default; needs the visualizer)
             scale: 1 + (view.calm ? 0 : root.cfg.lyricPulse / 100 * 0.07 * view.vizBeat)
             width: view.lw - 40
@@ -399,12 +443,12 @@ PlasmoidItem {
         HoverHandler { id: hover }
         // Hover buttons, top right: look for other lyrics (saved to the library) and open the library
         Grid {
-            visible: root.cfg.hoverButtons && hover.hovered && !lyrics.idle && (!view.cardOn || card.toolsRect !== null)
-            columns: view.cardOn && card.toolsRow ? 2 : 1
+            visible: root.cfg.hoverButtons && hover.hovered && !lyrics.idle && card.toolsRect !== null
+            columns: card.toolsRow ? 2 : 1
             z: 20      // above the card, so hovering them keeps them
-            // with a card the layout says where (beside the lyrics); without one, the top right corner
-            x: view.cardOn && card.toolsRect ? card.toolsRect.x : view.width - width - 8
-            y: view.cardOn && card.toolsRect ? card.toolsRect.y : 6
+            // where the layout says (beside the lyrics), or where the user moved it: Settings, Card, Edit the layout
+            x: card.toolsRect ? card.toolsRect.x : 0
+            y: card.toolsRect ? card.toolsRect.y : 0
             spacing: 4
             Repeater {
                 model: [
@@ -448,11 +492,11 @@ PlasmoidItem {
         }
         Row {
             id: nudgeRow
-            visible: root.cfg.showSyncControls && hover.hovered && lyrics.synced
+            visible: root.cfg.showSyncControls && hover.hovered && lyrics.synced && card.nudgeRect !== null
             z: 20      // above the card, so hovering them keeps them
             // a quarter of the way up from the bottom edge, centered; with a card, at the bottom of the space the layout gives the lyrics
-            x: view.cardOn && card.nudgeRect ? card.nudgeRect.x + (card.nudgeRect.w - width) / 2 : (view.width - width) / 2
-            y: view.cardOn && card.nudgeRect ? card.nudgeRect.y + card.nudgeRect.h - height : view.height - height - Math.max(8, view.height * 0.25)
+            x: card.nudgeRect ? card.nudgeRect.x + (card.nudgeRect.w - width) / 2 : 0
+            y: card.nudgeRect ? card.nudgeRect.y + card.nudgeRect.h - height : 0
             spacing: 14
             Repeater {
                 model: [
