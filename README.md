@@ -237,6 +237,22 @@ open together. On KDE's window manager the windows open in the middle of the scr
 - Some songs have no synced lyrics anywhere; unsynced text is shown as a static block.
 - Provider interfaces are unofficial and can change or rate-limit without notice.
 
+## Roadmap
+
+Not done yet, in rough order of how likely they are:
+
+- **Publishing:** submit the package to the AUR and the widget to the KDE Store.
+- **A shared database of timed lyrics:** people contribute line-timed and word-timed lyrics for songs no provider has (covers,
+  remixes, fan uploads). Open questions: the legal side of hosting lyric text, a song fingerprint that two people share, free
+  hosting, and moderation. First small steps: export the lyrics library to a documented JSON format, and an optional upload
+  of edited lyrics to LRCLIB.
+- **Card and visualizer extras:** separate refraction and highlight sliders for the glass look, a full bloom pass, swipe
+  gestures on the card, a position and margin for the buttons, a Plasma system-font option, and separately saved popup and
+  pill presets.
+- **Other places to run:** versions for other desktops, and translations.
+- **Checks still to do:** the settings and card in a dark Plasma theme (the colors follow the theme, but it has not been
+  looked at), and the YouTube Music queue extension against more page versions.
+
 ## Project layout
 
 ```
