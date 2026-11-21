@@ -100,6 +100,7 @@ settings dialog at a time), so several widgets can have their settings open toge
 | Audio input | where the sound comes from, what is drawn, level and pitch range, equalizer |
 | Card | layout, background, cover, buttons, seek bar, title and details, the pill for panels |
 | Looks | ready-made looks, random look, look of the day, your own saved looks |
+| Layout | hide, move, resize and fade the parts of a card, in pixels |
 | Sources | your own lyric files, next songs, the Spotify app, YouTube Music, other players |
 | Lyrics library | get, edit, retime and save lyrics |
 
@@ -113,7 +114,7 @@ How the pages work:
   settings from other pages, and the General page follows.
 - **Colors from the cover.** Pick it in **Visualizer, Colors, Color mode**, or turn on **Use colors from the album cover** on
   the Lyrics page.
-- **Edit the layout** (Card page). Turn any part of a layout on or off, move it, resize it and fade it, for each layout on its
+- **Edit the layout** (Layout page). Turn any part of a layout on or off, move it, resize it and fade it, for each layout on its
   own. Positions are X and Y in pixels on a snap grid. "Only this" shows one part and hides the rest.
 - **Search and notices.** Each page has a search box. If the lyrics, visualizer or card is off, a notice at the top of its page
   turns it on, and that also sets the General switch.

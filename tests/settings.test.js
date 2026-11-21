@@ -17,7 +17,7 @@ const stores = { bool: ["Bool"], int: ["Int"], real: ["Double"], color: ["String
 const noKey = ["presets", "spotify", "queuecheck", "browsercheck", "browser", "info"];
 const seenKeys = {};
 const pageFiles = { general: "configGeneral.qml", lyrics: "configLyrics.qml", visualizer: "configVisualizer.qml", audio: "configAudio.qml",
-                    card: "configCard.qml", looks: "configLooks.qml", sources: "configAccounts.qml" };
+                    card: "configCard.qml", looks: "configLooks.qml", layout: "configLayout.qml", sources: "configAccounts.qml" };
 
 function defOf(k) { return entries[k] ? entries[k].def : undefined; }
 function inRange(v, lo, hi) { return +v >= lo && +v <= hi; }

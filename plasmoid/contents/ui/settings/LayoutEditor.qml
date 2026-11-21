@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.plasmoid
 import "tokens.js" as T
 import "../card/layouts.js" as Layouts
 
@@ -13,7 +14,8 @@ import "../card/layouts.js" as Layouts
 ColumnLayout {
     id: ed
     required property var kcm
-    property int mode: kcm.cfg_layoutMode ?? 2
+    readonly property int inUse: Plasmoid.configuration.layoutMode ?? 2      // chosen on the Card page
+    property int mode: inUse
     readonly property var layoutIds: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     readonly property var list: Layouts.partsFor(mode)
     spacing: Kirigami.Units.largeSpacing
@@ -45,7 +47,7 @@ ColumnLayout {
         QQC2.Label { text: i18n("Layout to edit"); Layout.preferredWidth: Kirigami.Units.gridUnit * T.labelUnits }
         QQC2.ComboBox {
             implicitContentWidthPolicy: QQC2.ComboBox.WidestText
-            model: ed.layoutIds.map(m => ed.layoutName(m) + (m === (ed.kcm.cfg_layoutMode ?? 2) ? i18n("  (the one in use)") : ""))
+            model: ed.layoutIds.map(m => ed.layoutName(m) + (m === ed.inUse ? i18n("  (the one in use)") : ""))
             // set once the model exists (a ComboBox starts at its first entry when the model arrives)
             Component.onCompleted: currentIndex = Math.max(0, ed.layoutIds.indexOf(ed.mode))
             onActivated: ed.mode = ed.layoutIds[currentIndex]

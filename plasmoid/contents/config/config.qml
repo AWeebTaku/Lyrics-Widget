@@ -35,6 +35,11 @@ ConfigModel {
         source: "configLooks.qml"
     }
     ConfigCategory {
+        name: i18n("Layout")
+        icon: "view-grid"
+        source: "configLayout.qml"
+    }
+    ConfigCategory {
         name: i18n("Sources")
         icon: "preferences-system-users"
         source: "configAccounts.qml"

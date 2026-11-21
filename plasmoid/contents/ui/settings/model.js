@@ -124,7 +124,7 @@ const styles = ["Bars", "Wave", "Blocks", "Peak bars", "LED meter", "Mountain", 
                 "Stereo scope", "Custom (my own QML file)", "CRT oscilloscope", "Silk ribbon"]
 const styleValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 const looks = [
-    { id: "presets", title: "Looks", desc: "Pick a look or save your own.", open: true, rows: [
+    { id: "presets", title: "Looks", desc: "Pick a look or save your own.", plain: true, rows: [
         { type: "presets" }
     ] }
 ]
@@ -227,15 +227,19 @@ const audio = [
     ] }
 ]
 
+// ---- Layout
+const layoutSections = [
+    { id: "edit", title: "Edit the layout", desc: "Hide, move, resize, fade.", plain: true, rows: [
+        { key: "layoutEdits", type: "layoutedit", label: "" }
+    ] }
+]
+
 // ---- Card
 const cardSections = [
     { id: "layout", title: "Layout", desc: "How the card is arranged.", open: true, rows: [
         { key: "layoutMode", type: "combo", label: "Layout", options: ["Classic", "Mirrored", "Inline", "Hero wave", "Stacked", "Orbit", "Poster", "Slim strip", "Compact (no art)", "Icon (cover in a progress ring)"], values: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11], hint: "The card is turned on in General." },
         { key: "cardAccentSource", type: "combo", label: "Accent color", options: ["Same as the lyrics", "The Plasma accent", "A color of my own"] },
         { key: "customAccent", type: "color", label: "My accent", when: { key: "cardAccentSource", in: [2] } }
-    ] },
-    { id: "edit", title: "Edit the layout", desc: "Hide, move, resize, fade.", rows: [
-        { key: "layoutEdits", type: "layoutedit", label: "" }
     ] },
     { id: "surface", title: "Background and glow", desc: "Corners and glow.", rows: [
         { key: "cardSurface", type: "combo", label: "Background", options: ["None", "Color", "Art backdrop", "Glass", "Liquid glass", "Atmosphere", "Solid"] },
@@ -384,6 +388,8 @@ const pages = [
     { id: "card", title: "Card", icon: "view-media-playlist", subtitle: "Cover, title, buttons, seek bar.",
       banner: { key: "showCard", text: "The card is off.", button: "Turn it on" }, preview: "card", sections: cardSections },
     { id: "looks", title: "Looks", icon: "preferences-desktop-theme", subtitle: "Ready-made looks, and your own.", preview: "viz", sections: looks },
+    { id: "layout", title: "Layout", icon: "view-grid", subtitle: "Hide, move and resize the parts of a card.",
+      banner: { key: "showCard", text: "The card is off.", button: "Turn it on" }, preview: "card", sections: layoutSections },
     { id: "sources", title: "Sources", icon: "folder-music", subtitle: "Where lyrics come from.", sections: sources }
 ]
 
