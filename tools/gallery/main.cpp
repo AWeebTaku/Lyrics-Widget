@@ -6,6 +6,7 @@
 #include <QQmlEngine>
 #include <QTimer>
 #include <cstdio>
+#include <functional>
 
 int main(int argc, char **argv)
 {
@@ -21,19 +22,28 @@ int main(int argc, char **argv)
     const int count = v.rootObject()->property("count").toInt();
     int i = 0;
     QTimer t;
-    t.setInterval(1400);
+    t.setInterval(3600);
     QObject::connect(&t, &QTimer::timeout, [&] {
         if (i >= count) { app.quit(); return; }
         auto *r = v.rootObject();
         r->setProperty("index", i);
         QTimer::singleShot(900, [&, k = i] {
             const QSize s(v.rootObject()->property("shotW").toInt(), v.rootObject()->property("shotH").toInt());
-            v.resize(s);
-            QTimer::singleShot(250, [&, k, s] {
-                const QString file = QString::fromUtf8(argv[3]) + QString("/%1.png").arg(k, 2, 10, QLatin1Char('0'));
-                v.grabWindow().save(file);
-                std::printf("%s  %dx%d\n", qPrintable(file), s.width(), s.height());
-            });
+            const QString file = QString::fromUtf8(argv[3]) + QString("/%1.png").arg(k, 2, 10, QLatin1Char('0'));
+            // The window does not always reach the new size on the first resize (a look after a taller one kept the old size, so
+            // the slim looks came out cut off with a blank area below): resize and look again until the grab is the right size.
+            auto *grab = new std::function<void(int)>;
+            *grab = [&, s, file, grab](int tries) {
+                v.resize(s);
+                QTimer::singleShot(400, [&, s, file, grab, tries] {
+                    const QImage img = v.grabWindow();
+                    const QSize want(qRound(s.width() * v.devicePixelRatio()), qRound(s.height() * v.devicePixelRatio()));
+                    if (img.size() != want && tries < 5) { (*grab)(tries + 1); return; }
+                    img.save(file);
+                    std::printf("%s  %dx%d%s\n", qPrintable(file), img.width(), img.height(), img.size() == want ? "" : "  (WRONG SIZE)");
+                });
+            };
+            (*grab)(0);
         });
         ++i;
     });
