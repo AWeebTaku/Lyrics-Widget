@@ -59,18 +59,14 @@ bash lyric-widget.sh uninstall    # remove the widget (add --purge to delete you
 packages itself on Arch Linux; on other systems it lists what is missing. It asks for your password only for the install
 into `/usr`, and keeps its files in `~/.local/share/lyric-widget`.
 
-**From the KDE Store:** the Store carries the widget's QML files only, and the widget also needs its C++ plugin. So install
-the plugin first, then the widget:
-
-```
-git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget
-./install.sh              # builds and installs the plugin, the icon, the romanization helper and the browser extension
-```
-
-Then right-click the desktop, **Add or Manage Widgets**, **Get New Widgets**, search for "Lyric Widget" and install it.
-`./install.sh --dry-run` shows what it would do. It installs packages itself on Arch Linux; on other systems it checks the tools
-and lists what is missing. If the widget shows "module org.lyricwidget is not installed", the plugin is missing: run
-`./install.sh`. When the Store updates the widget, `git pull && ./install.sh` brings the plugin up to date too.
+**From the KDE Store:** the Store installs the widget's QML files, and the widget also needs its C++ plugin, which a store
+package cannot install. So the package carries the plugin's source and the installer, and the widget does the rest: add the
+widget (Add or Manage Widgets, Get New Widgets, "Lyric Widget"), and until the plugin is there it shows a setup screen with an
+**Install the plugin** button. The button opens a terminal that builds the plugin from the source in the package (no download, always
+the same version as the widget), asks for your password once, and restarts Plasma. It needs Plasma 6, Qt 6, cmake and a C++
+compiler (it installs them for you on Arch Linux; on other systems it lists what is missing). Prefer a terminal? From a clone,
+`./install.sh` does the same, and `./install.sh --dry-run` shows what it would do. A compiled plugin is not shipped in the package on
+purpose: it would only work on the exact Qt and library versions it was built with.
 
 | For | You need |
 |---|---|

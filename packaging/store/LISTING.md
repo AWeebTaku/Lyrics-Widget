@@ -18,11 +18,9 @@ Synced lyrics on your desktop for Spotify and for YouTube / YouTube Music in a b
 with 36 ready-made looks, romanization of Japanese, Korean and Chinese, karaoke word timing, your own lyric files and colors
 from the album cover. No accounts or keys.
 
-IMPORTANT: this widget needs its C++ plugin, which the Store cannot install. Before adding the widget, run:
-
-    git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget && ./install.sh
-
-(Arch Linux is tested; on other distributions the script lists the packages you need.) Without the plugin Plasma shows
-"module org.lyricwidget is not installed".
+After adding the widget it shows a setup screen with an "Install the plugin" button: it opens a terminal that builds the widget's
+small C++ plugin from the source inside this package (nothing is downloaded), asks for your password once and restarts Plasma. It
+needs Plasma 6, Qt 6, cmake and a C++ compiler; on Arch Linux the script installs them for you, on other distributions it lists what
+is missing. Arch Linux is the tested system.
 
 Source, README and help: https://github.com/AWeebTaku/Lyrics-Widget

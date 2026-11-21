@@ -10,6 +10,8 @@
 #
 # Options:  --dry-run  only print what it would do      -y  no questions      --version TAG  a release other than the latest
 #           --purge    uninstall: also delete the lyrics library, cached lyrics and your own styles
+#           --source DIR   build from a source folder you already have (the KDE Store package carries one) instead of downloading
+#           --plugin-only  install the C++ plugin and its data but not the widget files (for a widget installed from the KDE Store)
 #
 # It installs into /usr with sudo (asking for your password at that step), and keeps its own files in
 # ~/.local/share/lyric-widget. Packages are installed for you on Arch Linux (the tested system); on other systems it checks the
@@ -19,16 +21,19 @@ set -euo pipefail
 REPO="AWeebTaku/Lyrics-Widget"
 HOME_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/lyric-widget"
 STAMP="$HOME_DIR/installed-version"
+MODEFILE="$HOME_DIR/installed-mode"      # "plugin" when only the plugin was installed (an update keeps the mode)
 
-DRY=0; YES=0; PURGE=0; WANT=""; CMD=""
+DRY=0; YES=0; PURGE=0; PLUGIN=0; WANT=""; CMD=""; SOURCE=""
 while [ $# -gt 0 ]; do
     case "$1" in
         install | update | check | uninstall | version) CMD="$1" ;;
         --dry-run) DRY=1 ;;
         -y | --yes) YES=1 ;;
         --purge) PURGE=1 ;;
+        --plugin-only) PLUGIN=1 ;;
+        --source) shift; SOURCE="${1:-}"; [ -d "$SOURCE" ] || { echo "--source needs a folder that exists"; exit 2; } ;;
         --version) shift; WANT="${1:-}"; [ -n "$WANT" ] || { echo "--version needs a release tag, for example v2.1.0"; exit 2; } ;;
-        -h | --help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "unknown option: $1 (try --help)"; exit 2 ;;
     esac
     shift
@@ -85,28 +90,36 @@ install_packages() {
 do_install() {
     check_system
     local tag="${WANT:-}"
+    [ -n "$tag" ] || { [ -n "$SOURCE" ] && tag="local"; } || true
     [ -n "$tag" ] || tag="$(latest_tag)"
     local have_v; have_v="$(installed_version)"
     if [ -n "$have_v" ] && [ "$have_v" = "$tag" ] && [ "$CMD" = install ] && [ "$YES" != 1 ]; then
         ask "$tag is already installed. Build and install it again?" || { echo "nothing to do"; return 0; }
     fi
-    say "Lyric Widget $tag"
+    [ "$PLUGIN" = 1 ] || { [ -r "$MODEFILE" ] && [ "$(cat "$MODEFILE")" = plugin ] && PLUGIN=1; } || true
+    say "Lyric Widget $tag$([ "$PLUGIN" = 1 ] && echo ' (plugin only: the widget files come from the KDE Store)')"
     install_packages
 
     local src="$HOME_DIR/source/${tag#v}"
-    say "Downloading $tag"
     run rm -rf "$src"
     run mkdir -p "$src"
-    if [ "$DRY" = 1 ]; then echo "+ download https://github.com/$REPO/archive/refs/tags/$tag.tar.gz | tar -xz -C $src --strip-components=1"
-    else fetch "https://github.com/$REPO/archive/refs/tags/$tag.tar.gz" | tar -xz -C "$src" --strip-components=1; fi
-    [ "$DRY" = 1 ] || [ -f "$src/CMakeLists.txt" ] || die "the download for $tag has no CMakeLists.txt (is $tag a release of $REPO?)"
+    if [ -n "$SOURCE" ]; then
+        say "Using the source in $SOURCE"
+        run cp -r "$SOURCE"/. "$src"/
+    else
+        say "Downloading $tag"
+        if [ "$DRY" = 1 ]; then echo "+ download https://github.com/$REPO/archive/refs/tags/$tag.tar.gz | tar -xz -C $src --strip-components=1"
+        else fetch "https://github.com/$REPO/archive/refs/tags/$tag.tar.gz" | tar -xz -C "$src" --strip-components=1; fi
+    fi
+    [ "$DRY" = 1 ] || [ -f "$src/CMakeLists.txt" ] || die "no CMakeLists.txt in the source for $tag (is $tag a release of $REPO?)"
 
     say "Building"
-    run cmake -B "$src/build" -S "$src" -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_MESSAGE=NEVER --log-level=WARNING
+    run cmake -B "$src/build" -S "$src" -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_MESSAGE=NEVER --log-level=WARNING \
+        $([ "$PLUGIN" = 1 ] && echo -DPLUGIN_ONLY=ON)
     run cmake --build "$src/build"
 
     say "Installing (needs sudo)"
-    run sudo rm -rf /usr/share/plasma/plasmoids/org.lyricwidget      # so files removed in a newer version do not linger
+    [ "$PLUGIN" = 1 ] || run sudo rm -rf /usr/share/plasma/plasmoids/org.lyricwidget      # so files removed in a newer version do not linger
     run sudo cmake --install "$src/build"
 
     say "Japanese romanization (optional, private Python environment, about 30 seconds the first time)"
@@ -115,14 +128,14 @@ do_install() {
     say "Restarting Plasma"
     run rm -rf "$HOME/.cache/plasmashell/qmlcache"
     run systemctl --user restart plasma-plasmashell
-    if [ "$DRY" != 1 ]; then mkdir -p "$HOME_DIR"; echo "$tag" > "$STAMP"; fi
+    if [ "$DRY" != 1 ]; then mkdir -p "$HOME_DIR"; echo "$tag" > "$STAMP"; if [ "$PLUGIN" = 1 ]; then echo plugin > "$MODEFILE"; else rm -f "$MODEFILE"; fi; fi
     # keep only this source folder
     if [ "$DRY" != 1 ]; then for d in "$HOME_DIR"/source/*/; do [ "${d%/}" = "$src" ] || rm -rf "$d"; done; fi
 
     cat <<MSG
 
-Done: Lyric Widget $tag is installed.
-Right-click the desktop, Add or Manage Widgets, drag "Lyric Widget" onto it and play something.
+Done: Lyric Widget $tag is installed$([ "$PLUGIN" = 1 ] && echo ' (the plugin)').
+$([ "$PLUGIN" = 1 ] && echo 'Add the widget from Get New Widgets if you have not, or it appears by itself if it was already on the desktop.' || echo 'Right-click the desktop, Add or Manage Widgets, drag "Lyric Widget" onto it and play something.')
 Check the system:  bash /usr/share/lyric-widget/doctor.sh
 Look for updates:  bash $(basename "$0") check
 MSG
@@ -163,7 +176,7 @@ print("removed " + n + " widget(s)");'
     run sudo rm -rf -- /usr/lib/qt6/qml/org/lyricwidget /usr/lib64/qt6/qml/org/lyricwidget /usr/share/plasma/plasmoids/org.lyricwidget \
         /usr/share/lyric-widget /usr/share/icons/hicolor/scalable/apps/org.lyricwidget.svg
     run rm -rf -- "$HOME/.local/share/plasma/plasmoids/org.lyricwidget" "$HOME/.cache/lyric-widget" "$HOME/.cache/plasmashell/qmlcache"
-    run rm -rf -- "$HOME_DIR/source" "$HOME_DIR/venv" "$STAMP"
+    run rm -rf -- "$HOME_DIR/source" "$HOME_DIR/venv" "$STAMP" "$MODEFILE"
     if [ "$PURGE" = 1 ]; then
         say "Deleting your data"
         run rm -f -- "$HOME/.local/share/plasmashell/lyrics.db" "$HOME/.local/share/plasmashell/lyrics.db-wal" \

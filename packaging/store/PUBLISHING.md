@@ -1,7 +1,8 @@
 # Publishing on the KDE Store (store.kde.org)
 
-The store hosts the widget's QML part. The C++ plugin cannot be installed by the store, so the listing must tell people to run
-`install.sh` first (the text is ready in `LISTING.md`). The store's page layout changes now and then, so the names of buttons
+The store hosts the widget's QML part. It cannot install the C++ plugin, so the package carries the plugin's source and the
+installer (`contents/installer`), and the widget shows an "Install the plugin" button until the plugin is there. The listing says so
+(the text is ready in `LISTING.md`). The store's page layout changes now and then, so the names of buttons
 below may differ a little. There is no reliable command-line route, so this is done in the browser.
 
 ## Before you start (about 5 minutes)
@@ -48,13 +49,12 @@ Screenshots worth uploading, 1280 px wide or more is best:
 
 ## Check it like a user
 
-1. On a clean test account or after `kpackagetool6 --type Plasma/Applet --remove org.lyricwidget` (this only affects the copy
-   the store installed under `~/.local`):
-   ```
-   git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget && ./install.sh
-   ```
+1. Best on a spare account or a virtual machine without the plugin (the plugin installs into `/usr`).
 2. Right-click the desktop, **Add or Manage Widgets**, **Get New Widgets**, search "Lyric Widget", install it, drag it out.
-3. Play a song. If Plasma shows "module org.lyricwidget is not installed", the plugin step was skipped: run `./install.sh`.
+3. It shows "Lyric Widget needs its plugin". Press **Install the plugin**, follow the terminal (it asks for your password), and the
+   widget appears when Plasma restarts. Play a song.
+4. To test on a machine that already has the plugin, `kpackagetool6 --type Plasma/Applet --install build/org.lyricwidget-<version>.plasmoid`
+   installs just the package (the widget then loads normally).
 
 ## For each new version
 

@@ -13,7 +13,7 @@
         "License": "GPL-3.0",
         "Website": "https://github.com/AWeebTaku/Lyrics-Widget",
         "BugReportUrl": "https://github.com/AWeebTaku/Lyrics-Widget/issues",
-        "Version": "2.1.0"
+        "Version": "2.2.0"
     },
     "KPackageStructure": "Plasma/Applet",
     "X-Plasma-API-Minimum-Version": "6.0"
