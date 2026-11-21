@@ -11,8 +11,8 @@ QQC2.ScrollView {
     implicitHeight: 100
     contentWidth: availableWidth
     clip: true
-    readonly property var keys: ["visualizerStyle","waveMode","fillWave","pinnedDownSides","drawInactiveBlocks","roundedBars","centeredBars","waveSimulateWaveform","orientation","barWidth","barGap","blockHeight","blockSpacing","ribbonCurvature","ribbonFullness","allowCustomQml","customQmlFile","circleMode","circleModeSize","circleModeFill","vizColorMode","vizPalette","vizRainbowSpeed","barColors","waveFillColors","inactiveBlockColors","vizColorFlow","vizColorByLevel","vizGlow","vizGlowColorMode","vizSmoothing","vizReleaseMs","vizPeakFall","vizBassWeight","vizTrebleWeight","vizTaper","vizSpacing","fadeVizWhenPaused","expanding","length","minimumLength","fillPanel","vizWidthPct","vizHeightPct","vizHAlign","vizVAlign","vizOffsetX","vizOffsetY","vizUserPresets","vizFavourites"]
-    readonly property var defaults: ({"visualizerStyle":1,"waveMode":0,"fillWave":true,"pinnedDownSides":false,"drawInactiveBlocks":false,"roundedBars":false,"centeredBars":false,"waveSimulateWaveform":false,"orientation":1,"barWidth":2,"barGap":5,"blockHeight":2,"blockSpacing":2,"ribbonCurvature":100,"ribbonFullness":100,"allowCustomQml":false,"customQmlFile":"","circleMode":false,"circleModeSize":0.5,"circleModeFill":false,"vizColorMode":0,"vizPalette":0,"vizRainbowSpeed":30,"barColors":"{}","waveFillColors":"{}","inactiveBlockColors":"{}","vizColorFlow":0,"vizColorByLevel":false,"vizGlow":0,"vizGlowColorMode":0,"vizSmoothing":0,"vizReleaseMs":350,"vizPeakFall":40,"vizBassWeight":100,"vizTrebleWeight":100,"vizTaper":false,"vizSpacing":0,"fadeVizWhenPaused":false,"expanding":false,"length":200,"minimumLength":50,"fillPanel":false,"vizWidthPct":100,"vizHeightPct":60,"vizHAlign":1,"vizVAlign":2,"vizOffsetX":0,"vizOffsetY":0,"vizUserPresets":"[]","vizFavourites":"[]"})
+    readonly property var keys: ["visualizerStyle","waveMode","fillWave","pinnedDownSides","drawInactiveBlocks","roundedBars","centeredBars","waveSimulateWaveform","orientation","barWidth","barGap","blockHeight","blockSpacing","ribbonCurvature","ribbonFullness","allowCustomQml","customQmlFile","circleMode","circleModeSize","circleModeFill","vizColorMode","vizPalette","vizRainbowSpeed","barColors","waveFillColors","inactiveBlockColors","vizColorFlow","vizColorByLevel","vizGlow","vizGlowColorMode","vizSmoothing","vizReleaseMs","vizPeakFall","vizBassWeight","vizTrebleWeight","vizTaper","vizSpacing","fadeVizWhenPaused","expanding","length","minimumLength","fillPanel","vizWidthPct","vizHeightPct","vizHAlign","vizVAlign","vizOffsetX","vizOffsetY"]
+    readonly property var defaults: ({"visualizerStyle":1,"waveMode":0,"fillWave":true,"pinnedDownSides":false,"drawInactiveBlocks":false,"roundedBars":false,"centeredBars":false,"waveSimulateWaveform":false,"orientation":1,"barWidth":2,"barGap":5,"blockHeight":2,"blockSpacing":2,"ribbonCurvature":100,"ribbonFullness":100,"allowCustomQml":false,"customQmlFile":"","circleMode":false,"circleModeSize":0.5,"circleModeFill":false,"vizColorMode":0,"vizPalette":0,"vizRainbowSpeed":30,"barColors":"{}","waveFillColors":"{}","inactiveBlockColors":"{}","vizColorFlow":0,"vizColorByLevel":false,"vizGlow":0,"vizGlowColorMode":0,"vizSmoothing":0,"vizReleaseMs":350,"vizPeakFall":40,"vizBassWeight":100,"vizTrebleWeight":100,"vizTaper":false,"vizSpacing":0,"fadeVizWhenPaused":false,"expanding":false,"length":200,"minimumLength":50,"fillPanel":false,"vizWidthPct":100,"vizHeightPct":60,"vizHAlign":1,"vizVAlign":2,"vizOffsetX":0,"vizOffsetY":0})
 
     property int cfg_visualizerStyle
     property int cfg_visualizerStyleDefault
@@ -110,10 +110,6 @@ QQC2.ScrollView {
     property int cfg_vizOffsetXDefault
     property int cfg_vizOffsetY
     property int cfg_vizOffsetYDefault
-    property string cfg_vizUserPresets
-    property string cfg_vizUserPresetsDefault
-    property string cfg_vizFavourites
-    property string cfg_vizFavouritesDefault
 
     function load(cfg) {
         if (!cfg) return

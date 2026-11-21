@@ -1,7 +1,7 @@
 # Preset gallery
 
 Every built-in look, drawn by the widget's own code with a sample song and a made-up spectrum. Apply one in
-**Settings, Visualizer, Presets**. Made by `tools/gallery/render.sh`.
+**Settings, Looks**. Made by `tools/gallery/render.sh`.
 
 ## Visualizer looks
 

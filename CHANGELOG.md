@@ -2,8 +2,10 @@
 
 Each release's section is used for its GitHub release notes (`.github/workflows/release.yml`), so keep the heading as `## <version>`.
 
-## Unreleased
+## 2.3.0
 
+- The looks have their own **Looks** page, between Card and Sources. The Visualizer page now starts at Style.
+- Fixed settings that a look could no longer change once you had edited them by hand: a look now updates every control, and you can edit it afterwards.
 - Removed the KDE Store packaging: the Store package, the plugin-only installer, the setup screen shown when the plugin is missing, and the `--plugin-only` and `--source` options of `lyric-widget.sh`. The widget is distributed from GitHub (the release installer, `build.sh`, or the Arch package).
 
 ## 2.2.0

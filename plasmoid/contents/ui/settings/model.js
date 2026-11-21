@@ -123,10 +123,12 @@ const styles = ["Bars", "Wave", "Blocks", "Peak bars", "LED meter", "Mountain", 
                 "Radial burst", "Pulse orb", "Ribbon", "Sparkles", "Gravity sparks", "Plasma (GPU)", "Orbit ring", "Terrain (GPU)", "Tunnel (GPU)",
                 "Stereo scope", "Custom (my own QML file)", "CRT oscilloscope", "Silk ribbon"]
 const styleValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
-const visualizer = [
+const looks = [
     { id: "presets", title: "Looks", desc: "Pick a look or save your own.", open: true, rows: [
         { type: "presets" }
-    ] },
+    ] }
+]
+const visualizer = [
     { id: "style", title: "Style", desc: "What is drawn.", rows: [
         { key: "visualizerStyle", type: "combo", label: "Style", options: styles, values: styleValues },
         { key: "waveMode", type: "combo", label: "Shape", options: ["Curve", "Square", "Triangle"], when: { key: "visualizerStyle", in: [1] } },
@@ -381,6 +383,7 @@ const pages = [
       banner: { key: "showVisualizer", text: "The visualizer is off.", button: "Turn it on" }, sections: audio },
     { id: "card", title: "Card", icon: "view-media-playlist", subtitle: "Cover, title, buttons, seek bar.",
       banner: { key: "showCard", text: "The card is off.", button: "Turn it on" }, preview: "card", sections: cardSections },
+    { id: "looks", title: "Looks", icon: "preferences-desktop-theme", subtitle: "Ready-made looks, and your own.", preview: "viz", sections: looks },
     { id: "sources", title: "Sources", icon: "folder-music", subtitle: "Where lyrics come from.", sections: sources }
 ]
 
@@ -390,7 +393,7 @@ function pageKeys(p) {
     const out = []
     for (const s of p.sections) for (const r of s.rows) for (const k of rowKeys(r)) out.push(k)
     // the preset manager keeps the user's looks and favorites
-    if (p.id === "visualizer") out.push("vizUserPresets", "vizFavourites")
+    if (p.id === "looks") out.push("vizUserPresets", "vizFavourites")
     return out
 }
 function pageById(id) { return pages.find(p => p.id === id) }

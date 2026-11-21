@@ -17,7 +17,7 @@ const stores = { bool: ["Bool"], int: ["Int"], real: ["Double"], color: ["String
 const noKey = ["presets", "spotify", "queuecheck", "browsercheck", "browser", "info"];
 const seenKeys = {};
 const pageFiles = { general: "configGeneral.qml", lyrics: "configLyrics.qml", visualizer: "configVisualizer.qml", audio: "configAudio.qml",
-                    card: "configCard.qml", sources: "configAccounts.qml" };
+                    card: "configCard.qml", looks: "configLooks.qml", sources: "configAccounts.qml" };
 
 function defOf(k) { return entries[k] ? entries[k].def : undefined; }
 function inRange(v, lo, hi) { return +v >= lo && +v <= hi; }
@@ -81,8 +81,8 @@ for (const p of M.pages) {
     const like = { 0: { key: "a", in: [1] }, 1: { key: "b", in: [false] }, length: 2 };
     check(!M.whenMet(like, get) && M.whenMet({ 0: { key: "a", in: [1] }, length: 1 }, get), "whenMet: an array-like list");
 }
-// the preset manager's own keys belong to the Visualizer page
-for (const k of ["vizUserPresets", "vizFavourites"]) (seenKeys[k] = seenKeys[k] || []).push("visualizer");
+// the preset manager's own keys belong to the Looks page
+for (const k of ["vizUserPresets", "vizFavourites"]) (seenKeys[k] = seenKeys[k] || []).push("looks");
 
 // every setting on exactly one page; only two have none
 const noPage = ["showPanel", "debugMode"];   // showPanel: only read once, to move the old background setting to the card surface

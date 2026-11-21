@@ -108,10 +108,6 @@ KCM.SimpleKCM {
     property int cfg_vizOffsetXDefault
     property int cfg_vizOffsetY
     property int cfg_vizOffsetYDefault
-    property string cfg_vizUserPresets
-    property string cfg_vizUserPresetsDefault
-    property string cfg_vizFavourites
-    property string cfg_vizFavouritesDefault
 
     SettingsPage { kcm: page; pageId: "visualizer" }
 }

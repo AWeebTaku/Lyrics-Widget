@@ -30,6 +30,11 @@ ConfigModel {
         source: "configCard.qml"
     }
     ConfigCategory {
+        name: i18n("Looks")
+        icon: "preferences-desktop-theme"
+        source: "configLooks.qml"
+    }
+    ConfigCategory {
         name: i18n("Sources")
         icon: "preferences-system-users"
         source: "configAccounts.qml"

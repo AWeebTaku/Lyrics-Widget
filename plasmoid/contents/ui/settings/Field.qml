@@ -103,7 +103,9 @@ ColumnLayout {
     }
 
     // ---- the controls
-    Component { id: boolC; QQC2.Switch { checked: !!f.value; onToggled: f.put(f.row.key, checked) } }
+    // A control the user has touched drops a plain `checked: ...` / `value: ...` binding, and then a look (or Reset) could no longer
+    // change it. `Binding on` keeps following the setting.
+    Component { id: boolC; QQC2.Switch { Binding on checked { value: !!f.value } onToggled: f.put(f.row.key, checked) } }
     Component {
         id: intC
         QQC2.SpinBox {
@@ -113,7 +115,7 @@ ColumnLayout {
             to: f.row.max ?? 9999
             stepSize: f.row.step ?? 1
             editable: true
-            value: f.value ?? 0
+            Binding on value { value: f.value ?? 0 }
             textFromValue: v => (f.row.off !== undefined && v === from) ? f.row.off
                 : (div !== 1 ? (v / div).toFixed(u.decimals ?? 2) : String(v)) + (u && u.suffix ? u.suffix : "")
             valueFromText: t => { const n = parseFloat(String(t).replace(",", ".")); return isNaN(n) ? value : Math.max(from, Math.min(to, Math.round(n * div))) }
@@ -127,7 +129,7 @@ ColumnLayout {
             from: f.row.min ?? 0
             to: f.row.max ?? 100
             editable: true
-            value: Math.round((f.value ?? 0) * k)
+            Binding on value { value: Math.round((f.value ?? 0) * k) }
             textFromValue: v => v + "%"
             valueFromText: t => { const n = parseFloat(String(t)); return isNaN(n) ? value : Math.max(from, Math.min(to, Math.round(n))) }
             onValueModified: f.put(f.row.key, value / k)
@@ -138,7 +140,7 @@ ColumnLayout {
         QQC2.ComboBox {
             model: f.row.options
             implicitContentWidthPolicy: QQC2.ComboBox.WidestText
-            currentIndex: f.row.values ? f.row.values.indexOf(f.value) : (f.value ?? 0)
+            Binding on currentIndex { value: f.row.values ? f.row.values.indexOf(f.value) : (f.value ?? 0) }
             onActivated: f.put(f.row.key, f.row.values ? f.row.values[currentIndex] : currentIndex)
         }
     }
@@ -147,7 +149,7 @@ ColumnLayout {
         QQC2.ComboBox {
             model: Model.flows
             implicitContentWidthPolicy: QQC2.ComboBox.WidestText
-            currentIndex: Math.max(0, Model.flowValues.indexOf(f.value))
+            Binding on currentIndex { value: Math.max(0, Model.flowValues.indexOf(f.value)) }
             onActivated: f.put(f.row.key, Model.flowValues[currentIndex])
         }
     }
@@ -156,7 +158,7 @@ ColumnLayout {
         QQC2.ComboBox {
             model: Palettes.palettes.map(p => p.name)
             implicitContentWidthPolicy: QQC2.ComboBox.WidestText
-            currentIndex: f.value ?? 0
+            Binding on currentIndex { value: f.value ?? 0 }
             onActivated: f.put(f.row.key, currentIndex)
         }
     }
@@ -200,7 +202,7 @@ ColumnLayout {
                 readonly property string suffix: f.row.unit && f.row.unit.suffix ? f.row.unit.suffix : ""
                 from: f.row.min ?? 0; to: f.row.max ?? 9999; stepSize: f.row.step ?? 1; editable: true
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 8
-                value: f.get(f.row.keys[which]) ?? 0
+                Binding on value { value: f.get(f.row.keys[which]) ?? 0 }
                 textFromValue: v => v + suffix
                 valueFromText: t => { const n = parseInt(t); return isNaN(n) ? value : Math.max(from, Math.min(to, n)) }
                 onValueModified: f.put(f.row.keys[which], value)

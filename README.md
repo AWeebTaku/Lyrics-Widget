@@ -96,9 +96,10 @@ settings dialog at a time), so several widgets can have their settings open toge
 |---|---|
 | General | what to show (lyrics, visualizer, card), size on the desktop, when it hides, power saving |
 | Lyrics | what is shown, text, colors, effects (shadow, outline, highlight bar), timing, hover buttons, position |
-| Visualizer | the looks, then style, colors, how it reacts to the music, position |
+| Visualizer | style, colors, how it reacts to the music, position |
 | Audio input | where the sound comes from, what is drawn, level and pitch range, equalizer |
 | Card | layout, background, cover, buttons, seek bar, title and details, the pill for panels |
+| Looks | ready-made looks, random look, look of the day, your own saved looks |
 | Sources | your own lyric files, next songs, the Spotify app, YouTube Music, other players |
 | Lyrics library | get, edit, retime and save lyrics |
 
@@ -107,7 +108,7 @@ How the pages work:
 - **Live preview.** Lyrics, Visualizer and Card each show a live, animated preview at the top. Press **Listen to my music** on
   it to see your real music: the visualizer draws the sound playing now (needs `cava`), the card shows the real title, cover,
   colors and lyric line, and the lyrics preview shows the real lines.
-- **Looks.** The Visualizer page shows the 36 looks as picture cards in groups (Favorites, Visualizer, Cards and layouts,
+- **Looks.** The Looks page shows the 36 looks as picture cards in groups (Favorites, Visualizer, Cards and layouts,
   Mine). Click one to apply it. **Random look**, **Look of the day** and **Save current look** are cards too. A look can set
   settings from other pages, and the General page follows.
 - **Colors from the cover.** Pick it in **Visualizer, Colors, Color mode**, or turn on **Use colors from the album cover** on
