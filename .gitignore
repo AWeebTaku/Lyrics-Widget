@@ -48,6 +48,5 @@ core
 Thumbs.db
 .env
 
-# release and store packaging output
+# release packaging output
 dist/
-*.plasmoid

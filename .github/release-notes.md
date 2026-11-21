@@ -18,8 +18,3 @@ bash lyric-widget.sh uninstall    # remove the widget (add --purge to delete you
 
 `--dry-run` shows what any command would do, `-y` skips the questions. Packages are installed for you on Arch Linux; on other
 systems the script lists what is missing. The checksums are in `SHA256SUMS`.
-
-### The KDE Store package
-
-`org.lyricwidget-{{VERSION}}.plasmoid` is for the Store or `kpackagetool6`. It carries the plugin's source and an installer: until the plugin
-is installed, the widget shows an **Install the plugin** button that builds it for you.

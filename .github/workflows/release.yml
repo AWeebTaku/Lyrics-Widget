@@ -1,6 +1,6 @@
 # Publishes a GitHub release when a version tag is pushed (git tag v2.2.0 && git push origin v2.2.0).
 # The notes come from .github/release-notes.md and CHANGELOG.md, so every release reads the same.
-# The release carries the one-file installer (lyric-widget.sh: install, update, check, uninstall), the KDE Store package and checksums.
+# The release carries the one-file installer (lyric-widget.sh: install, update, check, uninstall) and its checksum.
 name: release
 on:
   push:
@@ -18,14 +18,12 @@ jobs:
           [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME does not match metadata.json version $v"; exit 1; }
       - name: Check the scripts and the JS tests
         run: |
-          for f in packaging/release/lyric-widget.sh install.sh build.sh uninstall.sh setup-romaji.sh packaging/store/make-plasmoid.sh; do bash -n "$f"; done
+          for f in packaging/release/lyric-widget.sh build.sh uninstall.sh setup-romaji.sh; do bash -n "$f"; done
           for t in tests/*.test.js; do node "$t"; done
-      - name: Pack the Store package and the checksums
+      - name: Pack the installer and its checksum
         run: |
-          packaging/store/make-plasmoid.sh
           mkdir -p dist
           cp packaging/release/lyric-widget.sh dist/
-          cp build/org.lyricwidget-*.plasmoid dist/
           (cd dist && sha256sum * > SHA256SUMS)
       - name: Write the release notes (template plus this version's section of CHANGELOG.md)
         run: python3 packaging/release/notes.py "$GITHUB_REF_NAME" > notes.md

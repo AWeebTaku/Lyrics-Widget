@@ -2,6 +2,10 @@
 
 Each release's section is used for its GitHub release notes (`.github/workflows/release.yml`), so keep the heading as `## <version>`.
 
+## Unreleased
+
+- Removed the KDE Store packaging: the Store package, the plugin-only installer, the setup screen shown when the plugin is missing, and the `--plugin-only` and `--source` options of `lyric-widget.sh`. The widget is distributed from GitHub (the release installer, `build.sh`, or the Arch package).
+
 ## 2.2.0
 
 - The KDE Store package carries the plugin's source and the installer. When the plugin is missing, the widget shows a setup screen with an **Install the plugin** button instead of an error: it builds the plugin from the package, asks for your password once and restarts Plasma.

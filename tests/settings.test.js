@@ -125,10 +125,7 @@ for (const f of ["SettingsWindow.qml", "LibraryWindow.qml"]) {
 }
 check(/src\/WindowPlacer\.cpp/.test(fs.readFileSync(__dirname + "/../CMakeLists.txt", "utf8")), "CMakeLists.txt must build WindowPlacer");
 const mainQml = fs.readFileSync(ui + "main.qml", "utf8");
-const widgetQml = fs.readFileSync(ui + "Widget.qml", "utf8");
-check(/SettingsWindow\.qml/.test(widgetQml) && /contextualActions/.test(mainQml) && /openSettingsWindow/.test(mainQml), "the menu (main.qml) must open the widget's own settings window (Widget.qml)");
-const imp = /^import\s+org\.lyricwidget/m;
-check(!imp.test(mainQml) && !imp.test(fs.readFileSync(ui + "Setup.qml", "utf8")), "main.qml and Setup.qml must not import the plugin (they run when it is missing)");
+check(/SettingsWindow\.qml/.test(mainQml) && /contextualActions/.test(mainQml), "main.qml must open the widget's own settings window from the menu");
 check(/removeInternalAction\("configure"\)/.test(mainQml) && /Configure %1/.test(mainQml), "the menu has one Configure entry: Plasma's own is replaced by the widget's, not joined by a second");
 
 // the files the renderer needs exist, and the old settings code is gone

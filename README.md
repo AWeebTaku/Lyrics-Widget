@@ -59,15 +59,6 @@ bash lyric-widget.sh uninstall    # remove the widget (add --purge to delete you
 packages itself on Arch Linux; on other systems it lists what is missing. It asks for your password only for the install
 into `/usr`, and keeps its files in `~/.local/share/lyric-widget`.
 
-**From the KDE Store:** the Store installs the widget's QML files, and the widget also needs its C++ plugin, which a store
-package cannot install. So the package carries the plugin's source and the installer, and the widget does the rest: add the
-widget (Add or Manage Widgets, Get New Widgets, "Lyric Widget"), and until the plugin is there it shows a setup screen with an
-**Install the plugin** button. The button opens a terminal that builds the plugin from the source in the package (no download, always
-the same version as the widget), asks for your password once, and restarts Plasma. It needs Plasma 6, Qt 6, cmake and a C++
-compiler (it installs them for you on Arch Linux; on other systems it lists what is missing). Prefer a terminal? From a clone,
-`./install.sh` does the same, and `./install.sh --dry-run` shows what it would do. A compiled plugin is not shipped in the package on
-purpose: it would only work on the exact Qt and library versions it was built with.
-
 | For | You need |
 |---|---|
 | Building | Plasma 6 development files, Qt 6.4 or newer (base, declarative, websockets), CMake 3.21+, Ninja, a C++20 compiler, ICU |
@@ -253,7 +244,7 @@ interfaces are unofficial and can change or rate-limit without notice.
 ## For developers
 
 ```
-CMakeLists.txt  build.sh  install.sh  uninstall.sh  setup-romaji.sh
+CMakeLists.txt  build.sh  uninstall.sh  setup-romaji.sh
 .github/    issue and pull request templates, workflows/release.yml (publishes a release from a version tag)
 CONTRIBUTING.md  SECURITY.md  CODE_OF_CONDUCT.md
 src/        C++ plugin (QML module org.lyricwidget): player watching, lyric lookup and matching, cache, library,
@@ -266,8 +257,8 @@ examples/   example visualizers, seek bars and buttons you can copy
 tools/      doctor.sh (checks a system), gen-settings.js (writes the settings pages), gallery/ (renders the gallery)
 tests/      table-driven checks of lyric matching, layouts, presets and settings
 docs/       the website (index.html), the gallery, and the guide to writing your own styles
-packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing text, publishing steps and the packing script;
-            release/lyric-widget.sh, the one-file installer, updater and uninstaller attached to each release
+packaging/  arch/PKGBUILD for Arch Linux; release/lyric-widget.sh, the one-file installer, updater and uninstaller attached to
+            each release, and notes.py, which writes the release notes
 ```
 
 - **Settings are defined once**, in `plasmoid/contents/ui/settings/model.js`. After changing it, run
@@ -283,7 +274,7 @@ packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing tex
 
 - **Make a release:** raise `Version` in `plasmoid/metadata.json`, add a `## <version>` section to `CHANGELOG.md`, commit, then
   `git tag v2.3.0 && git push origin v2.3.0`. The workflow in `.github/workflows/release.yml` publishes the release with
-  `lyric-widget.sh`, the KDE Store package and `SHA256SUMS`. The notes are `.github/release-notes.md` plus that CHANGELOG section,
+  `lyric-widget.sh` and `SHA256SUMS`. The notes are `.github/release-notes.md` plus that CHANGELOG section,
   so every release reads the same (`python3 packaging/release/notes.py v2.3.0` previews them).
 - **Redraw the gallery** after changing a look: `tools/gallery/render.sh` (needs a display and a built backend). It writes
   `docs/gallery/*.png` and `docs/gallery.md`, and copies the pictures into the app for the settings window.
@@ -294,13 +285,12 @@ packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing tex
   most of them). A security problem goes through the private "Report a vulnerability" form, see [SECURITY.md](SECURITY.md).
 - **Want to add something?** [CONTRIBUTING.md](CONTRIBUTING.md) says where a setting, a look or a lyric rule lives and what to
   run before a pull request. Please follow the [code of conduct](CODE_OF_CONDUCT.md).
-- **Publishing on the KDE Store:** the steps are in [packaging/store/PUBLISHING.md](packaging/store/PUBLISHING.md).
 
 ## Roadmap
 
 Not done yet, in rough order of how likely they are:
 
-- **Publishing:** the package on the AUR and the widget on the KDE Store.
+- **Publishing:** the package on the AUR.
 - **A shared database of timed lyrics** for songs no provider has (covers, remixes, fan uploads). Open questions: the legal side
   of hosting lyric text, a song fingerprint two people share, free hosting, and moderation. First steps: export the lyrics
   library to a documented JSON format, and an optional upload of edited lyrics to LRCLIB.
