@@ -2,15 +2,17 @@
     "KPlugin": {
         "Id": "org.lyricwidget",
         "Name": "Lyric Widget",
-        "Description": "Synced lyrics for Spotify and Chrome, right on your desktop",
+        "Description": "Synced lyrics, an audio visualizer and a media card for Spotify and YouTube Music",
         "Category": "Multimedia",
-        "Icon": "view-media-lyrics",
+        "Icon": "org.lyricwidget",
         "Authors": [
             {
                 "Name": "Adu"
             }
         ],
         "License": "GPL-3.0",
+        "Website": "https://github.com/AWeebTaku/Lyrics-Widget",
+        "BugReportUrl": "https://github.com/AWeebTaku/Lyrics-Widget/issues",
         "Version": "2.1.0"
     },
     "KPackageStructure": "Plasma/Applet",

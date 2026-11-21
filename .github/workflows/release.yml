@@ -1,0 +1,32 @@
+# Publishes a GitHub release when a version tag is pushed (git tag v2.2.0 && git push origin v2.2.0).
+# The release carries the one-file installer (lyric-widget.sh: install, update, check, uninstall), the KDE Store package and checksums.
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The tag must match the version in metadata.json
+        run: |
+          v="$(python3 -c "import json;print(json.load(open('plasmoid/metadata.json'))['KPlugin']['Version'])")"
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME does not match metadata.json version $v"; exit 1; }
+      - name: Check the scripts and the JS tests
+        run: |
+          for f in packaging/release/lyric-widget.sh install.sh build.sh uninstall.sh setup-romaji.sh packaging/store/make-plasmoid.sh; do bash -n "$f"; done
+          for t in tests/*.test.js; do node "$t"; done
+      - name: Pack the Store package and the checksums
+        run: |
+          packaging/store/make-plasmoid.sh
+          mkdir -p dist
+          cp packaging/release/lyric-widget.sh dist/
+          cp build/org.lyricwidget-*.plasmoid dist/
+          (cd dist && sha256sum * > SHA256SUMS)
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Lyric Widget $GITHUB_REF_NAME" --generate-notes

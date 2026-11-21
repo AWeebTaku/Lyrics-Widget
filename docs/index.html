@@ -472,18 +472,19 @@
         <h2>Install</h2>
         <p class="lead">Tested on Arch Linux with Plasma 6 and Qt 6.12.</p>
         <ul>
-          <li><strong>Install the packages</strong><span>Plasma 6 and the build tools. For YouTube, add Plasma Browser Integration to Chrome.</span></li>
-          <li><strong>Build</strong><span><code>build.sh</code> builds, installs into <code>/usr</code> with sudo and restarts plasmashell.</span></li>
+          <li><strong>Get the installer</strong><span>One file from the latest release. For YouTube, add Plasma Browser Integration to Chrome.</span></li>
+          <li><strong>Run it</strong><span><code>lyric-widget.sh</code> downloads, builds and installs into <code>/usr</code> with sudo, then restarts plasmashell. It also updates and removes the widget.</span></li>
           <li><strong>Add the widget</strong><span>Right-click the desktop, choose Add or Manage Widgets, drag Lyric Widget out and play something.</span></li>
         </ul>
       </div>
       <div class="term rv" style="--d:.1s">
         <div class="tb"><span>Terminal</span><button class="btn sm" id="copy" type="button">Copy</button></div>
-<pre id="cmd"><span class="d">$ </span>sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
-<span class="d">$ </span>git clone https://github.com/AWeebTaku/Lyrics-Widget &amp;&amp; cd Lyrics-Widget
-<span class="d">$ </span>./build.sh
-<span class="c"># to remove everything later, preview first:</span>
-<span class="d">$ </span>./uninstall.sh --dry-run</pre>
+<pre id="cmd"><span class="d">$ </span>curl -fsSLO https://github.com/AWeebTaku/Lyrics-Widget/releases/latest/download/lyric-widget.sh
+<span class="d">$ </span>bash lyric-widget.sh
+<span class="c"># later: look for a newer release, install it, or remove everything</span>
+<span class="d">$ </span>bash lyric-widget.sh check
+<span class="d">$ </span>bash lyric-widget.sh update
+<span class="d">$ </span>bash lyric-widget.sh uninstall</pre>
       </div>
     </div>
   </section>

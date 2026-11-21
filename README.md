@@ -37,12 +37,40 @@ git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget
 ./build.sh
 ```
 
-`build.sh` sets up the romanization helper (first run only, about 30 seconds and 270 MB), builds, installs into `/usr` with
+`build.sh` (the whole widget from this folder) sets up the romanization helper (first run only, about 30 seconds and 270 MB), builds, installs into `/usr` with
 `sudo`, clears the cached lyrics table and Plasma's QML cache, and restarts plasmashell. Your settings and per-song sync
 offsets are kept. (If you downloaded a zip instead of cloning, run `bash build.sh`.)
 
 Then right-click the desktop, choose **Add or Manage Widgets**, drag **Lyric Widget** onto it and play something.
 Right-click the widget and choose **Configure…** for the settings.
+
+**From a GitHub release (one file, does everything):** each release has `lyric-widget.sh`, which downloads, builds and installs
+the whole widget, looks for updates and removes it again. No clone needed:
+
+```
+curl -fsSLO https://github.com/AWeebTaku/Lyrics-Widget/releases/latest/download/lyric-widget.sh
+bash lyric-widget.sh              # install the latest release
+bash lyric-widget.sh check        # is there a newer release?
+bash lyric-widget.sh update       # install it
+bash lyric-widget.sh uninstall    # remove the widget (add --purge to delete your lyrics library too)
+```
+
+`--dry-run` shows what any command would do, `-y` skips the questions, `--version v2.1.0` picks a release. It installs
+packages itself on Arch Linux; on other systems it lists what is missing. It asks for your password only for the install
+into `/usr`, and keeps its files in `~/.local/share/lyric-widget`.
+
+**From the KDE Store:** the Store carries the widget's QML files only, and the widget also needs its C++ plugin. So install
+the plugin first, then the widget:
+
+```
+git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget
+./install.sh              # builds and installs the plugin, the icon, the romanization helper and the browser extension
+```
+
+Then right-click the desktop, **Add or Manage Widgets**, **Get New Widgets**, search for "Lyric Widget" and install it.
+`./install.sh --dry-run` shows what it would do. It installs packages itself on Arch Linux; on other systems it checks the tools
+and lists what is missing. If the widget shows "module org.lyricwidget is not installed", the plugin is missing: run
+`./install.sh`. When the Store updates the widget, `git pull && ./install.sh` brings the plugin up to date too.
 
 | For | You need |
 |---|---|
@@ -229,7 +257,7 @@ interfaces are unofficial and can change or rate-limit without notice.
 ## For developers
 
 ```
-CMakeLists.txt  build.sh  uninstall.sh  setup-romaji.sh
+CMakeLists.txt  build.sh  install.sh  uninstall.sh  setup-romaji.sh   (and .github/workflows/release.yml)
 src/        C++ plugin (QML module org.lyricwidget): player watching, lyric lookup and matching, cache, library,
             visualizer analysis, window placement
 plasmoid/   the widget: metadata.json, contents/ui (widget, card, visualizer, settings), contents/config (main.xml: the
@@ -240,7 +268,8 @@ examples/   example visualizers, seek bars and buttons you can copy
 tools/      doctor.sh (checks a system), gen-settings.js (writes the settings pages), gallery/ (renders the gallery)
 tests/      table-driven checks of lyric matching, layouts, presets and settings
 docs/       the website (index.html), the gallery, and the guide to writing your own styles
-packaging/  arch/PKGBUILD for Arch Linux
+packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing text and the script that packs the widget;
+            release/lyric-widget.sh, the one-file installer, updater and uninstaller attached to each release
 ```
 
 - **Settings are defined once**, in `plasmoid/contents/ui/settings/model.js`. After changing it, run
@@ -254,6 +283,9 @@ packaging/  arch/PKGBUILD for Arch Linux
   ctest --test-dir build --output-on-failure
   ```
 
+- **Make a release:** raise `Version` in `plasmoid/metadata.json`, commit, then `git tag v2.2.0 && git push origin v2.2.0`. The
+  workflow in `.github/workflows/release.yml` publishes the release with `lyric-widget.sh`, the KDE Store package and
+  `SHA256SUMS`.
 - **Redraw the gallery** after changing a look: `tools/gallery/render.sh` (needs a display and a built backend). It writes
   `docs/gallery/*.png` and `docs/gallery.md`, and copies the pictures into the app for the settings window.
 

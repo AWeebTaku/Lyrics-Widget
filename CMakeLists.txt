@@ -65,9 +65,16 @@ install(DIRECTORY examples/ DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget/ex
 # ---- Chrome extension for the YouTube Music queue (load it unpacked)
 install(DIRECTORY extension/ DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget/extension)
 
+# ---- the widget's icon (the website's favicon): metadata.json names it "org.lyricwidget"
+install(FILES docs/favicon.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps RENAME org.lyricwidget.svg)
+
 # ---- Plasma widget package ----------------------------------------------------
-install(DIRECTORY plasmoid/
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/plasma/plasmoids/org.lyricwidget)
+# PLUGIN_ONLY=ON (install.sh): the plugin and its data only, for a widget installed from the KDE Store
+option(PLUGIN_ONLY "Install only the plugin and its data, not the widget files" OFF)
+if(NOT PLUGIN_ONLY)
+  install(DIRECTORY plasmoid/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/plasma/plasmoids/org.lyricwidget)
+endif()
 
 
 # ---- tests (optional): table-driven checks of the lyric matching in src/Text.h

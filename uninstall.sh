@@ -26,7 +26,7 @@ run() { echo "+ $*"; [ "$DRY" = 1 ] || "$@"; }
 
 echo "This will remove the Lyric Widget from your system:"
 echo "  - the widget on your desktop and its settings"
-echo "  - /usr/lib/qt6/qml/org/lyricwidget, /usr/share/plasma/plasmoids/org.lyricwidget, /usr/share/lyric-widget"
+echo "  - /usr/lib/qt6/qml/org/lyricwidget, /usr/share/plasma/plasmoids/org.lyricwidget, /usr/share/lyric-widget, its icon"
 echo "  - ~/.local/share/plasmashell/lyrics.db (cache, your per-song sync adjustments AND your lyrics library), an old spotify.json"
 echo "  - ~/.cache/lyric-widget and plasmashell's QML cache"
 echo "  - ./build"
@@ -57,7 +57,7 @@ fi
 
 echo
 echo "== 2/5 installed files (needs sudo)"
-run sudo rm -rf -- /usr/lib/qt6/qml/org/lyricwidget /usr/share/plasma/plasmoids/org.lyricwidget /usr/share/lyric-widget
+run sudo rm -rf -- /usr/lib/qt6/qml/org/lyricwidget /usr/share/plasma/plasmoids/org.lyricwidget /usr/share/lyric-widget /usr/share/icons/hicolor/scalable/apps/org.lyricwidget.svg
 
 echo
 echo "== 3/5 cache and data"
