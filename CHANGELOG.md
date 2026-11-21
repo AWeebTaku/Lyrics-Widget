@@ -5,6 +5,8 @@ Each release's section is used for its GitHub release notes (`.github/workflows/
 ## 2.3.0
 
 - The looks have their own **Looks** page, between Card and Sources. The Visualizer page now starts at Style.
+- "Edit the layout" moved from the Card page to its own **Layout** page, after Looks. The Looks and Layout pages have no folding heading.
+- Fixed the pictures of the Slim strip, Mirrored minimal and Compact looks, and tall pictures that ran out of the landing page viewer.
 - Fixed settings that a look could no longer change once you had edited them by hand: a look now updates every control, and you can edit it afterwards.
 - Removed the KDE Store packaging: the Store package, the plugin-only installer, the setup screen shown when the plugin is missing, and the `--plugin-only` and `--source` options of `lyric-widget.sh`. The widget is distributed from GitHub (the release installer, `build.sh`, or the Arch package).
 
