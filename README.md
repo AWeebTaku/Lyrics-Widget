@@ -281,9 +281,10 @@ packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing tex
   ctest --test-dir build --output-on-failure
   ```
 
-- **Make a release:** raise `Version` in `plasmoid/metadata.json`, commit, then `git tag v2.2.0 && git push origin v2.2.0`. The
-  workflow in `.github/workflows/release.yml` publishes the release with `lyric-widget.sh`, the KDE Store package and
-  `SHA256SUMS`.
+- **Make a release:** raise `Version` in `plasmoid/metadata.json`, add a `## <version>` section to `CHANGELOG.md`, commit, then
+  `git tag v2.3.0 && git push origin v2.3.0`. The workflow in `.github/workflows/release.yml` publishes the release with
+  `lyric-widget.sh`, the KDE Store package and `SHA256SUMS`. The notes are `.github/release-notes.md` plus that CHANGELOG section,
+  so every release reads the same (`python3 packaging/release/notes.py v2.3.0` previews them).
 - **Redraw the gallery** after changing a look: `tools/gallery/render.sh` (needs a display and a built backend). It writes
   `docs/gallery/*.png` and `docs/gallery.md`, and copies the pictures into the app for the settings window.
 

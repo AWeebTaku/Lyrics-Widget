@@ -1,4 +1,5 @@
 # Publishes a GitHub release when a version tag is pushed (git tag v2.2.0 && git push origin v2.2.0).
+# The notes come from .github/release-notes.md and CHANGELOG.md, so every release reads the same.
 # The release carries the one-file installer (lyric-widget.sh: install, update, check, uninstall), the KDE Store package and checksums.
 name: release
 on:
@@ -26,7 +27,9 @@ jobs:
           cp packaging/release/lyric-widget.sh dist/
           cp build/org.lyricwidget-*.plasmoid dist/
           (cd dist && sha256sum * > SHA256SUMS)
+      - name: Write the release notes (template plus this version's section of CHANGELOG.md)
+        run: python3 packaging/release/notes.py "$GITHUB_REF_NAME" > notes.md
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Lyric Widget $GITHUB_REF_NAME" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Lyric Widget $GITHUB_REF_NAME" --notes-file notes.md --generate-notes
