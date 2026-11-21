@@ -47,3 +47,7 @@ core
 *.swo
 Thumbs.db
 .env
+
+# release and store packaging output
+dist/
+*.plasmoid

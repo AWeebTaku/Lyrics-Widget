@@ -255,7 +255,9 @@
   .inst li strong { display: block; font-size: 17px; margin-bottom: 2px; }
   .inst li span { color: var(--muted); font-size: 15px; }
   .term { border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
-  .term .tb { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 10px 18px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  .term .tb { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px 10px 14px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  .tabs2 { display: flex; gap: 6px; flex-wrap: wrap; }
+  .term pre[hidden] { display: none; }
   .term pre { margin: 0; padding: 20px 22px; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.9 var(--mono); }
   .term pre .c { color: var(--muted); }
   .term pre .d { color: var(--accent); user-select: none; }
@@ -478,13 +480,30 @@
         </ul>
       </div>
       <div class="term rv" style="--d:.1s">
-        <div class="tb"><span>Terminal</span><button class="btn sm" id="copy" type="button">Copy</button></div>
-<pre id="cmd"><span class="d">$ </span>curl -fsSLO https://github.com/AWeebTaku/Lyrics-Widget/releases/latest/download/lyric-widget.sh
+        <div class="tb">
+          <div class="tabs2" role="tablist" aria-label="Ways to install">
+            <button class="pill" type="button" role="tab" data-t="rel" aria-selected="true">Release script</button>
+            <button class="pill" type="button" role="tab" data-t="src" aria-selected="false">From source</button>
+            <button class="pill" type="button" role="tab" data-t="arch" aria-selected="false">Arch package</button>
+          </div>
+          <button class="btn sm" id="copy" type="button">Copy</button>
+        </div>
+<pre id="cmd" data-p="rel"><span class="d">$ </span>curl -fsSLO https://github.com/AWeebTaku/Lyrics-Widget/releases/latest/download/lyric-widget.sh
 <span class="d">$ </span>bash lyric-widget.sh
 <span class="c"># later: look for a newer release, install it, or remove everything</span>
 <span class="d">$ </span>bash lyric-widget.sh check
 <span class="d">$ </span>bash lyric-widget.sh update
 <span class="d">$ </span>bash lyric-widget.sh uninstall</pre>
+<pre data-p="src" hidden><span class="d">$ </span>sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
+<span class="d">$ </span>git clone https://github.com/AWeebTaku/Lyrics-Widget &amp;&amp; cd Lyrics-Widget
+<span class="d">$ </span>./build.sh
+<span class="c"># to remove everything later, preview first:</span>
+<span class="d">$ </span>./uninstall.sh --dry-run</pre>
+<pre data-p="arch" hidden><span class="d">$ </span>git clone https://github.com/AWeebTaku/Lyrics-Widget
+<span class="d">$ </span>cd Lyrics-Widget/packaging/arch
+<span class="d">$ </span>makepkg -si
+<span class="c"># to remove it again:</span>
+<span class="d">$ </span>sudo pacman -R lyric-widget-git</pre>
       </div>
     </div>
   </section>
@@ -493,7 +512,7 @@
 <footer>
 <div class="wrap">
   <p>Lyric Widget is GPL-3.0. Lyrics are fetched at runtime from third-party services and none are bundled.</p>
-  <a href="https://github.com/AWeebTaku/Lyrics-Widget">github.com/AWeebTaku/Lyrics-Widget</a>
+  <span><a href="https://github.com/AWeebTaku/Lyrics-Widget">GitHub</a> &nbsp; <a href="https://github.com/AWeebTaku/Lyrics-Widget/issues/new/choose">Report a problem</a> &nbsp; <a href="https://github.com/AWeebTaku/Lyrics-Widget/blob/main/CONTRIBUTING.md">Contribute</a> &nbsp; <a href="https://github.com/AWeebTaku/Lyrics-Widget/releases">Releases</a></span>
 </div>
 </footer>
 
@@ -796,8 +815,13 @@
   document.querySelectorAll("#nums > div").forEach((d) => cio.observe(d));
 
   // ---------- copy ----------
+  const tabs2 = [...document.querySelectorAll(".tabs2 .pill")], pres = [...document.querySelectorAll(".term pre")];
+  tabs2.forEach((b) => (b.onclick = () => {
+    tabs2.forEach((q) => q.setAttribute("aria-selected", String(q === b)));
+    pres.forEach((p) => { p.hidden = p.dataset.p !== b.dataset.t; });
+  }));
   $("copy").onclick = async (e) => {
-    const text = $("cmd").textContent.split("\n").filter((l) => l && !l.startsWith("#")).map((l) => l.replace(/^\$ /, "")).join("\n");
+    const text = pres.find((p) => !p.hidden).textContent.split("\n").filter((l) => l && !l.startsWith("#")).map((l) => l.replace(/^\$ /, "")).join("\n");
     try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied"; } catch (err) { e.target.textContent = "Select and copy"; }
     setTimeout(() => (e.target.textContent = "Copy"), 1800);
   };

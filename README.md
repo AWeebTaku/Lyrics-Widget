@@ -4,7 +4,7 @@ Synced lyrics on your desktop for **Spotify** and for **YouTube / YouTube Music 
 visualizer, a media card, romanization of Japanese, Korean and Chinese, and colors taken from the album cover. It is a native
 Plasma widget: QML for the interface, a C++ plugin for everything else.
 
-Website: open `docs/index.html`, or see the [gallery of looks](docs/gallery.md).
+Website: <https://aweebtaku.github.io/Lyrics-Widget/> (the source is `docs/index.html`). See also the [gallery of looks](docs/gallery.md).
 
 ## What you get
 
@@ -257,7 +257,9 @@ interfaces are unofficial and can change or rate-limit without notice.
 ## For developers
 
 ```
-CMakeLists.txt  build.sh  install.sh  uninstall.sh  setup-romaji.sh   (and .github/workflows/release.yml)
+CMakeLists.txt  build.sh  install.sh  uninstall.sh  setup-romaji.sh
+.github/    issue and pull request templates, workflows/release.yml (publishes a release from a version tag)
+CONTRIBUTING.md  SECURITY.md  CODE_OF_CONDUCT.md
 src/        C++ plugin (QML module org.lyricwidget): player watching, lyric lookup and matching, cache, library,
             visualizer analysis, window placement
 plasmoid/   the widget: metadata.json, contents/ui (widget, card, visualizer, settings), contents/config (main.xml: the
@@ -268,7 +270,7 @@ examples/   example visualizers, seek bars and buttons you can copy
 tools/      doctor.sh (checks a system), gen-settings.js (writes the settings pages), gallery/ (renders the gallery)
 tests/      table-driven checks of lyric matching, layouts, presets and settings
 docs/       the website (index.html), the gallery, and the guide to writing your own styles
-packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing text and the script that packs the widget;
+packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing text, publishing steps and the packing script;
             release/lyric-widget.sh, the one-file installer, updater and uninstaller attached to each release
 ```
 
@@ -288,6 +290,14 @@ packaging/  arch/PKGBUILD for Arch Linux; store/ the KDE Store icon, listing tex
   `SHA256SUMS`.
 - **Redraw the gallery** after changing a look: `tools/gallery/render.sh` (needs a display and a built backend). It writes
   `docs/gallery/*.png` and `docs/gallery.md`, and copies the pictures into the app for the settings window.
+
+## Help, ideas and contributing
+
+- **A problem?** Open an issue with the form; it asks for the facts that matter (`bash /usr/share/lyric-widget/doctor.sh` prints
+  most of them). A security problem goes through the private "Report a vulnerability" form, see [SECURITY.md](SECURITY.md).
+- **Want to add something?** [CONTRIBUTING.md](CONTRIBUTING.md) says where a setting, a look or a lyric rule lives and what to
+  run before a pull request. Please follow the [code of conduct](CODE_OF_CONDUCT.md).
+- **Publishing on the KDE Store:** the steps are in [packaging/store/PUBLISHING.md](packaging/store/PUBLISHING.md).
 
 ## Roadmap
 

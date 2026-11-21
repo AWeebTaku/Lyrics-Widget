@@ -1,0 +1,46 @@
+name: Something does not work
+description: The widget, its settings, the visualizer or the card misbehaves
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. A few facts make most problems quick to find. For "no lyrics for a song", also see the
+        troubleshooting table in the README.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Widget version
+      description: The release you installed (for example v2.1.0), or `main` if you built from the source folder.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Distribution, Plasma and Qt versions
+      description: "`bash /usr/share/lyric-widget/doctor.sh` prints all of this."
+    validations:
+      required: true
+  - type: dropdown
+    id: player
+    attributes:
+      label: Player
+      options: [Spotify (desktop app), YouTube Music in a browser, YouTube in a browser, Another player (VLC, mpv, Elisa...), Not about a player]
+    validations:
+      required: true
+  - type: input
+    id: song
+    attributes:
+      label: Song (title and artist), if it is about lyrics
+  - type: textarea
+    id: log
+    attributes:
+      label: Log lines
+      description: "`journalctl --user -b | grep -i -E \"lyric|org.lyricwidget\" | tail -50`"
+      render: shell
