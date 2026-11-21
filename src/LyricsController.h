@@ -64,6 +64,8 @@ class LyricsController : public QObject
     Q_PROPERTY(int prefetchCount READ prefetchCount WRITE setPrefetchCount NOTIFY prefetchCountChanged)
     // What "Check the next songs" (Settings, Sources) found: one line for the Spotify app, one for the browser extension
     Q_PROPERTY(QString queueStatus READ queueStatus NOTIFY queueStatusChanged)
+    // What "Test the connection" (Settings, Sources, YouTube Music and browsers) found about the browser extension
+    Q_PROPERTY(QString browserStatus READ browserStatus NOTIFY queueStatusChanged)
     Q_PROPERTY(bool spotifyAppQueue READ spotifyAppQueue WRITE setSpotifyAppQueue NOTIFY prefetchCountChanged)
     Q_PROPERTY(int spotifyDebugPort READ spotifyDebugPort WRITE setSpotifyDebugPort NOTIFY prefetchCountChanged)
     Q_PROPERTY(bool anyPlayer READ anyPlayer WRITE setAnyPlayer NOTIFY prefetchCountChanged)
@@ -137,6 +139,8 @@ public:
     void setAllowedSites(const QString &s) { m_sites = s; m_watcher.setSites(s.split(QLatin1Char(','), Qt::SkipEmptyParts)); emit prefetchCountChanged(); }
     int prefetchCount() const { return m_prefetchCount; }
     QString queueStatus() const { return m_queueStatus; }
+    QString browserStatus() const { return m_browserStatus; }
+    Q_INVOKABLE void checkBrowser();   // is the extension's port open, and has a queue arrived from it
     Q_INVOKABLE void checkQueue();   // ask both queue sources for the upcoming songs and report in queueStatus
     void setPrefetchCount(int n);
     bool spotifyAppQueue() const { return m_spotify.appQueue(); }
@@ -278,7 +282,8 @@ private:
     // prefetch of upcoming queue tracks (Spotify app, YouTube Music extension)
     SpotifyApp m_spotify;
     BrowserQueue m_browser;
-    QString m_queueSpotify, m_queueBrowser, m_queueStatus;
+    QString m_queueSpotify, m_queueBrowser, m_queueStatus, m_browserStatus;
+    QString browserLine(const QString &prefix) const;
     bool m_browserOn = false;
     int m_browserPort = 8899;
     LyricsFetcher m_pre;

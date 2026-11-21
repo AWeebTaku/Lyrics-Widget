@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import "tokens.js" as T
 import org.kde.plasma.plasmoid
@@ -30,10 +31,12 @@ ColumnLayout {
 
     function apply(p) {
         if (!p) return
+        const w = panel.Window.window
         for (const k in p.settings) {
             const v = p.settings[k]
             if (kcm["cfg_" + k] !== undefined) kcm["cfg_" + k] = v
-            Plasmoid.configuration[k] = v
+            if (w && w.setKey) w.setKey(k, v)           // the other pages (General: what to show) learn it too
+            else Plasmoid.configuration[k] = v
         }
         Plasmoid.configuration.writeConfig()
         picked = p.name

@@ -88,6 +88,8 @@ Item {
         }
         VizPreview {
             id: cardViz
+            animate: !root.still
+            still: root.still
             visible: (root.viz.showVisualizer || root.g.vizForced) && root.g.vizPlace !== null
             color: "transparent"
             showListen: false

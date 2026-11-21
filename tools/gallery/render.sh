@@ -39,4 +39,7 @@ g++ -std=c++20 -fPIC "$here/main.cpp" -o "$work/gallery" $(pkg-config --cflags -
 mkdir -p "$root/docs/gallery"; rm -f "$root"/docs/gallery/*.png
 QT_SCALE_FACTOR="${SCALE:-1.5}" QML2_IMPORT_PATH="$build" "$work/gallery" "$work" "$build" "$root/docs/gallery"
 node "$here/gallery_md.js" > "$root/docs/gallery.md"
+# the settings window shows the same pictures: keep its copies in step
+mkdir -p "$root/plasmoid/contents/ui/viz/looks"
+cp "$root"/docs/gallery/*.png "$root/plasmoid/contents/ui/viz/looks/"
 echo "wrote $(ls "$root"/docs/gallery/*.png | wc -l) pictures and docs/gallery.md"

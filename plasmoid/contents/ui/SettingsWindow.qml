@@ -55,6 +55,16 @@ QQC2.ApplicationWindow {
             if (it) it.load(cfg)
         }
     }
+    // Set one setting right away (the "Turn it on" notices, applying a look): in the widget's configuration, and in every page that
+    // has loaded it, so a page does not write its older value back on Apply (the General page's "show the visualizer" switch).
+    function setKey(key, value) {
+        if (!cfg) return
+        cfg[key] = value
+        for (let i = 0; i < panels.count; ++i) {
+            const it = panel(i)
+            if (it && it["cfg_" + key] !== undefined) it["cfg_" + key] = value
+        }
+    }
     // write what changed on every page that has been opened
     function apply() {
         if (!cfg) return

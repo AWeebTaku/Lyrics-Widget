@@ -1270,17 +1270,7 @@ void LyricsController::checkQueue()
         m_queueStatus = (m_queueSpotify + QLatin1Char('\n') + m_queueBrowser).trimmed();
         emit queueStatusChanged();
     };
-    if (m_browser.enabled()) {
-        const QList<Track> next = m_browser.latest();
-        if (!next.isEmpty())
-            m_queueBrowser = QStringLiteral("YouTube Music extension: working, %1 upcoming songs (%2)").arg(next.size()).arg(names(next));
-        else if (m_browser.hasReceived())
-            m_queueBrowser = QStringLiteral("YouTube Music extension: last queue came %1 s ago. Play a song in YouTube Music to refresh it.").arg(m_browser.ageSec());
-        else
-            m_queueBrowser = QStringLiteral("YouTube Music extension: listening on port %1, nothing received yet. Is the extension installed and set to this port?").arg(m_browser.port());
-    } else {
-        m_queueBrowser = QStringLiteral("YouTube Music extension: off");
-    }
+    m_queueBrowser = browserLine(QStringLiteral("YouTube Music extension: "));
     if (m_spotify.appQueue()) {
         m_queueSpotify = QStringLiteral("Spotify app: checking…");
         m_spotify.fetchQueue([this, names, publish](bool ok, const QList<Track> &next) {
@@ -1293,4 +1283,29 @@ void LyricsController::checkQueue()
         m_queueSpotify = QStringLiteral("Spotify app: off");
     }
     publish();
+}
+
+// One line about the browser extension link, for "Check the next songs" and for "Test the connection".
+QString LyricsController::browserLine(const QString &prefix) const
+{
+    if (!m_browserOn)
+        return prefix + QStringLiteral("off. Turn on \"Get the queue from YouTube Music\".");
+    if (!m_browser.enabled())
+        return prefix + QStringLiteral("can't listen on port %1. Is another program using it? Pick another port here and in the extension.").arg(m_browserPort);
+    const QList<Track> next = m_browser.latest();
+    if (!next.isEmpty()) {
+        QStringList names;
+        for (const Track &t : next.mid(0, 3))
+            names << (t.artist.isEmpty() ? t.title : t.artist + QStringLiteral(" - ") + t.title);
+        return prefix + QStringLiteral("working, %1 upcoming songs (%2)").arg(next.size()).arg(names.join(QStringLiteral(", ")));
+    }
+    if (m_browser.hasReceived())
+        return prefix + QStringLiteral("connected, but the last queue came %1 s ago. Play a song in YouTube Music to refresh it.").arg(m_browser.ageSec());
+    return prefix + QStringLiteral("listening on port %1, nothing received yet. Install the extension, give it this port, and play a song in YouTube Music.").arg(m_browserPort);
+}
+
+void LyricsController::checkBrowser()
+{
+    m_browserStatus = browserLine(QString());
+    emit queueStatusChanged();
 }

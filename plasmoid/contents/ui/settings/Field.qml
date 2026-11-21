@@ -16,7 +16,7 @@ ColumnLayout {
     required property var row
     required property var kcm
     readonly property real labelWidth: Kirigami.Units.gridUnit * T.labelUnits
-    readonly property bool wide: ["presets", "colors", "eq", "spotify", "queuecheck", "browser", "sites", "info", "layoutedit"].indexOf(row.type) >= 0
+    readonly property bool wide: ["presets", "colors", "eq", "spotify", "queuecheck", "browsercheck", "browser", "sites", "info", "layoutedit"].indexOf(row.type) >= 0
     readonly property bool inlineHint: !wide && row.type !== "text"     // the hint follows the control on its line
     readonly property var value: row.key ? kcm["cfg_" + row.key] : undefined
     spacing: 2
@@ -82,6 +82,7 @@ ColumnLayout {
             case "eq": return eqC
             case "spotify": return spotifyC
             case "queuecheck": return queueCheckC
+            case "browsercheck": return browserCheckC
             case "browser": return browserC
             case "sites": return sitesC
             case "info": return infoC
@@ -258,6 +259,7 @@ ColumnLayout {
     Component { id: layoutEditC; LayoutEditor { kcm: f.kcm } }
     Component { id: spotifyC; SpotifyCheck { kcm: f.kcm } }
     Component { id: queueCheckC; QueueCheck {} }
+    Component { id: browserCheckC; QueueCheck { browser: true } }
     Component { id: browserC; BrowserSetupRow {} }
     Component { id: sitesC; SitesList { kcm: f.kcm } }
     Component { id: infoC; QQC2.Label { text: f.row.text ?? ""; wrapMode: Text.WordWrap; opacity: 0.8 } }

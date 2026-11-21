@@ -14,7 +14,7 @@ for (const m of xml.matchAll(/<entry name="(\w+)" type="(\w+)">([\s\S]*?)<\/entr
 // which main.xml types a row type may store in
 const stores = { bool: ["Bool"], int: ["Int"], real: ["Double"], color: ["String"], text: ["String"], file: ["String"], font: ["String"],
                  flow: ["Int"], palette: ["Int"], pair: ["Int"], align: ["Int"], colors: ["String"], eq: ["StringList"], source: ["String"], sites: ["String"], layoutedit: ["String"] };
-const noKey = ["presets", "spotify", "queuecheck", "browser", "info"];
+const noKey = ["presets", "spotify", "queuecheck", "browsercheck", "browser", "info"];
 const seenKeys = {};
 const pageFiles = { general: "configGeneral.qml", lyrics: "configLyrics.qml", visualizer: "configVisualizer.qml", audio: "configAudio.qml",
                     card: "configCard.qml", sources: "configAccounts.qml" };

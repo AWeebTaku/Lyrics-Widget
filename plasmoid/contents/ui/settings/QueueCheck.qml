@@ -9,16 +9,18 @@ import org.kde.kirigami as Kirigami
 RowLayout {
     id: row
     readonly property var live: Window.window ? Window.window.live : null
+    property bool browser: false          // test the browser extension link only, instead of the next songs from both sources
     QQC2.Button {
-        text: i18n("Check the next songs")
-        icon.name: "view-media-playlist"
+        text: row.browser ? i18n("Test the connection") : i18n("Check the next songs")
+        icon.name: row.browser ? "network-connect" : "view-media-playlist"
         enabled: !!row.live
         Layout.alignment: Qt.AlignTop
-        onClicked: row.live.checkQueue()
+        onClicked: row.browser ? row.live.checkBrowser() : row.live.checkQueue()
     }
     QQC2.Label {
         text: !row.live ? i18n("Open the widget's own settings window to check.")
-            : row.live.queueStatus !== "" ? row.live.queueStatus : i18n("Uses the saved settings: press Apply first.")
+            : (row.browser ? row.live.browserStatus : row.live.queueStatus) !== "" ? (row.browser ? row.live.browserStatus : row.live.queueStatus)
+            : i18n("Uses the saved settings: press Apply first.")
         opacity: 0.8; wrapMode: Text.WordWrap
         Layout.fillWidth: true; Layout.maximumWidth: Kirigami.Units.gridUnit * 30
     }

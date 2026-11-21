@@ -363,7 +363,8 @@ const sources = [
     { id: "browser", title: "YouTube Music and browsers", desc: "Queue from YouTube Music.", rows: [
         { key: "browserQueue", type: "bool", label: "Get the queue from YouTube Music" },
         { key: "browserQueuePort", type: "int", label: "Port", min: 1024, max: 65535, when: { key: "browserQueue", in: [true] } },
-        { type: "browser", label: "Browser extension" }
+        { type: "browser", label: "Browser extension" },
+        { type: "browsercheck", label: "Check", when: { key: "browserQueue", in: [true] } }
     ] },
     { id: "players", title: "Players", desc: "Which players it follows.", rows: [
         { key: "anyPlayer", type: "bool", label: "Follow any media player", hint: "Also VLC, mpv and others." },
@@ -373,7 +374,7 @@ const sources = [
 
 const pages = [
     { id: "general", title: "General", icon: "configure", subtitle: "What shows, its size, when it rests.", sections: general },
-    { id: "lyrics", title: "Lyrics", icon: "format-text-bold", subtitle: "The lines of the song.", preview: "lyrics", sections: lyrics },
+    { id: "lyrics", title: "Lyrics", icon: "format-text-bold", subtitle: "The lines of the song.", banner: { key: "showLyrics", text: "The lyrics are off.", button: "Turn them on" }, preview: "lyrics", sections: lyrics },
     { id: "visualizer", title: "Visualizer", icon: "audio-input-microphone", subtitle: "Bars and waves for the music.",
       banner: { key: "showVisualizer", text: "The visualizer is off.", button: "Turn it on" }, preview: "viz", sections: visualizer },
     { id: "audio", title: "Audio input", icon: "audio-input-line", subtitle: "Where the sound comes from.",

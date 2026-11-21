@@ -38,3 +38,12 @@ node_modules/
 *~
 .directory
 .DS_Store
+
+# more local leftovers
+.clangd/
+.gdb_history
+core
+*.core
+*.swo
+Thumbs.db
+.env

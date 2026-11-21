@@ -18,258 +18,277 @@
   })();
 </script>
 <style>
-  /* ---- tokens. Dark is true AMOLED black; light is a cool off-white. The accent follows the chosen player. ---- */
+  /* ---- tokens: dark is true black, light is a cool off-white; the accent follows the cover color the visitor picks ---- */
   :root {
     --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-    --r-card: 18px;      /* shape system: cards 18px, every control is a pill */
+    --r: 18px;                     /* one shape system: cards 18px, every control a pill */
     --ease: cubic-bezier(.16, 1, .3, 1);
     --spring: cubic-bezier(.34, 1.56, .64, 1);
   }
-  html[data-theme="dark"] {
-    --bg: #000; --surface: #0a0a0c; --surface2: #131318; --line: #24242b;
-    --text: #f3f4f6; --muted: #a3a9b4; color-scheme: dark;
-  }
-  html[data-theme="light"] {
-    --bg: #f5f6f8; --surface: #fff; --surface2: #eceef2; --line: #d8dbe2;
-    --text: #0f1218; --muted: #525a67; color-scheme: light;
-  }
-  /* accent + the text colour that sits on it (both pass 4.5:1) */
-  html[data-theme="dark"][data-src="plasma"]  { --accent: #3daee9; --on: #00131f; }
-  html[data-theme="dark"][data-src="spotify"] { --accent: #1ed760; --on: #00160a; }
-  html[data-theme="dark"][data-src="ytm"]     { --accent: #ff4e45; --on: #1c0200; }
+  html[data-theme="dark"]  { --bg: #000; --surface: #0a0a0c; --surface2: #131318; --line: #24242b; --text: #f3f4f6; --muted: #a3a9b4; color-scheme: dark; }
+  html[data-theme="light"] { --bg: #f5f6f8; --surface: #fff; --surface2: #eceef2; --line: #d8dbe2; --text: #0f1218; --muted: #525a67; color-scheme: light; }
+  html[data-theme="dark"][data-src="plasma"]   { --accent: #3daee9; --on: #00131f; }
+  html[data-theme="dark"][data-src="spotify"]  { --accent: #1ed760; --on: #00160a; }
+  html[data-theme="dark"][data-src="ytm"]      { --accent: #ff4e45; --on: #1c0200; }
   html[data-theme="light"][data-src="plasma"]  { --accent: #0b6fb3; --on: #fff; }
   html[data-theme="light"][data-src="spotify"] { --accent: #0e7a34; --on: #fff; }
   html[data-theme="light"][data-src="ytm"]     { --accent: #d1002a; --on: #fff; }
 
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font);
-         -webkit-font-smoothing: antialiased; transition: background .5s var(--ease), color .5s var(--ease); }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); -webkit-font-smoothing: antialiased;
+         transition: background .5s var(--ease), color .5s var(--ease); overflow-x: clip; }
   a { color: var(--accent); }
+  img { display: block; max-width: 100%; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
-  h1, h2, h3 { margin: 0; letter-spacing: -.03em; line-height: 1.05; }
-  p { margin: 0; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2, h3 { letter-spacing: -.035em; line-height: 1.04; }
+  h2 { font-size: clamp(2rem, 4.2vw, 3.3rem); font-weight: 700; max-width: 18ch; }
+  .lead { color: var(--muted); font-size: 17px; max-width: 52ch; margin-top: 16px; }
+  section { padding: 120px 0 0; }
+  code { font-family: var(--mono); font-size: .92em; }
+
+  /* ---- scroll progress (CSS scroll-driven; a browser without it shows nothing) ---- */
+  .bar { position: fixed; inset: 0 0 auto 0; height: 2px; z-index: 30; background: var(--accent); transform-origin: left; transform: scaleX(0); display: none; }
+  @supports (animation-timeline: scroll()) {
+    .bar { display: block; animation: fill linear both; animation-timeline: scroll(root); }
+    @keyframes fill { to { transform: scaleX(1); } }
+  }
 
   /* ---- controls ---- */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
-         padding: 12px 24px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
-         color: var(--text); font: 600 15px/1 var(--font); text-decoration: none; cursor: pointer;
-         transition: transform .25s var(--ease), background .3s, border-color .3s, color .3s; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; padding: 13px 26px;
+         border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text);
+         font: 600 15px/1 var(--font); text-decoration: none; cursor: pointer;
+         transition: transform .3s var(--spring), background .3s, border-color .3s, filter .3s; }
   .btn:hover { border-color: var(--accent); }
-  .btn:active { transform: scale(.97); }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .5; cursor: default; }
   .btn.main { background: var(--accent); color: var(--on); border-color: var(--accent); }
-  .btn.main:hover { filter: brightness(1.08); }
+  .btn.main:hover { filter: brightness(1.1); }
   .btn.sm { padding: 9px 16px; font-size: 14px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--line);
+          background: transparent; color: var(--text); font: 600 13px/1 var(--font); cursor: pointer; white-space: nowrap;
+          transition: border-color .25s, background .25s, transform .3s var(--spring), color .25s; }
+  .pill:hover { border-color: var(--accent); }
+  .pill:active { transform: scale(.95); }
+  .pill[aria-pressed="true"], .pill[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); }
+  .pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
 
   /* ---- nav ---- */
   nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 78%, transparent);
         -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
         border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
   nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-  nav b { font-size: 17px; letter-spacing: -.02em; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -.02em; color: var(--text); text-decoration: none; }
+  .brand img { width: 26px; height: 26px; }
   nav .r { display: flex; align-items: center; gap: 22px; }
   nav .r > a:not(.btn) { color: var(--muted); text-decoration: none; font-size: 14px; transition: color .2s; }
   nav .r > a:not(.btn):hover { color: var(--text); }
   #theme { min-width: 76px; }
 
   /* ---- hero ---- */
-  .hero { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 40px; align-items: center;
-          min-height: calc(100dvh - 64px); padding: 24px 0 48px; }
-  .hero h1 { font-size: clamp(2.5rem, 4.5vw, 4.1rem); font-weight: 700; }
+  .hero { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 48px; align-items: center; min-height: calc(100dvh - 64px); padding: 24px 0 56px; }
+  .hero h1 { font-size: clamp(2.5rem, 4.6vw, 4.2rem); font-weight: 750; }
   .hero h1 em { display: block; font-style: normal; color: var(--accent); transition: color .5s; }
-  .hero .sub { color: var(--muted); font-size: 18px; max-width: 34ch; margin: 22px 0 32px; }
+  .hero .sub { color: var(--muted); font-size: 18px; max-width: 32ch; margin: 22px 0 32px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  [data-in] { opacity: 0; transform: translateY(22px); animation: rise .9s var(--ease) forwards; animation-delay: var(--d, 0s); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
 
-  /* ---- the live demo: a working miniature of the widget on a desktop ---- */
-  .demo { min-width: 0; }
-  .stage { position: relative; border-radius: var(--r-card); overflow: hidden; border: 1px solid var(--line);
-           height: clamp(400px, 56vh, 520px); isolation: isolate;
-           background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 38%, var(--bg)) 0%, var(--bg) 78%);
-           transition: background .6s var(--ease); }
-  .orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; z-index: -1;
-         background: var(--accent); transition: background .6s; }
+  /* the live demo: a working miniature of the widget on a desktop */
+  .stage { position: relative; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); height: clamp(420px, 58vh, 540px); isolation: isolate;
+           background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 38%, var(--bg)) 0%, var(--bg) 78%); transition: background .6s var(--ease); }
+  .orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; z-index: -1; background: var(--accent); transition: background .6s; }
   .orb.a { width: 280px; height: 280px; left: -60px; top: -80px; animation: drift 14s ease-in-out infinite alternate; }
   .orb.b { width: 220px; height: 220px; right: -40px; bottom: -70px; opacity: .35; animation: drift 18s ease-in-out infinite alternate-reverse; }
   @keyframes drift { to { transform: translate(60px, 40px) scale(1.15); } }
-
-  .widget { position: absolute; left: 50%; top: 50%; width: min(86%, 520px); margin-left: calc(min(86%, 520px) / -2);
-            margin-top: -170px; border-radius: var(--r-card); padding: 16px 18px 14px; cursor: grab; user-select: none;
-            background: color-mix(in srgb, var(--bg) 58%, transparent);
-            -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+  .widget { position: absolute; left: 50%; top: 50%; width: min(88%, 520px); margin-left: calc(min(88%, 520px) / -2); margin-top: -176px;
+            border-radius: var(--r); padding: 16px 18px 14px; cursor: grab; user-select: none; touch-action: none; will-change: transform;
+            background: color-mix(in srgb, var(--bg) 58%, transparent); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
             border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
             box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 14%, transparent), 0 24px 60px rgb(0 0 0 / .35);
-            transition: transform .7s var(--spring), opacity .45s var(--ease); will-change: transform; touch-action: none; }
+            transition: transform .7s var(--spring); }
   .widget.drag { cursor: grabbing; transition: none; }
-  .wh { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .wh { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
   .cover { width: 44px; height: 44px; border-radius: 10px; flex: none; position: relative; overflow: hidden;
            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 35%, #000)); transition: background .6s; }
-  .cover::after { content: ""; position: absolute; inset: 0;
-           background: radial-gradient(circle at 30% 25%, rgb(255 255 255 / .45), transparent 55%); }
+  .cover::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 25%, rgb(255 255 255 / .45), transparent 55%); }
   .wh .meta { min-width: 0; flex: 1; }
   .wh .t { font-weight: 600; font-size: 15px; line-height: 1.25; }
   .wh .s { color: var(--muted); font-size: 13px; line-height: 1.3; }
-  .ctl { min-width: 68px; height: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
-         color: var(--text); font: 600 12px var(--font); cursor: pointer; transition: transform .2s var(--ease), border-color .2s; }
+  .ctl { min-width: 68px; height: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text);
+         font: 600 12px var(--font); cursor: pointer; transition: transform .2s var(--ease), border-color .2s; }
   .ctl:hover { border-color: var(--accent); }
   .ctl:active { transform: scale(.92); }
-
   .lyr { position: relative; height: 192px; overflow: hidden; text-align: center;
-         -webkit-mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent);
-         mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); }
+         -webkit-mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); }
   .lyr ol { list-style: none; margin: 0; padding: 0; transition: transform .6s var(--ease); }
-  .lyr li { height: 40px; line-height: 40px; font-size: 19px; color: var(--muted); cursor: pointer;
-            transition: color .4s, transform .5s var(--ease); white-space: nowrap; }
+  .lyr li { height: 40px; line-height: 40px; font-size: 19px; color: var(--muted); cursor: pointer; transition: color .4s, transform .5s var(--ease); white-space: nowrap; }
   .lyr li:hover { color: var(--text); }
   .lyr li.on { color: var(--accent); font-weight: 650; transform: scale(1.1); }
-
-  .bars { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin: 6px 0 8px; }
-  .bars i { flex: 1; height: 100%; border-radius: 2px; transform-origin: bottom; transform: scaleY(.1);
-            background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 30%, transparent)); }
+  #viz { display: block; width: 100%; height: 56px; margin: 4px 0 6px; }
   .prog { height: 18px; display: flex; align-items: center; cursor: pointer; }
   .prog span { display: block; width: 100%; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .prog b { display: block; height: 100%; width: 0; background: var(--accent); }
-
   .picker { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-  .picker small { color: var(--muted); font-size: 13px; margin-right: 4px; }
-  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
-          border: 1px solid var(--line); background: transparent; color: var(--text); font: 600 13px/1 var(--font);
-          cursor: pointer; transition: border-color .25s, background .25s, transform .2s var(--ease); }
-  .pill:hover { border-color: var(--accent); }
-  .pill:active { transform: scale(.96); }
-  .pill[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); }
-  .pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .picker small { color: var(--muted); font-size: 13px; margin-right: 2px; }
+  .picker .gap { width: 10px; }
 
   /* ---- works with: logos only ---- */
-  .logos { display: flex; align-items: center; gap: 22px 56px; flex-wrap: wrap; padding: 28px 0 8px;
-           border-top: 1px solid var(--line); }
+  .logos { display: flex; align-items: center; gap: 22px 56px; flex-wrap: wrap; padding: 28px 0 0; border-top: 1px solid var(--line); }
   .logos span { color: var(--muted); font-size: 14px; margin-right: 8px; }
-  .logos img { height: 28px; width: auto; opacity: .9; transition: transform .3s var(--spring), opacity .3s; }
-  .logos img:hover { transform: translateY(-3px) scale(1.08); opacity: 1; }
+  .logos img { height: 28px; width: auto; transition: transform .35s var(--spring); }
+  .logos img:hover { transform: translateY(-4px) scale(1.1); }
 
-  /* ---- looks: real renders from the widget ---- */
-  .looks { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 48px; align-items: start; }
-  .looks .g { color: var(--muted); font-size: 14px; margin: 28px 0 10px; }
-  .looks .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-  .shot { border-radius: var(--r-card); border: 1px solid var(--line); background: var(--surface); overflow: hidden;
-          height: clamp(320px, 52vh, 500px); display: grid; place-items: center; padding: 14px; position: relative;
+  /* ---- looks: a big stage and a rail of every look ---- */
+  .looks-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 36px; }
+  .viewer { margin-top: 24px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); overflow: hidden; position: relative; }
+  .shot { height: clamp(300px, 44vw, 480px); display: grid; place-items: center; padding: 24px; perspective: 1100px;
           background-image: radial-gradient(color-mix(in srgb, var(--text) 14%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
-  .shot img { max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 12px;
-              box-shadow: 0 24px 60px rgb(0 0 0 / .35); transition: opacity .3s var(--ease), transform .5s var(--ease); }
-  .shot img.sw { opacity: 0; transform: scale(.97); }
-  .looks .note { min-height: 0; margin-top: 14px; font-size: 14px; }
+  .shot img { max-height: 100%; max-width: 100%; width: auto; height: auto; border-radius: 14px; box-shadow: 0 30px 70px rgb(0 0 0 / .4);
+              transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .5s var(--ease), opacity .35s var(--ease); will-change: transform; }
+  .shot img.sw { opacity: 0; transform: scale(.96); }
+  .cap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 20px; border-top: 1px solid var(--line); }
+  .cap b { font-size: 18px; letter-spacing: -.02em; }
+  .cap p { color: var(--muted); font-size: 15px; margin-top: 2px; }
+  .cap .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tick { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+  .tick.run { animation: tick var(--ms, 4500ms) linear forwards; }
+  .viewer:hover .tick.run, .viewer:focus-within .tick.run { animation-play-state: paused; }
+  @keyframes tick { to { transform: scaleX(1); } }
+  .rail { display: flex; gap: 12px; overflow-x: auto; padding: 18px 2px 14px; margin-top: 8px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+  .thumb { flex: none; width: 168px; scroll-snap-align: center; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); padding: 6px 6px 8px;
+           cursor: pointer; text-align: left; color: var(--text); font: 600 13px/1.2 var(--font); transition: transform .35s var(--spring), border-color .25s; }
+  .thumb:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+  .thumb[aria-selected="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .thumb img { width: 100%; height: auto; aspect-ratio: 16 / 7; object-fit: cover; border-radius: 9px; margin-bottom: 8px; background: #181c26; }
+  .thumb span { display: block; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* ---- features: a bento of working miniatures ---- */
-  section { padding: 96px 0 0; }
-  h2 { font-size: clamp(2rem, 4vw, 3.1rem); font-weight: 700; }
-  .lead { color: var(--muted); max-width: 52ch; margin-top: 14px; font-size: 17px; }
-  .bento { display: grid; gap: 16px; margin-top: 44px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
-  .cell { position: relative; border-radius: var(--r-card); padding: 26px; overflow: hidden; min-width: 0;
-          background: var(--surface); border: 1px solid var(--line);
-          transition: border-color .3s, transform .5s var(--ease); }
+  .bento { display: grid; gap: 16px; margin-top: 48px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .cell { position: relative; border-radius: var(--r); padding: 28px; overflow: hidden; min-width: 0; background: var(--surface); border: 1px solid var(--line);
+          transition: border-color .3s; }
   .cell::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
-          background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 20%, transparent), transparent 65%); }
+          background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 20%, transparent), transparent 65%); }
   .cell:hover::before { opacity: 1; }
   .cell:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
   .cell > * { position: relative; }
-  .c1 { grid-column: span 7; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), var(--surface) 70%); }
-  .c2 { grid-column: span 5; }
-  .c3 { grid-column: span 4; background: var(--surface2); }
-  .c4 { grid-column: span 5;
-        background-image: radial-gradient(color-mix(in srgb, var(--text) 14%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
-  .c5 { grid-column: span 3; background: linear-gradient(200deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), var(--surface) 75%); }
-  .cell h3 { font-size: 22px; letter-spacing: -.02em; }
-  .cell .p { color: var(--muted); font-size: 15px; margin: 8px 0 20px; max-width: 46ch; }
+  .cell h3 { font-size: 24px; letter-spacing: -.025em; }
+  .cell .p { color: var(--muted); font-size: 15px; margin: 8px 0 22px; max-width: 46ch; }
+  .k1 { grid-column: span 7; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), var(--surface) 70%); }
+  .k2 { grid-column: span 5; }
+  .k3 { grid-column: span 5; background: var(--surface2); }
+  .k4 { grid-column: span 7; padding: 0; min-height: 360px; display: grid; align-content: end; background: #0d1220; color: #f3f4f6; }
+  .k4 > img.bgimg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .9; transition: transform 1.2s var(--ease); }
+  .k4:hover > img.bgimg { transform: scale(1.04); }
+  .k4 .txt { padding: 28px; background: linear-gradient(transparent, rgb(0 0 0 / .78)); }
+  .k4 .txt .p { color: #c8ccd6; margin-bottom: 0; }
+  .k5 { grid-column: span 5; background-image: radial-gradient(color-mix(in srgb, var(--text) 14%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
+  .k6 { grid-column: span 4; background: linear-gradient(200deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), var(--surface) 75%); }
+  .k7 { grid-column: span 3; background: var(--surface2); }
 
+  /* karaoke */
+  .karaoke { font-size: clamp(1.4rem, 3vw, 2.1rem); font-weight: 650; letter-spacing: -.02em; line-height: 1.3; margin-bottom: 20px; }
+  .karaoke span { color: color-mix(in srgb, var(--text) 38%, transparent); transition: color .25s; }
+  .karaoke.off span, .karaoke span.lit { color: var(--text); }
+  .karaoke span.lit { color: var(--accent); }
+  .karaoke.off span.lit { color: var(--text); }
+  /* switch */
+  .switch { display: inline-flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; cursor: pointer; color: var(--text); font: 600 14px var(--font); }
+  .switch i { width: 46px; height: 28px; border-radius: 999px; background: var(--line); position: relative; transition: background .3s; flex: none; }
+  .switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--text); transition: transform .35s var(--spring), background .3s; }
+  .switch[aria-checked="true"] i { background: var(--accent); }
+  .switch[aria-checked="true"] i::after { transform: translateX(18px); background: var(--on); }
+  /* romanization */
+  .big { font-size: 24px; line-height: 1.35; min-height: 132px; font-weight: 600; letter-spacing: -.01em; display: grid; gap: 6px; align-content: start; margin-bottom: 8px; }
+  .big span { display: inline-block; transition: opacity .35s, transform .45s var(--ease), filter .35s; }
+  .big.sw span { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  /* matching */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .chip { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 600;
+          transition: border-color .3s, background .3s, transform .4s var(--spring), color .3s; }
+  .chip.look { border-color: var(--muted); animation: bob .9s ease-in-out infinite alternate; }
+  @keyframes bob { to { transform: translateY(-3px); } }
+  .chip.best { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent); }
+  .chip.done { color: var(--muted); }
+  /* the cover shapes */
+  .covers { display: flex; align-items: center; justify-content: center; height: 190px; margin-bottom: 16px; }
+  .cv { width: 150px; height: 150px; position: relative; transition: border-radius .6s var(--ease), transform .6s var(--spring), background .6s; border-radius: 6px;
+        background: radial-gradient(circle at 50% 38%, #ffd36a 0 18%, transparent 19%), linear-gradient(180deg, #ff7a59, #7a3fb0 62%, #1c1030 62%); box-shadow: 0 18px 40px rgb(0 0 0 / .35); }
+  .cv[data-s="rounded"] { border-radius: 22px; }
+  .cv[data-s="squircle"] { border-radius: 34%; }
+  .cv[data-s="circle"] { border-radius: 50%; }
+  .cv[data-s="vinyl"], .cv[data-s="cd"] { border-radius: 50%; animation: spin 6s linear infinite; }
+  .cv[data-s="vinyl"] { background: radial-gradient(circle, #ff7a59 0 16%, #1a1a1f 17% 19%, transparent 20%), repeating-radial-gradient(circle, #101014 0 2px, #1d1d23 3px 4px); }
+  .cv[data-s="cd"] { background: radial-gradient(circle, var(--bg) 0 9%, transparent 10%), conic-gradient(from 20deg, #e9eef7, #b9c8ff, #f6d6ff, #c7ffe9, #fff3c4, #e9eef7); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .shapes { display: flex; flex-wrap: wrap; gap: 8px; }
   /* stamp */
   .clock { font: 600 30px/1 var(--mono); letter-spacing: -.02em; margin-bottom: 14px; }
   .stamps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 6px; }
-  .stamps li { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 8px 12px; border-radius: 12px;
-               border: 1px solid transparent; font-size: 15px; transition: background .3s, border-color .3s; }
+  .stamps li { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 8px 12px; border-radius: 12px; border: 1px solid transparent; font-size: 15px; transition: background .3s, border-color .3s; }
   .stamps li time { font: 500 14px var(--mono); color: var(--muted); }
   .stamps li.cur { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
   .stamps li.set time { color: var(--accent); }
-  /* romanization */
-  .big { font-size: 24px; line-height: 1.35; min-height: 144px; font-weight: 600; letter-spacing: -.01em; display: grid; gap: 6px; align-content: start; margin-bottom: 8px; }
-  .big span { display: inline-block; transition: opacity .35s, transform .45s var(--ease), filter .35s; }
-  .big.sw span { opacity: 0; transform: translateY(8px); filter: blur(4px); }
-  .switch { display: inline-flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; cursor: pointer;
-            color: var(--text); font: 600 14px var(--font); }
-  .switch i { width: 46px; height: 28px; border-radius: 999px; background: var(--line); position: relative; transition: background .3s; flex: none; }
-  .switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%;
-            background: var(--text); transition: transform .35s var(--spring), background .3s; }
-  .switch[aria-checked="true"] i { background: var(--accent); }
-  .switch[aria-checked="true"] i::after { transform: translateX(18px); background: var(--on); }
-  /* look-ahead queue */
+  /* queue */
   .queue { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
-  .queue li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px;
-              border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 15px;
-              transition: opacity .4s, transform .5s var(--ease); }
+  .queue li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+              font-size: 15px; transition: opacity .4s, transform .5s var(--ease); }
   .queue li.out { opacity: 0; transform: translateX(-20px); }
   .queue .st { font-size: 13px; color: var(--muted); min-width: 74px; text-align: right; }
   .queue li.ready .st { color: var(--accent); font-weight: 600; }
-  .queue li.wait .st { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--text) 18%, var(--line)) 50%, var(--line) 75%);
-              background-size: 200% 100%; animation: shimmer 1.2s linear infinite; color: transparent; }
+  .queue li.wait .st { height: 12px; border-radius: 6px; color: transparent; background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+              background-image: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--text) 18%, var(--line)) 50%, var(--line) 75%); }
   @keyframes shimmer { to { background-position: -200% 0; } }
-  /* matching chips */
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-  .chip { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
-          font-size: 14px; font-weight: 600; transition: border-color .3s, background .3s, transform .4s var(--spring), color .3s; }
-  .chip.look { border-color: var(--muted); animation: pulse .9s ease-in-out infinite alternate; }
-  @keyframes pulse { to { transform: translateY(-3px); } }
-  .chip.best { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent); }
-  .chip.done { color: var(--muted); }
-  /* hide under a maximized window */
-  .mini { height: 72px; border-radius: 14px; display: grid; place-items: center; text-align: center; padding: 0 12px;
-          background: color-mix(in srgb, var(--bg) 60%, transparent); border: 1px solid var(--line); margin-bottom: 14px;
-          font-weight: 600; font-size: 15px; transition: opacity .45s var(--ease); }
-  .mini.hid { opacity: .06; }
-  .note { color: var(--muted); font-size: 13px; min-height: 40px; margin-top: 12px; }
+
+  /* ---- numbers ---- */
+  .nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 44px 32px; margin-top: 52px; }
+  .nums b { display: block; font: 650 clamp(3rem, 6vw, 5rem)/1 var(--mono); letter-spacing: -.05em; color: var(--accent); transition: color .5s; font-variant-numeric: tabular-nums; }
+  .nums span { display: block; color: var(--muted); font-size: 16px; margin-top: 8px; }
 
   /* ---- install ---- */
   .inst { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: start; }
   .inst ul { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 22px; }
   .inst li strong { display: block; font-size: 17px; margin-bottom: 2px; }
   .inst li span { color: var(--muted); font-size: 15px; }
-  code { font-family: var(--mono); font-size: .92em; }
-  .term { border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
-  .term .bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 10px 18px;
-               border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  .term { border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+  .term .tb { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 10px 18px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
   .term pre { margin: 0; padding: 20px 22px; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.9 var(--mono); }
   .term pre .c { color: var(--muted); }
   .term pre .d { color: var(--accent); user-select: none; }
 
-  footer { margin-top: 112px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  footer { margin-top: 120px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
   footer .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-top: 32px; padding-bottom: 56px; }
   footer p { max-width: 62ch; }
 
   /* ---- reveal on scroll ---- */
-  .rv { opacity: 0; transform: translateY(26px); transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: var(--d, 0s); }
+  .rv { opacity: 0; transform: translateY(28px); transition: opacity .9s var(--ease), transform .9s var(--ease); transition-delay: var(--d, 0s); }
   .rv.in { opacity: 1; transform: none; }
 
   @media (max-width: 960px) {
+    section { padding-top: 84px; }
     .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 40px; gap: 36px; }
     .hero .sub { max-width: 40ch; }
-    .looks { grid-template-columns: 1fr; gap: 28px; }
-    .shot { height: auto; min-height: 220px; }
     .bento { grid-template-columns: 1fr; }
-    .c1, .c2, .c3, .c4, .c5 { grid-column: auto; }
+    .k1, .k2, .k3, .k4, .k5, .k6, .k7 { grid-column: auto; }
+    .nums { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .inst { grid-template-columns: 1fr; gap: 36px; }
     nav .r > a:not(.btn) { display: none; }
-    section { padding-top: 72px; }
   }
   @media (max-width: 520px) {
     .wrap { padding: 0 16px; }
     .lyr li { font-size: 14px; }
     .lyr li.on { transform: none; }
     .widget { padding: 14px 14px 12px; }
-    .logos { gap: 20px 32px; }
+    .thumb { width: 140px; }
+    .cell { padding: 22px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
-    .rv { opacity: 1; transform: none; }
+    [data-in], .rv { opacity: 1; transform: none; }
     html { scroll-behavior: auto; }
   }
   @media (prefers-reduced-transparency: reduce) {
@@ -279,10 +298,11 @@
 </style>
 </head>
 <body>
+<div class="bar" aria-hidden="true"></div>
 
 <nav>
   <div class="wrap">
-    <b>Lyric Widget</b>
+    <a class="brand" href="#top"><img src="favicon.svg" alt="" width="26" height="26">Lyric Widget</a>
     <div class="r">
       <a href="#looks">Looks</a>
       <a href="#features">Features</a>
@@ -293,18 +313,18 @@
   </div>
 </nav>
 
-<main class="wrap">
+<main class="wrap" id="top">
   <header class="hero">
     <div>
-      <h1>Synced lyrics <em>for your desktop</em></h1>
-      <p class="sub">Timed lyrics, a visualizer and a media card for Spotify and YouTube Music on Plasma 6. No accounts.</p>
-      <div class="row">
+      <h1 data-in>Lyrics, in time, <em>on your desktop</em></h1>
+      <p class="sub" data-in style="--d:.1s">Synced lyrics, a visualizer and a media card for Spotify and YouTube Music on Plasma 6.</p>
+      <div class="row" data-in style="--d:.2s">
         <a class="btn main" id="mag" href="#install">Install</a>
-        <a class="btn" href="https://github.com/AWeebTaku/Lyrics-Widget">GitHub</a>
+        <a class="btn" href="#looks">See the looks</a>
       </div>
     </div>
 
-    <div class="demo">
+    <div data-in style="--d:.15s">
       <div class="stage" id="stage">
         <div class="orb a"></div><div class="orb b"></div>
         <div class="widget" id="widget" role="group" aria-label="Interactive demo of the widget. Drag it, click a line to jump.">
@@ -314,15 +334,21 @@
             <button class="ctl" id="play" type="button" aria-label="Pause">Pause</button>
           </div>
           <div class="lyr"><ol id="ly"></ol></div>
-          <div class="bars" id="bars" aria-hidden="true"></div>
+          <canvas id="viz" aria-hidden="true"></canvas>
           <div class="prog" id="prog" role="slider" aria-label="Position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><span><b id="progB"></b></span></div>
         </div>
       </div>
-      <div class="picker" role="group" aria-label="Pick a cover color">
-        <small>Colors follow the cover:</small>
+      <div class="picker">
+        <small>Colors follow the cover</small>
         <button class="pill" type="button" data-src="spotify" aria-pressed="false" style="--c:#1ed760"><i></i>Spotify</button>
         <button class="pill" type="button" data-src="ytm" aria-pressed="false" style="--c:#ff3b30"><i></i>YouTube Music</button>
         <button class="pill" type="button" data-src="plasma" aria-pressed="true" style="--c:#3daee9"><i></i>Breeze blue</button>
+      </div>
+      <div class="picker" role="group" aria-label="Visualizer style">
+        <small>Visualizer</small>
+        <button class="pill" type="button" data-viz="bars" aria-pressed="true">Bars</button>
+        <button class="pill" type="button" data-viz="wave" aria-pressed="false">Wave</button>
+        <button class="pill" type="button" data-viz="dots" aria-pressed="false">Dots</button>
       </div>
     </div>
   </header>
@@ -336,20 +362,30 @@
   </div>
 
   <section id="looks">
-    <div class="looks">
-      <div class="rv">
-        <h2>Pick a look, or build your own</h2>
-        <p class="lead">36 built-in looks for the visualizer and the media card. Each picture is a real render from the widget.</p>
-        <p class="g">Visualizer</p>
-        <div class="pills" id="vizPills" role="group" aria-label="Visualizer looks"></div>
-        <p class="g">Media card</p>
-        <div class="pills" id="cardPills" role="group" aria-label="Media card looks"></div>
-      </div>
-      <div class="rv" style="--d:.1s">
-        <div class="shot"><img id="shot" src="gallery/09.png" width="1152" height="342" alt="Ribbon visualizer"></div>
-        <p class="note" id="shotN" aria-live="polite"></p>
+    <div class="looks-head rv">
+      <div>
+        <h2>36 looks, ready to wear</h2>
+        <p class="lead">Every picture is a real render of the widget. Apply one, or save your own.</p>
       </div>
     </div>
+    <div class="tabs rv" role="tablist" aria-label="Kinds of look">
+      <button class="pill" type="button" role="tab" id="tabV" aria-selected="true">Visualizer</button>
+      <button class="pill" type="button" role="tab" id="tabC" aria-selected="false">Cards and layouts</button>
+    </div>
+    <div class="viewer rv" id="viewer">
+      <div class="shot" id="shot"><img id="shotImg" src="gallery/00.png" width="1152" height="342" alt="Classic bars"></div>
+      <div class="cap">
+        <div><b id="capT">Classic bars</b><p id="capP">Plain bars, nothing else.</p></div>
+        <div class="acts">
+          <button class="pill" type="button" id="prev" aria-label="Previous look">Previous</button>
+          <button class="pill" type="button" id="next" aria-label="Next look">Next</button>
+          <button class="pill" type="button" id="rand">Random look</button>
+          <button class="pill" type="button" id="day">Look of the day</button>
+        </div>
+      </div>
+      <div class="tick" id="tick" aria-hidden="true"></div>
+    </div>
+    <div class="rail" id="rail" role="listbox" aria-label="All looks in this kind"></div>
   </section>
 
   <section id="features">
@@ -357,42 +393,76 @@
     <p class="lead rv">Try the controls. Each one is a working miniature of the real widget.</p>
 
     <div class="bento">
-      <article class="cell c1 rv">
+      <article class="cell k1 rv">
+        <h3>Karaoke, word by word</h3>
+        <p class="p">The words of the current line light up as they are sung, from word-timed lyrics. Off by default.</p>
+        <div class="karaoke" id="karaoke" lang="en" aria-live="off"></div>
+        <button class="switch" id="karSw" type="button" role="switch" aria-checked="true"><i></i>Karaoke effect</button>
+      </article>
+
+      <article class="cell k2 rv" style="--d:.08s">
+        <h3>Romanization replaces the line</h3>
+        <p class="p">Japanese, Korean and Chinese, from the provider, human-made furigana or a local converter.</p>
+        <div class="big" id="roman" lang="ja"><span>夜明けまで歩こう</span><span>風の中で待っている</span><span>君の名前を呼んだ</span></div>
+        <button class="switch" id="romanSw" type="button" role="switch" aria-checked="false"><i></i>Romanize</button>
+      </article>
+
+      <article class="cell k3 rv">
+        <h3>Matched, not guessed</h3>
+        <p class="p">Four lyric sources are searched in parallel and scored on title, artist, length and album.</p>
+        <div class="chips" id="chips"><span class="chip">Spotify app</span><span class="chip">LRCLIB</span><span class="chip">NetEase</span><span class="chip">QQ Music</span><span class="chip">Kugou</span></div>
+        <button class="btn sm" id="search" type="button">Run a search</button>
+      </article>
+
+      <article class="cell k4 rv" style="--d:.08s">
+        <img class="bgimg" src="gallery/12.png" width="732" height="312" alt="A GPU terrain visualizer in neon colors" loading="lazy">
+        <div class="txt">
+          <h3>23 visualizer styles</h3>
+          <p class="p">Bars, waves, an oscilloscope, a pulse orb, plasma, a terrain and a tunnel. Several run on the GPU.</p>
+        </div>
+      </article>
+
+      <article class="cell k5 rv">
+        <h3>A cover for every taste</h3>
+        <p class="p">Sharp, rounded, squircle, circle, a spinning record or a CD.</p>
+        <div class="covers"><div class="cv" id="cv" data-s="rounded"></div></div>
+        <div class="shapes" id="shapes" role="group" aria-label="Cover shape">
+          <button class="pill" type="button" data-s="sharp" aria-pressed="false">Sharp</button>
+          <button class="pill" type="button" data-s="rounded" aria-pressed="true">Rounded</button>
+          <button class="pill" type="button" data-s="squircle" aria-pressed="false">Squircle</button>
+          <button class="pill" type="button" data-s="circle" aria-pressed="false">Circle</button>
+          <button class="pill" type="button" data-s="vinyl" aria-pressed="false">Record</button>
+          <button class="pill" type="button" data-s="cd" aria-pressed="false">CD</button>
+        </div>
+      </article>
+
+      <article class="cell k6 rv" style="--d:.08s">
         <h3>Stamp lines as the song plays</h3>
-        <p class="p">In the lyrics library, press once as each line starts. It takes the song's time and moves to the next line. Fine-tune afterwards.</p>
+        <p class="p">In the lyrics library, press once as each line starts. It takes the song's time and moves on.</p>
         <div class="clock" id="clock">0.0 s</div>
         <ul class="stamps" id="stamps"></ul>
         <div class="row"><button class="btn main sm" id="stampBtn" type="button">Stamp line</button><button class="btn sm" id="stampReset" type="button">Start over</button></div>
       </article>
 
-      <article class="cell c2 rv" style="--d:.08s">
-        <h3>Romanization replaces the line</h3>
-        <p class="p">Japanese, Korean and Chinese, from the provider, UtaTen readings or a local converter.</p>
-        <div class="big" id="roman" lang="ja"><span>夜明けまで歩こう</span><span>風の中で待っている</span><span>君の名前を呼んだ</span></div>
-        <button class="switch" id="romanSw" type="button" role="switch" aria-checked="false"><i></i>Romanize</button>
-      </article>
-
-      <article class="cell c3 rv">
+      <article class="cell k7 rv" style="--d:.16s">
         <h3>Look-ahead</h3>
         <p class="p">Lyrics for the next songs in a shuffled queue are fetched before they start.</p>
         <ul class="queue" id="queue"></ul>
         <button class="btn sm" id="skip" type="button">Skip track</button>
       </article>
+    </div>
+  </section>
 
-      <article class="cell c4 rv" style="--d:.08s">
-        <h3>Matched, not guessed</h3>
-        <p class="p">Four lyric sources are searched in parallel and scored on title, artist, length and album. Spotify songs are asked of the Spotify app first.</p>
-        <div class="chips" id="chips"><span class="chip">Spotify app</span><span class="chip">LRCLIB</span><span class="chip">NetEase</span><span class="chip">QQ Music</span><span class="chip">Kugou</span></div>
-        <button class="btn sm" id="search" type="button">Run a search</button>
-      </article>
-
-      <article class="cell c5 rv" style="--d:.16s">
-        <h3>Out of the way</h3>
-        <p class="p">Maximize a window and it hides, still following the song.</p>
-        <div class="mini" id="mini"><span id="miniT">the harbour lamps are coming on</span></div>
-        <button class="switch" id="maxSw" type="button" role="switch" aria-checked="false"><i></i>Maximized</button>
-        <div class="note" id="miniN" aria-live="polite"></div>
-      </article>
+  <section id="numbers">
+    <h2 class="rv">Made to be changed</h2>
+    <p class="lead rv">Write your own visualizer, seek bar or buttons as a QML file, or keep lyrics in a <code>.lrc</code> beside the song.</p>
+    <div class="nums" id="nums">
+      <div class="rv"><b data-to="36">0</b><span>built-in looks</span></div>
+      <div class="rv" style="--d:.06s"><b data-to="23">0</b><span>visualizer styles</span></div>
+      <div class="rv" style="--d:.12s"><b data-to="10">0</b><span>card layouts</span></div>
+      <div class="rv"><b data-to="11">0</b><span>seek bar styles</span></div>
+      <div class="rv" style="--d:.06s"><b data-to="6">0</b><span>cover shapes</span></div>
+      <div class="rv" style="--d:.12s"><b data-to="4">0</b><span>lyric sources, no accounts</span></div>
     </div>
   </section>
 
@@ -408,7 +478,7 @@
         </ul>
       </div>
       <div class="term rv" style="--d:.1s">
-        <div class="bar"><span>Terminal</span><button class="btn sm" id="copy" type="button">Copy</button></div>
+        <div class="tb"><span>Terminal</span><button class="btn sm" id="copy" type="button">Copy</button></div>
 <pre id="cmd"><span class="d">$ </span>sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
 <span class="d">$ </span>git clone https://github.com/AWeebTaku/Lyrics-Widget &amp;&amp; cd Lyrics-Widget
 <span class="d">$ </span>./build.sh
@@ -436,14 +506,10 @@
   // ---------- theme ----------
   const themeBtn = $("theme");
   const showTheme = () => { themeBtn.textContent = root.dataset.theme === "dark" ? "Light" : "Dark"; };
-  themeBtn.onclick = () => {
-    root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
-    save("lw-theme", root.dataset.theme);
-    showTheme();
-  };
+  themeBtn.onclick = () => { root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark"; save("lw-theme", root.dataset.theme); showTheme(); readAccent(); };
   showTheme();
 
-  // ---------- the player: one clock drives lyrics, bars and the maximize demo ----------
+  // ---------- the player: one clock drives lyrics, the visualizer and the progress bar ----------
   const SONG = [
     [0, "the harbour lamps are coming on"], [4, "we count the boats and let them go"],
     [8, "a radio down by the rail"], [12, "plays something soft and something slow"],
@@ -451,22 +517,62 @@
     [24, "carry me past the last street light"], [28, "and leave the porch light on"],
   ];
   const LEN = 32;
-  const ol = $("ly"), bars = $("bars"), progB = $("progB"), prog = $("prog"), playBtn = $("play");
+  const ol = $("ly"), progB = $("progB"), prog = $("prog"), playBtn = $("play"), cv = $("viz"), ctx = cv.getContext("2d");
   SONG.forEach(([s, text]) => { const li = document.createElement("li"); li.textContent = text; li.onclick = () => seek(s); ol.appendChild(li); });
   const items = [...ol.children];
-  const N = 36, bar = [], lvl = new Array(N).fill(0);
-  for (let i = 0; i < N; i++) { const b = document.createElement("i"); bars.appendChild(b); bar.push(b); }
+  const N = 40, lvl = new Array(N).fill(0);
+  let t = 0, playing = !reduce, cur = -1, last = performance.now(), visible = true, vstyle = "bars", accent = "#3daee9", dpr = 1, cw = 0, ch = 0;
 
-  let t = 0, playing = !reduce, cur = -1, last = performance.now(), visible = true, maxed = false;
-  const lineAt = (x) => { let k = 0; SONG.forEach(([s], i) => { if (x >= s) k = i; }); return k; };
+  function readAccent() { accent = getComputedStyle(root).getPropertyValue("--accent").trim() || accent; }
+  function sizeCanvas() {
+    dpr = Math.min(2, devicePixelRatio || 1);
+    cw = cv.clientWidth; ch = cv.clientHeight;
+    cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  new ResizeObserver(sizeCanvas).observe(cv);
+
+  function drawViz() {
+    ctx.clearRect(0, 0, cw, ch);
+    const step = cw / N;
+    if (vstyle === "bars") {
+      ctx.fillStyle = accent;
+      for (let i = 0; i < N; i++) {
+        const h = Math.max(3, lvl[i] * ch), w = step * 0.62;
+        ctx.globalAlpha = 0.55 + 0.45 * lvl[i];
+        ctx.beginPath(); ctx.roundRect(i * step + (step - w) / 2, ch - h, w, h, 2); ctx.fill();
+      }
+    } else if (vstyle === "wave") {
+      const g = ctx.createLinearGradient(0, 0, 0, ch);
+      g.addColorStop(0, accent); g.addColorStop(1, "transparent");
+      ctx.beginPath(); ctx.moveTo(0, ch);
+      for (let i = 0; i < N; i++) {
+        const x = i * step + step / 2, y = ch - Math.max(2, lvl[i] * ch);
+        const nx = (i + 1) * step + step / 2, ny = ch - Math.max(2, (lvl[i + 1] ?? lvl[i]) * ch);
+        if (i === 0) ctx.lineTo(x, y);
+        ctx.quadraticCurveTo(x, y, (x + nx) / 2, (y + ny) / 2);
+      }
+      ctx.lineTo(cw, ch); ctx.closePath(); ctx.globalAlpha = 0.5; ctx.fillStyle = g; ctx.fill();
+      ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.stroke();
+    } else {
+      ctx.fillStyle = accent;
+      for (let i = 0; i < N; i++) {
+        const n = Math.max(1, Math.round(lvl[i] * 9));
+        for (let k = 0; k < n; k++) {
+          ctx.globalAlpha = 0.9 - k * 0.07;
+          ctx.beginPath(); ctx.arc(i * step + step / 2, ch - 3 - k * (ch / 9), Math.max(1.2, step * 0.2), 0, 6.2832); ctx.fill();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function paintLine() {
-    const k = lineAt(t);
+    let k = 0; SONG.forEach(([s], i) => { if (t >= s) k = i; });
     if (k === cur) return;
     cur = k;
     items.forEach((li, i) => li.classList.toggle("on", i === k));
     ol.style.transform = "translateY(" + (76 - k * 40) + "px)";
-    $("miniT").textContent = SONG[k][1];
-    if (maxed) $("miniN").textContent = "Hidden, following line " + (k + 1) + " of " + SONG.length;
   }
   function seek(x) { t = Math.max(0, Math.min(LEN - 0.01, x)); paintLine(); }
   function showPlay() { playBtn.textContent = playing ? "Pause" : "Play"; playBtn.setAttribute("aria-label", playing ? "Pause" : "Play"); }
@@ -475,11 +581,18 @@
   prog.onkeydown = (e) => { if (e.key === "ArrowRight") seek(t + 2); if (e.key === "ArrowLeft") seek(t - 2); };
   showPlay();
 
-  // stamp demo state (its clock ticks in the same frame loop)
+  // karaoke: the words of a line light up on a loop; the switch turns the effect off (the whole line shows)
+  const KL = "the harbour lamps are coming on".split(" "), kar = $("karaoke"), kws = [];
+  KL.forEach((w) => { const s = document.createElement("span"); s.textContent = w + " "; kar.appendChild(s); kws.push(s); });
+  let karOn = true, karLit = -1;
+  $("karSw").onclick = (e) => { karOn = e.currentTarget.getAttribute("aria-checked") !== "true"; e.currentTarget.setAttribute("aria-checked", String(karOn)); kar.classList.toggle("off", !karOn); };
+
+  // stamp demo clock
   const SL = ["the harbour lamps are coming on", "we count the boats and let them go", "a radio down by the rail", "plays something soft and something slow"];
   const stamps = $("stamps"), clock = $("clock");
   let sIdx = 0, sT0 = performance.now(), sNow = 0, sTimes = [];
 
+  let kt0 = performance.now();
   function frame(now) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (visible) {
@@ -488,27 +601,34 @@
       progB.style.width = (t / LEN * 100) + "%";
       prog.setAttribute("aria-valuenow", Math.round(t / LEN * 100));
       for (let i = 0; i < N; i++) {
-        const target = playing ? 0.18 + 0.82 * Math.abs(Math.sin(t * (1.3 + i * 0.11) + i)) * (0.55 + 0.45 * Math.sin(t * 0.9 + i * 0.35)) : 0.06;
+        const target = playing ? 0.16 + 0.84 * Math.abs(Math.sin(t * (1.3 + i * 0.11) + i)) * (0.55 + 0.45 * Math.sin(t * 0.9 + i * 0.35)) : 0.05;
         lvl[i] += (target - lvl[i]) * 0.2;
-        bar[i].style.transform = "scaleY(" + lvl[i].toFixed(3) + ")";
       }
+      drawViz();
     }
     sNow = (now - sT0) / 1000;
     if (sIdx < SL.length) clock.textContent = sNow.toFixed(1) + " s";
+    if (karOn) {
+      const lit = Math.min(KL.length, Math.floor(((now - kt0) / 5200 % 1) * (KL.length + 1.5)));
+      if (lit !== karLit) { karLit = lit; kws.forEach((s, i) => s.classList.toggle("lit", i < lit)); }
+    } else if (karLit !== -1) { karLit = -1; kws.forEach((s) => s.classList.remove("lit")); }
     requestAnimationFrame(frame);
   }
   new IntersectionObserver((e) => { visible = e[0].isIntersecting; }, { threshold: 0 }).observe($("stage"));
 
-  // ---------- colors follow the cover ----------
+  // ---------- colors follow the cover; the visualizer style ----------
   const SUB = { plasma: "Sample song", spotify: "Sample song, playing on Spotify", ytm: "Sample song, playing on YouTube Music" };
-  const pills = [...document.querySelectorAll(".pill")];
+  const srcPills = [...document.querySelectorAll("[data-src]")], vizPills = [...document.querySelectorAll("[data-viz]")];
   function setSrc(s) {
     root.dataset.src = s;
-    pills.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.src === s)));
+    srcPills.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.src === s)));
     $("songS").textContent = SUB[s];
+    readAccent();
   }
-  pills.forEach((p) => (p.onclick = () => setSrc(p.dataset.src)));
+  srcPills.forEach((p) => (p.onclick = () => setSrc(p.dataset.src)));
+  vizPills.forEach((p) => (p.onclick = () => { vstyle = p.dataset.viz; vizPills.forEach((q) => q.setAttribute("aria-pressed", String(q === p))); }));
   setSrc(root.dataset.src);
+  setTimeout(readAccent, 700);   // the accent transitions: read the settled value
 
   // ---------- drag the widget: it follows the pointer and wobbles with its speed (a nod to Plasma's wobbly windows) ----------
   const w = $("widget"), stage = $("stage");
@@ -529,36 +649,6 @@
   const drop = () => { if (!drag) return; drag = false; w.classList.remove("drag"); tx = ty = 0; w.style.transform = ""; };
   w.addEventListener("pointerup", drop); w.addEventListener("pointercancel", drop);
 
-  // ---------- looks gallery ----------
-  const LOOKS = [
-    ["viz", "Ribbon", "09", 1152, 342, "A flowing ribbon in sunset colors."],
-    ["viz", "LED meter", "04", 1152, 342, "A stereo-rack meter of lit segments."],
-    ["viz", "Pulse orb", "06", 1152, 342, "An orb that breathes with the bass."],
-    ["viz", "Terrain", "13", 732, 312, "A GPU landscape that moves with the music."],
-    ["viz", "Tunnel", "14", 732, 312, "A GPU tunnel that speeds up on the beat."],
-    ["card", "Cover wash", "19", 642, 252, "Cover, title, buttons and seek bar over a blurred cover."],
-    ["card", "Vinyl record", "21", 642, 252, "The cover as a spinning record."],
-    ["card", "Poster", "24", 492, 552, "A tall card with the cover as a sun and lyrics over the wave."],
-    ["card", "Halo", "32", 522, 582, "A cover in a ring that follows the music."],
-  ];
-  const shot = $("shot"), shotN = $("shotN"), lp = [];
-  function look(i) {
-    const [, name, id, w, h, text] = LOOKS[i];
-    lp.forEach((b, k) => b.setAttribute("aria-pressed", String(k === i)));
-    shot.classList.add("sw");
-    setTimeout(() => {
-      shot.src = "gallery/" + id + ".png"; shot.width = w; shot.height = h; shot.alt = name + ": " + text;
-      shotN.textContent = name + ". " + text;
-      shot.classList.remove("sw");
-    }, reduce ? 0 : 220);
-  }
-  LOOKS.forEach((l, i) => {
-    const b = document.createElement("button");
-    b.className = "pill"; b.type = "button"; b.textContent = l[1]; b.onclick = () => look(i);
-    $(l[0] === "viz" ? "vizPills" : "cardPills").appendChild(b); lp.push(b);
-  });
-  look(0);
-
   // ---------- magnetic install button ----------
   const mag = $("mag");
   if (!reduce && matchMedia("(hover: hover)").matches) {
@@ -574,6 +664,73 @@
     const r = c.getBoundingClientRect();
     c.style.setProperty("--mx", (e.clientX - r.left) + "px"); c.style.setProperty("--my", (e.clientY - r.top) + "px");
   }));
+
+  // ---------- the looks gallery: [name, about, picture, kind, width, height] ----------
+  const LOOKS = [["Classic bars", "Plain bars, nothing else.", "00", "v", 1152, 342], ["Soft wave", "A smooth wave with a soft glow, in the Lagoon palette.", "01", "v", 1152, 342], ["Neon mountain", "A glowing ridge that follows the music, in orchid colors.", "02", "v", 1152, 342], ["LED rack", "A stereo-rack meter: green to red segments with caps that hang on.", "03", "v", 1152, 342], ["Dot matrix", "A grid of lit pixels, in warm Cinder colors.", "04", "v", 1152, 342], ["Orb pulse", "An orb that breathes with the bass; the lyrics swell a little on the beat.", "05", "v", 1152, 342], ["Radial rainbow", "A turning ring of spokes in a slowly moving rainbow.", "06", "v", 1152, 342], ["Green scope", "An oscilloscope trace with a green glow.", "07", "v", 1152, 342], ["Silk ribbon", "A flowing ribbon in sunset colors.", "08", "v", 1152, 342], ["Spark storm", "Sparks bounce on every beat; the edges glow with the bass.", "09", "v", 1152, 342], ["Calm", "A slow, muted wave with reduced motion: easy on the eyes.", "10", "v", 1152, 342], ["Battery friendly", "Bars at 20 frames a second, no glow, no motion effects.", "11", "v", 1152, 342], ["Neon terrain", "A skyline of peaks over a grid that rolls towards you (GPU).", "12", "v", 732, 312], ["Tunnel run", "Rings and spokes rushing past, in rainbow colors (GPU).", "13", "v", 732, 312], ["Plasma wash", "A warm liquid field that swells with the bass (GPU).", "14", "v", 732, 312], ["Stereo scope", "Left against right: the stereo image as a glowing figure.", "15", "v", 732, 312], ["Plain card", "Cover, text, buttons and a sleek seek bar on a dark card.", "16", "c", 642, 252], ["Frosted card", "The same layout on a frosted-glass card with a soft shadow.", "17", "c", 642, 252], ["Cover wash", "The cover blurred behind the card, a round cover with a glow.", "18", "c", 642, 252], ["Midnight neon", "A near-black card with a neon mountain and a pulsing seek bar.", "19", "c", 642, 252], ["Turntable", "A spinning record on an atmosphere of the cover's colors.", "20", "c", 642, 252], ["Disc player", "A CD with a squiggle seek bar over the blurred cover.", "21", "c", 642, 252], ["Arcade", "A sharp pixel cover, an LED meter and a time-only readout.", "22", "c", 642, 252], ["Glass lens", "Clear glass: the cover seen through a lens that follows the pointer.", "23", "c", 492, 552], ["Quiet glass", "A calm frosted card with a mirrored wave and one round play button.", "24", "c", 492, 552], ["Album mist", "The cover's colors bleed in from the corners; a ribbon below.", "25", "c", 492, 552], ["Lyrics card", "The song's lyric line under the artist, with a ribbon.", "26", "c", 642, 252], ["Poster", "The title set big, the music as a soft texture behind it, and a clock.", "27", "c", 672, 342], ["Hanging bars", "A centered title with bars hanging from the top edge.", "28", "c", 672, 342], ["Stalactites", "Peak bars drip from the top edge towards the title, in icy colors.", "29", "c", 672, 342], ["Hero stage", "The visualizer takes the stage; the track text tucks underneath.", "30", "c", 672, 312], ["Orbit", "The cover is the center; bars circle it and the cover breathes with the bass.", "31", "c", 522, 582], ["Halo", "A spinning record inside a ring of bars, with a progress ring.", "32", "c", 522, 582], ["Slim strip", "A wide, low bar for the bottom of the screen.", "33", "c", 522, 582], ["Mirrored minimal", "Cover on the right, dotted progress, no card, buttons on hover.", "34", "c", 522, 582], ["Compact", "No cover column: visualizer, seek bar and title only.", "35", "c", 522, 582]];
+  const viewer = $("viewer"), shotImg = $("shotImg"), rail = $("rail"), tick = $("tick");
+  let kind = "v", pos = 0, auto = !reduce, inView = false, timer = 0;
+  const list = () => LOOKS.filter((l) => l[3] === kind);
+  function buildRail() {
+    rail.textContent = "";
+    list().forEach((l, i) => {
+      const b = document.createElement("button");
+      b.className = "thumb"; b.type = "button"; b.setAttribute("role", "option"); b.dataset.i = i;
+      const im = document.createElement("img"); im.src = "gallery/" + l[2] + ".png"; im.alt = ""; im.loading = "lazy"; im.width = l[4]; im.height = l[5];
+      const sp = document.createElement("span"); sp.textContent = l[0];
+      b.append(im, sp); b.onclick = () => { stopAuto(); show(i); }; rail.appendChild(b);
+    });
+  }
+  function show(i, instant) {
+    const L = list(); pos = (i + L.length) % L.length;
+    const l = L[pos];
+    [...rail.children].forEach((b, k) => b.setAttribute("aria-selected", String(k === pos)));
+    const b = rail.children[pos];
+    if (b) { const x = b.offsetLeft - (rail.clientWidth - b.clientWidth) / 2; rail.scrollTo({ left: x, behavior: reduce || instant ? "auto" : "smooth" }); }
+    const swap = () => {
+      shotImg.src = "gallery/" + l[2] + ".png"; shotImg.width = l[4]; shotImg.height = l[5]; shotImg.alt = l[0] + ": " + l[1];
+      $("capT").textContent = l[0]; $("capP").textContent = l[1]; shotImg.classList.remove("sw");
+    };
+    if (reduce || instant) swap(); else { shotImg.classList.add("sw"); setTimeout(swap, 200); }
+    restartTick();
+  }
+  function restartTick() {
+    tick.classList.remove("run"); void tick.offsetWidth;
+    if (auto && inView) tick.classList.add("run");
+  }
+  function advance() { if (auto && inView && !viewer.matches(":hover, :focus-within")) show(pos + 1); restartTick(); }
+  function startAuto() { clearInterval(timer); if (auto) timer = setInterval(advance, 4500); }
+  function stopAuto() { auto = false; clearInterval(timer); tick.classList.remove("run"); }
+  function setKind(k) {
+    kind = k; $("tabV").setAttribute("aria-selected", String(k === "v")); $("tabC").setAttribute("aria-selected", String(k === "c"));
+    buildRail(); show(0, true);
+  }
+  $("tabV").onclick = () => { stopAuto(); setKind("v"); };
+  $("tabC").onclick = () => { stopAuto(); setKind("c"); };
+  $("prev").onclick = () => { stopAuto(); show(pos - 1); };
+  $("next").onclick = () => { stopAuto(); show(pos + 1); };
+  $("rand").onclick = () => { stopAuto(); let n; do { n = Math.floor(Math.random() * list().length); } while (n === pos && list().length > 1); show(n); };
+  $("day").onclick = () => {   // the same look all day: chosen by the date, like the widget's own button
+    stopAuto(); const d = new Date().toISOString().slice(0, 10); let h = 0;
+    for (let i = 0; i < d.length; i++) h = (h * 31 + d.charCodeAt(i)) >>> 0;
+    const all = LOOKS[h % LOOKS.length]; setKind(all[3]); show(list().indexOf(all));
+  };
+  viewer.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") { stopAuto(); show(pos + 1); } if (e.key === "ArrowLeft") { stopAuto(); show(pos - 1); } });
+  viewer.tabIndex = 0;
+  if (!reduce && matchMedia("(hover: hover)").matches) {
+    const shot = $("shot");
+    shot.addEventListener("pointermove", (e) => {
+      const r = shot.getBoundingClientRect();
+      shotImg.style.setProperty("--ry", ((e.clientX - r.left) / r.width - 0.5) * 10 + "deg");
+      shotImg.style.setProperty("--rx", (0.5 - (e.clientY - r.top) / r.height) * 8 + "deg");
+    });
+    shot.addEventListener("pointerleave", () => { shotImg.style.setProperty("--ry", "0deg"); shotImg.style.setProperty("--rx", "0deg"); });
+  }
+  new IntersectionObserver((e) => { inView = e[0].isIntersecting; restartTick(); }, { threshold: 0.35 }).observe(viewer);
+  buildRail(); show(0, true); startAuto();
+
+  // ---------- the cover shapes ----------
+  const shapes = [...document.querySelectorAll("#shapes .pill")];
+  shapes.forEach((b) => (b.onclick = () => { $("cv").dataset.s = b.dataset.s; shapes.forEach((q) => q.setAttribute("aria-pressed", String(q === b))); }));
 
   // ---------- stamp ----------
   SL.forEach((s) => { const li = document.createElement("li"); li.innerHTML = "<time>--:--.-</time><span></span>"; li.lastChild.textContent = s; stamps.appendChild(li); });
@@ -595,10 +752,7 @@
     const on = rsw.getAttribute("aria-checked") !== "true";
     rsw.setAttribute("aria-checked", String(on));
     roman.classList.add("sw");
-    setTimeout(() => {
-      [...roman.children].forEach((el, i) => { el.textContent = (on ? RO : JA)[i]; });
-      roman.lang = on ? "ja-Latn" : "ja"; roman.classList.remove("sw");
-    }, reduce ? 0 : 280);
+    setTimeout(() => { [...roman.children].forEach((el, i) => { el.textContent = (on ? RO : JA)[i]; }); roman.lang = on ? "ja-Latn" : "ja"; roman.classList.remove("sw"); }, reduce ? 0 : 280);
   };
 
   // ---------- look-ahead queue ----------
@@ -624,20 +778,21 @@
   const chips = [...$("chips").children], searchBtn = $("search");
   searchBtn.onclick = () => {
     searchBtn.disabled = true;
-    const gap = reduce ? 0 : 260, first = reduce ? 0 : 700, best = 1 + Math.floor(Math.random() * 4); // one of the four lyric sources
+    const gap = reduce ? 0 : 260, first = reduce ? 0 : 700, best = Math.floor(Math.random() * chips.length);
     chips.forEach((c) => { c.className = "chip look"; });
     chips.forEach((c, i) => setTimeout(() => { c.className = "chip " + (i === best ? "best" : "done"); }, first + i * gap));
     setTimeout(() => { searchBtn.disabled = false; }, first + chips.length * gap + 200);
   };
 
-  // ---------- maximized window: hides, keeps following ----------
-  const msw = $("maxSw"), mini = $("mini");
-  msw.onclick = () => {
-    maxed = msw.getAttribute("aria-checked") !== "true";
-    msw.setAttribute("aria-checked", String(maxed));
-    mini.classList.toggle("hid", maxed);
-    $("miniN").textContent = maxed ? "Hidden, following line " + (cur + 1) + " of " + SONG.length : "";
-  };
+  // ---------- numbers count up when they come into view ----------
+  const cio = new IntersectionObserver((es) => es.forEach((en) => {
+    if (!en.isIntersecting) return;
+    cio.unobserve(en.target);
+    const el = en.target.querySelector("b"), to = +el.dataset.to, t0 = performance.now();
+    if (reduce) { el.textContent = to; return; }
+    (function tickUp(now) { const p = Math.min(1, (now - t0) / 1100); el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(tickUp); })(t0);
+  }), { threshold: 0.6 });
+  document.querySelectorAll("#nums > div").forEach((d) => cio.observe(d));
 
   // ---------- copy ----------
   $("copy").onclick = async (e) => {
@@ -647,7 +802,7 @@
   };
 
   // ---------- reveal on scroll ----------
-  const io = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: 0.15 });
+  const io = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: 0.12 });
   document.querySelectorAll(".rv").forEach((el) => io.observe(el));
 
   paintLine();

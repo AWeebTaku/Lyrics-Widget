@@ -55,7 +55,11 @@ Item {
                 QQC2.Label { text: parent.parent.b ? parent.parent.b.text : ""; wrapMode: Text.WordWrap; Layout.fillWidth: true }
                 QQC2.Button {
                     text: parent.parent.b ? parent.parent.b.button : ""
-                    onClicked: Plasmoid.configuration[parent.parent.b.key] = true
+                    onClicked: {
+                        const key = parent.parent.b.key, w = root.Window.window
+                        if (w && w.setKey) w.setKey(key, true)          // also in the pages (General) that hold the old value
+                        else Plasmoid.configuration[key] = true
+                    }
                 }
             }
         }
