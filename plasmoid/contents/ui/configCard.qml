@@ -18,6 +18,8 @@ KCM.SimpleKCM {
     property int cfg_cardAccentSourceDefault
     property string cfg_customAccent
     property string cfg_customAccentDefault
+    property string cfg_layoutEdits
+    property string cfg_layoutEditsDefault
     property int cfg_cardSurface
     property int cfg_cardSurfaceDefault
     property string cfg_panelColor
@@ -110,6 +112,10 @@ KCM.SimpleKCM {
     property bool cfg_doubleClickSkipDefault
     property int cfg_trackTextStyle
     property int cfg_trackTextStyleDefault
+    property int cfg_titleColorSource
+    property int cfg_titleColorSourceDefault
+    property string cfg_customTitleColor
+    property string cfg_customTitleColorDefault
     property int cfg_titleSize
     property int cfg_titleSizeDefault
     property int cfg_textAlign

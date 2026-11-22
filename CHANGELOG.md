@@ -2,6 +2,13 @@
 
 Each release's section is used for its GitHub release notes (`.github/workflows/release.yml`), so keep the heading as `## <version>`.
 
+## 2.4.0
+
+- The **Layout** page is gone. On the Card page every part has its on/off switch, place and size next to its other settings (Background, Cover, Buttons, Seek bar, Title and details, Lyrics and visualizer, Corner buttons). The changes belong to the layout in use, and **Reset this layout** puts them back.
+- The cover can be turned on and placed in any layout, including the ones that have none (Hero wave, Poster, Compact).
+- A color for the song title (the buttons and the seek bar already had one).
+- Next and Previous on YouTube Music: when Chrome's media controls stop answering, the browser extension (version 0.2.0, reload it after updating) presses the page's own button, so Chrome no longer needs a restart.
+
 ## 2.3.0
 
 - The looks have their own **Looks** page, between Card and Sources. The Visualizer page now starts at Style.

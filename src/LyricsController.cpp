@@ -213,6 +213,31 @@ void LyricsController::schedulePrefetch()
         m_preTimer.start(5000);
 }
 
+// Next / Previous go to the player. Chrome's media controls for YouTube Music sometimes stop answering (the widget's buttons and the
+// system's media keys alike) until the browser is restarted. When nothing happened 1.5 s later and the companion extension is
+// running, it presses the page's own button instead.
+void LyricsController::skip(bool forward)
+{
+    MprisPlayer *p = m_watcher.active();
+    if (!p)
+        return;
+    const QString key = p->title() + QLatin1Char('\n') + p->url();
+    const qint64 pos = p->positionUs();
+    const bool ytm = p->url().contains(QLatin1String("music.youtube.com"));
+    forward ? p->next() : p->previous();
+    if (!ytm || !m_browser.enabled())
+        return;
+    QTimer::singleShot(1500, this, [this, p, key, pos, forward] {
+        MprisPlayer *q = m_watcher.active();
+        if (q != p)
+            return; // another player is active now, or this one is gone
+        // Previous restarts a song that has played a while: the position going back counts as it working
+        const bool done = key != q->title() + QLatin1Char('\n') + q->url() || (!forward && q->positionUs() + 1000000 < pos);
+        if (!done && m_browser.extensionAlive())
+            m_browser.request(forward ? QStringLiteral("next") : QStringLiteral("previous"));
+    });
+}
+
 void LyricsController::prefetchNext()
 {
     if (m_preId != 0 || m_preQueue.isEmpty())

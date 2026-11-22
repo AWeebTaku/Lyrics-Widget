@@ -222,8 +222,8 @@ function parseEdits(text) {
 }
 function editsFor(edits, mode) { return parseEdits(edits)[String(mode === 1 ? 0 : mode)] || {} }
 
-// where the corner buttons and the sync row go when a layout leaves them out and the user turns them on
-function cornerRects(W, H) { return { tools: r(W - 32, 4, 26, 56), nudge: r(0, H - 26, W, 22) } }
+// where the corner buttons, the sync row and the cover go when a layout leaves them out and the user turns them on
+function cornerRects(W, H) { return { tools: r(W - 32, 4, 26, 56), nudge: r(0, H - 26, W, 22), art: r(8, 8, 72, 72) } }
 // where a part sits in a layout before any edit, at the layout's own size: the origin the editor measures from
 function baseRect(mode, id) {
     const n = naturalSize(mode), p = parts.find(q => q.id === id)
@@ -262,11 +262,11 @@ function applyEdits(o, e, W, H) {
 }
 
 // the parts a layout has (the ones the user can edit), with where they sit now; the corner buttons, the sync row, the
-// background and the visualizer can always be edited
+// background, the cover and the visualizer can always be edited
 function partsFor(mode) {
     const n = naturalSize(mode)
     const o = layout(mode, n[0], n[1], 96, 14, {})
-    return parts.filter(p => p.flag ? (p.id === "ring" && o.ring) : (o[p.key] || ["tools", "nudge", "surface", "viz"].indexOf(p.id) >= 0))
+    return parts.filter(p => p.flag ? (p.id === "ring" && o.ring) : (o[p.key] || ["tools", "nudge", "surface", "viz", "art"].indexOf(p.id) >= 0))
 }
 function getEdit(edits, mode, id) { return editsFor(edits, mode)[id] || {} }
 // a new JSON text with one field of one part changed (a field at its default is dropped, so the text stays small)

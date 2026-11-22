@@ -488,6 +488,12 @@
     <entry name="customControlColor" type="String">
       <default>#ffffff</default>
     </entry>
+    <entry name="titleColorSource" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="customTitleColor" type="String">
+      <default>#ffffff</default>
+    </entry>
     <entry name="cardAccentSource" type="Int">
       <default>0</default>
     </entry>

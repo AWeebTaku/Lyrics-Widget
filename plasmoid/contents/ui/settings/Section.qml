@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import "model.js" as Model
+import "../card/layouts.js" as Layouts
 import "tokens.js" as T
 
 // A group of settings: a title with a line of what it is for, then the rows. It opens and closes; while searching it shows what
@@ -26,6 +27,7 @@ Item {
     // a row is shown when it applies to the settings now, and (while searching) when it matches
     function shown(r) {
         if (r.panel && !inPanel) return false
+        if (r.type === "part" && !Layouts.partsFor(kcm.cfg_layoutMode ?? 2).some(p => p.id === r.part)) return false      // the layout in use has no such part
         if (!Model.whenMet(r.when, k => kcm["cfg_" + k])) return false
         return !searching || titleHit || rowHit(r)
     }

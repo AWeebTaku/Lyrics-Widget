@@ -9,7 +9,7 @@
 
 // Receives the browser's "up next" list (YouTube Music) from the companion Chrome extension, so
 // lyrics can be fetched ahead of time. Listens on 127.0.0.1 only, opt-in, and only accepts
-// POST /queue from a browser extension (Origin chrome-extension://...) carrying the widget's
+// POST /queue and POST /poll from a browser extension (Origin chrome-extension://...) carrying the widget's
 // marker header, so ordinary web pages cannot talk to it.
 class BrowserQueue : public QObject
 {
@@ -27,6 +27,11 @@ public:
     bool hasReceived() const { return m_have; }
     int ageSec() const { return m_have ? int(m_age.elapsed() / 1000) : -1; }  // since the last queue arrived
 
+    // For when the browser's own Next / Previous does nothing (Chrome's media controls sometimes stop answering until the browser
+    // restarts): ask the extension to press the page's own button. The extension collects the request with POST /poll.
+    void request(const QString &cmd);                                   // "next" or "previous"
+    bool extensionAlive(int maxAgeSec = 5) const { return m_polled.isValid() && m_polled.elapsed() < maxAgeSec * 1000LL; }
+
 signals:
     void received(); // a fresh queue arrived
 
@@ -41,4 +46,6 @@ private:
     QString m_currentId;
     QElapsedTimer m_age;
     bool m_have = false;
+    QString m_cmd;                 // the skip waiting for the extension
+    QElapsedTimer m_cmdAge, m_polled;
 };

@@ -98,9 +98,8 @@ settings dialog at a time), so several widgets can have their settings open toge
 | Lyrics | what is shown, text, colors, effects (shadow, outline, highlight bar), timing, hover buttons, position |
 | Visualizer | style, colors, how it reacts to the music, position |
 | Audio input | where the sound comes from, what is drawn, level and pitch range, equalizer |
-| Card | layout, background, cover, buttons, seek bar, title and details, the pill for panels |
+| Card | layout, then each part with all its settings (background, cover, buttons, seek bar, title and details, lyrics and visualizer, corner buttons), the pill for panels |
 | Looks | ready-made looks, random look, look of the day, your own saved looks |
-| Layout | hide, move, resize and fade the parts of a card, in pixels |
 | Sources | your own lyric files, next songs, the Spotify app, YouTube Music, other players |
 | Lyrics library | get, edit, retime and save lyrics |
 
@@ -114,8 +113,9 @@ How the pages work:
   settings from other pages, and the General page follows.
 - **Colors from the cover.** Pick it in **Visualizer, Colors, Color mode**, or turn on **Use colors from the album cover** on
   the Lyrics page.
-- **Edit the layout** (Layout page). Turn any part of a layout on or off, move it, resize it and fade it, for each layout on its
-  own. Positions are X and Y in pixels on a snap grid. "Only this" shows one part and hides the rest.
+- **Each part in one place** (Card page). A part's group (Background, Cover, Buttons, Seek bar, Title and details, ...) has its
+  style and color settings and, above them, whether it is shown, its X, Y, Width, Height and opacity in pixels. The changes
+  belong to the layout in use, so each layout keeps its own. **Reset this layout** puts them back.
 - **Search and notices.** Each page has a search box. If the lyrics, visualizer or card is off, a notice at the top of its page
   turns it on, and that also sets the General switch.
 - **Same layout everywhere.** Labels have no units; the unit is in the box (` px`, ` %`, ` s`). Positions are X and Y, sizes
@@ -174,6 +174,12 @@ For look-ahead on YouTube Music, install the small extension from this project (
 If it stays empty, look at the extension's service worker console. YouTube changes its page now and then, so
 `extension/page.js` may need a small update. If you change the port in the widget, change `PORT` in `extension/background.js`
 too. From a terminal: `curl -i http://127.0.0.1:8899/ping` and `curl -s http://127.0.0.1:8899/status`.
+
+The same extension is a back-up for Next and Previous. Chrome's media controls for YouTube Music sometimes stop answering (the
+widget's buttons and the keyboard's media keys alike) until Chrome is restarted. When the song has not changed 1.5 seconds
+after you press Next or Previous in the widget, and the extension is running, it presses the page's own button. This needs the
+queue option above to be on, a song playing in the tab, and the extension at version 0.2.0 or newer (reload it in
+`chrome://extensions` after updating the widget).
 
 **Sources, Next songs, Check the next songs** shows what both the Spotify app and the extension can see, with one line each
 saying what works and what to fix.

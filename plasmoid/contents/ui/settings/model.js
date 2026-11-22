@@ -22,7 +22,9 @@
 //   eq                           the equalizer bands
 //   source                       the audio capture source, with a list of what is available
 //   presets                      the visualizer look manager
-//   layoutedit                   the editor for the parts of a card layout (stored as JSON text)
+//   part    part                 one part of the card (surface, art, ring, info, controls, progress, clock, lyrics, viz, tools, nudge):
+//                                on or off, X, Y, Width, Height and opacity in the layout in use (the edits are stored in layoutEdits)
+//   layouttools                  the buttons that reset those edits (stored as JSON text, key layoutEdits)
 //   spotify / browser / sites    the player-source tools on the Sources page
 //   info    text                 a paragraph
 // Conventions: a label is a short noun phrase in sentence case with no unit; the unit is `unit.suffix` (" px", " %", " s", " ms", " Hz"),
@@ -227,21 +229,16 @@ const audio = [
     ] }
 ]
 
-// ---- Layout
-const layoutSections = [
-    { id: "edit", title: "Edit the layout", desc: "Hide, move, resize, fade.", plain: true, rows: [
-        { key: "layoutEdits", type: "layoutedit", label: "" }
-    ] }
-]
-
 // ---- Card
 const cardSections = [
     { id: "layout", title: "Layout", desc: "How the card is arranged.", open: true, rows: [
         { key: "layoutMode", type: "combo", label: "Layout", options: ["Classic", "Mirrored", "Inline", "Hero wave", "Stacked", "Orbit", "Poster", "Slim strip", "Compact (no art)", "Icon (cover in a progress ring)"], values: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11], hint: "The card is turned on in General." },
         { key: "cardAccentSource", type: "combo", label: "Accent color", options: ["Same as the lyrics", "The Plasma accent", "A color of my own"] },
-        { key: "customAccent", type: "color", label: "My accent", when: { key: "cardAccentSource", in: [2] } }
+        { key: "customAccent", type: "color", label: "My accent", when: { key: "cardAccentSource", in: [2] } },
+        { key: "layoutEdits", type: "layouttools", label: "Changes to this layout" }
     ] },
     { id: "surface", title: "Background and glow", desc: "Corners and glow.", rows: [
+        { type: "part", part: "surface", label: "On or off, place and size" },
         { key: "cardSurface", type: "combo", label: "Background", options: ["None", "Color", "Art backdrop", "Glass", "Liquid glass", "Atmosphere", "Solid"] },
         { key: "panelColor", type: "color", alpha: true, label: "Color", when: { key: "cardSurface", in: [1, 6] } },
         { key: "glassTint", type: "combo", label: "Glass tint", options: ["Clear", "Dark", "Light", "The accent"], when: { key: "cardSurface", in: [3] } },
@@ -256,6 +253,8 @@ const cardSections = [
         { key: "ambientGlow", type: "int", label: "Glow around the card", min: 0, max: 100, hint: "Needs the visualizer.", off: "Off" }
     ] },
     { id: "cover", title: "Cover", desc: "The album picture.", rows: [
+        { type: "part", part: "art", label: "On or off, place and size" },
+        { type: "part", part: "ring", label: "Progress ring round the cover" },
         { key: "artShape", type: "combo", label: "Shape", options: ["Sharp", "Rounded", "Squircle", "Circle", "Vinyl record", "CD"] },
         { key: "artFormat", type: "combo", label: "Format", options: ["Square", "Wide (4:3)"], when: { key: "artShape", in: [0, 1, 2] } },
         { key: "artSize", type: "int", label: "Size", unit: { suffix: " px" }, min: 32, max: 400 },
@@ -273,6 +272,7 @@ const cardSections = [
         { key: "artClick", type: "combo", label: "Click on the cover", options: ["Nothing", "Play / pause", "Show the details"] }
     ] },
     { id: "buttons", title: "Buttons", desc: "Previous, play, next.", rows: [
+        { type: "part", part: "controls", label: "On or off, place and size" },
         { key: "controlsShow", type: "combo", label: "Show", options: ["Never", "When the pointer is over the card", "Always"] },
         { key: "dockStyle", type: "combo", label: "Look", options: ["Glass", "Soft", "Outline", "Tinted", "Bare", "Accent play button", "My own QML file"], when: { key: "controlsShow", in: [1, 2] } },
         { key: "customButtonsFile", type: "file", folder: "buttons", label: "Buttons file", when: { key: "dockStyle", in: [6] } },
@@ -282,6 +282,7 @@ const cardSections = [
         { key: "showShuffleRepeat", type: "bool", label: "Shuffle and repeat", when: { key: "controlsShow", in: [1, 2] } }
     ] },
     { id: "seek", title: "Seek bar", desc: "Song progress.", rows: [
+        { type: "part", part: "progress", label: "On or off, place and size" },
         { key: "progressStyle", type: "combo", label: "Style", options: ["None", "Sleek", "Minimal", "Glow pulse", "Pill", "Waveform", "Squiggle", "Segmented", "Dotted", "Capsule", "Time only", "Ring round the cover", "My own QML file"] },
         { key: "customProgressFile", type: "file", folder: "progress", label: "Seek bar file", when: { key: "progressStyle", in: [12] } },
         { key: "progressColorSource", type: "combo", label: "Color", options: ["The card's accent", "The text color", "The Plasma accent", "A color of my own"] },
@@ -294,7 +295,10 @@ const cardSections = [
         { key: "doubleClickSkip", type: "bool", label: "Double click skips 10 s" }
     ] },
     { id: "text", title: "Title and details", desc: "Name and details.", rows: [
+        { type: "part", part: "info", label: "On or off, place and size" },
         { key: "trackTextStyle", type: "combo", label: "Look", options: ["Plain", "Shadow", "Frosted plate"] },
+        { key: "titleColorSource", type: "combo", label: "Title color", options: ["The card's accent", "The text color", "The Plasma accent", "A color of my own"] },
+        { key: "customTitleColor", type: "color", label: "My title color", when: { key: "titleColorSource", in: [3] } },
         { key: "titleSize", type: "int", label: "Title size", unit: { suffix: " px" }, min: 9, max: 48 },
         { key: "textAlign", type: "combo", label: "Alignment", options: ["By the layout", "Left", "Center", "Right"] },
         { key: "trackShowAlbum", type: "bool", label: "Show the album" },
@@ -310,6 +314,7 @@ const cardSections = [
         { key: "detailAbout", type: "bool", label: "Show: Text about the artist", when: { key: "onlineInfo", in: "positive" } }
     ] },
     { id: "poster", title: "Poster arrangement", desc: "Poster layout only.", rows: [
+        { type: "part", part: "clock", label: "On or off, place and size" },
         { key: "posterLines", type: "int", label: "Title lines", min: 1, max: 3, when: { key: "layoutMode", in: [8] } },
         { key: "posterVizBehind", type: "bool", label: "Music behind the title", when: { key: "layoutMode", in: [8] } },
         { key: "posterVizOpacity", type: "int", label: "Music strength", unit: { suffix: " %" }, min: 5, max: 100, when: { key: "layoutMode", in: [8] } },
@@ -320,6 +325,14 @@ const cardSections = [
         { key: "orbitRotate", type: "bool", label: "The ring turns slowly", when: { key: "layoutMode", in: [7] } },
         { key: "orbitCoverPulse", type: "bool", label: "The cover breathes with the bass", when: { key: "layoutMode", in: [7] } },
         { key: "orbitGlowRing", type: "bool", label: "A glowing ring", when: { key: "layoutMode", in: [7] } }
+    ] },
+    { id: "inside", title: "Lyrics and visualizer", desc: "Where they sit in the card.", rows: [
+        { type: "part", part: "lyrics", label: "Lyrics: on or off, place and size" },
+        { type: "part", part: "viz", label: "Visualizer: on or off, place and size" }
+    ] },
+    { id: "extras", title: "Corner buttons", desc: "Other lyrics, library, sync.", rows: [
+        { type: "part", part: "tools", label: "Corner buttons: on or off, place" },
+        { type: "part", part: "nudge", label: "Sync row: on or off, place" }
     ] },
     { id: "behavior", title: "Pointer", desc: "Mouse over the card.", rows: [
         { key: "scrollVolume", type: "bool", label: "Scroll changes the volume" },
@@ -388,8 +401,6 @@ const pages = [
     { id: "card", title: "Card", icon: "view-media-playlist", subtitle: "Cover, title, buttons, seek bar.",
       banner: { key: "showCard", text: "The card is off.", button: "Turn it on" }, preview: "card", sections: cardSections },
     { id: "looks", title: "Looks", icon: "preferences-desktop-theme", subtitle: "Ready-made looks, and your own.", preview: "viz", sections: looks },
-    { id: "layout", title: "Layout", icon: "view-grid", subtitle: "Hide, move and resize the parts of a card.",
-      banner: { key: "showCard", text: "The card is off.", button: "Turn it on" }, preview: "card", sections: layoutSections },
     { id: "sources", title: "Sources", icon: "folder-music", subtitle: "Where lyrics come from.", sections: sources }
 ]
 

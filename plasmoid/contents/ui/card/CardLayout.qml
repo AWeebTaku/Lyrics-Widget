@@ -29,6 +29,7 @@ Item {
     // where the cover comes from: the player's picture, or a YouTube video's own
     readonly property string artSource: player.thumbUrl !== "" && (cfg.artThumbnail === 1 || player.artUrl === "") ? player.thumbUrl : player.artUrl
     readonly property color controlsColor: CardColors.pick(cfg.controlsColorSource, accent, textColor, systemAccent, cfg.customControlColor)
+    readonly property color titleColor: CardColors.pick(cfg.titleColorSource, accent, textColor, systemAccent, cfg.customTitleColor)
     readonly property color progressColor: CardColors.pick(cfg.progressColorSource, accent, textColor, systemAccent, cfg.customProgressColor)
     readonly property bool customOk: cfg.allowCustomQml
     readonly property bool orbitShowsCover: !geo.orbit || cfg.orbitCenter <= 1
@@ -181,7 +182,7 @@ Item {
         maxHeadlineLines: root.mode === 8 ? root.cfg.posterLines : 2
         align: root.infoAlign
         visible: root.geo.info !== null && !root.orbitTitleInside
-        textColor: root.textColor; dimColor: root.dimColor
+        textColor: root.textColor; titleColor: root.titleColor; dimColor: root.dimColor
         fontFamily: root.fontFamily
         onHoveredChanged: if (hovered && root.cfg.trackDetails === 3) hoverFlip.restart()
         onClicked: if (root.cfg.trackDetails === 2) root.detailsOpen = !root.detailsOpen
@@ -200,7 +201,7 @@ Item {
         height: root.geo.vizRect ? root.geo.vizRect.h * 0.28 : 0
         title: root.player.title; artist: root.player.artist
         align: Text.AlignHCenter; titleSize: Math.max(12, root.cfg.titleSize - 2); scroll: root.cfg.trackScroll; calm: root.calm
-        textColor: root.textColor; dimColor: root.dimColor; fontFamily: root.fontFamily
+        textColor: root.textColor; titleColor: root.titleColor; dimColor: root.dimColor; fontFamily: root.fontFamily
     }
     // which player this is, and a button to switch when there are two
     Row {

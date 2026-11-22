@@ -17,6 +17,7 @@ Item {
     property int maxHeadlineLines: 2
     property int align: Text.AlignLeft
     property color textColor: "white"
+    property color titleColor: textColor     // the song title (the artist keeps dimColor)
     property color dimColor: "#b0ffffff"
     property string fontFamily: ""
     property bool hovered: false
@@ -77,7 +78,7 @@ Item {
             visible: root.headline
             width: parent.width
             text: root.title
-            color: root.textColor
+            color: root.titleColor
             font.pixelSize: Math.max(22, Math.min(54, root.height * 0.34))
             font.bold: true
             font.family: root.fontFamily
@@ -88,7 +89,7 @@ Item {
             style: root.textStyle === 1 ? Text.Raised : Text.Normal
             styleColor: "#aa000000"
         }
-        Line { visible: !root.headline; text: root.title; size: root.titleSize; bold: true; color: root.textColor }
+        Line { visible: !root.headline; text: root.title; size: root.titleSize; bold: true; color: root.titleColor }
         Line { text: root.artist; size: root.headline ? 16 : 12; color: root.dimColor; visible: root.artist !== "" }
         Line { text: root.album; size: 11; color: root.dimColor; visible: root.showAlbum && root.album !== ""; opacity: 0.8 }
     }

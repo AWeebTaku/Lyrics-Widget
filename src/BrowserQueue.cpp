@@ -87,9 +87,20 @@ void BrowserQueue::handle(QTcpSocket *s, const QByteArray &req)
     } else if (line.startsWith("POST /queue") && fromExtension && marked) {
         parseQueue(req.mid(hdrEnd + 4));
         s->write(response(204, "No Content"));
+    } else if (line.startsWith("POST /poll") && fromExtension && marked) {
+        m_polled.restart();
+        const bool fresh = !m_cmd.isEmpty() && m_cmdAge.isValid() && m_cmdAge.elapsed() < 5000;   // an old request is dropped, not carried out late
+        s->write(response(200, "OK", QJsonDocument(QJsonObject{{QStringLiteral("cmd"), fresh ? m_cmd : QString()}}).toJson(QJsonDocument::Compact)));
+        m_cmd.clear();
     } else {
         s->write(response(403, "Forbidden"));
     }
+}
+
+void BrowserQueue::request(const QString &cmd)
+{
+    m_cmd = cmd;
+    m_cmdAge.restart();
 }
 
 void BrowserQueue::parseQueue(const QByteArray &body)

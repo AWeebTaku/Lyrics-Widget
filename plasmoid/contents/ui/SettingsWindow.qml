@@ -17,7 +17,7 @@ QQC2.ApplicationWindow {
     property var live: null               // the widget's lyrics controller: the previews can show the song playing now
     property string widgetName: ""        // what this widget is set to show (its layout), so the windows can be told apart
     property int current: 0
-    property var seen: [true, false, false, false, false, false, false, false]
+    property var seen: [true, false, false, false, false, false, false]
     property string note: ""
     signal libraryRequested()
 
@@ -45,7 +45,7 @@ QQC2.ApplicationWindow {
 
     readonly property var pages: Model.pages
     readonly property var files: ({ general: "GeneralPanel", lyrics: "LyricsPanel", visualizer: "VisualizerPanel", audio: "AudioPanel",
-                                    card: "CardPanel", looks: "LooksPanel", layout: "LayoutPanel", sources: "SourcesPanel" })
+                                    card: "CardPanel", looks: "LooksPanel", sources: "SourcesPanel" })
 
     function panel(i) { return panels.itemAt(i) ? panels.itemAt(i).item : null }
     function load() {

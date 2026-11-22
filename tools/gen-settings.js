@@ -16,7 +16,7 @@ const qml = { Bool: "bool", Int: "int", Double: "real", String: "string", String
 
 // model page -> file
 const files = { general: "configGeneral.qml", lyrics: "configLyrics.qml", visualizer: "configVisualizer.qml", audio: "configAudio.qml",
-                card: "configCard.qml", looks: "configLooks.qml", layout: "configLayout.qml", sources: "configAccounts.qml" };
+                card: "configCard.qml", looks: "configLooks.qml", sources: "configAccounts.qml" };
 
 function page(p) {
     const decl = M.pageKeys(p).map(k => {

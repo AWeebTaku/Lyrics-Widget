@@ -13,11 +13,11 @@ for (const m of xml.matchAll(/<entry name="(\w+)" type="(\w+)">([\s\S]*?)<\/entr
 
 // which main.xml types a row type may store in
 const stores = { bool: ["Bool"], int: ["Int"], real: ["Double"], color: ["String"], text: ["String"], file: ["String"], font: ["String"],
-                 flow: ["Int"], palette: ["Int"], pair: ["Int"], align: ["Int"], colors: ["String"], eq: ["StringList"], source: ["String"], sites: ["String"], layoutedit: ["String"] };
-const noKey = ["presets", "spotify", "queuecheck", "browsercheck", "browser", "info"];
+                 flow: ["Int"], palette: ["Int"], pair: ["Int"], align: ["Int"], colors: ["String"], eq: ["StringList"], source: ["String"], sites: ["String"], layouttools: ["String"] };
+const noKey = ["presets", "part", "spotify", "queuecheck", "browsercheck", "browser", "info"];
 const seenKeys = {};
 const pageFiles = { general: "configGeneral.qml", lyrics: "configLyrics.qml", visualizer: "configVisualizer.qml", audio: "configAudio.qml",
-                    card: "configCard.qml", looks: "configLooks.qml", layout: "configLayout.qml", sources: "configAccounts.qml" };
+                    card: "configCard.qml", looks: "configLooks.qml", sources: "configAccounts.qml" };
 
 function defOf(k) { return entries[k] ? entries[k].def : undefined; }
 function inRange(v, lo, hi) { return +v >= lo && +v <= hi; }
@@ -36,7 +36,7 @@ for (const p of M.pages) {
             if (noKey.includes(r.type)) { check(!r.key && !r.keys, `${where}: a ${r.type} row has no key`); continue; }
             if (r.type === "pair" || r.type === "align") check(Array.isArray(r.keys) && r.keys.length === 2, `${where}: needs two keys`);
             else check(!!r.key, `${where}: no key`);
-            check(r.label || r.type === "layoutedit", `${where}: no label`);
+            check(r.label, `${where}: no label`);
             // conventions: no unit in a label (it is in the box), no stray offText, a pair names its two boxes
             check(!/\((px|%|s|ms|Hz)\)/.test(r.label || ""), `${where}: put the unit in unit.suffix, not in the label`);
             check(r.offText === undefined, `${where}: use off, not offText`);
@@ -129,7 +129,7 @@ check(/SettingsWindow\.qml/.test(mainQml) && /contextualActions/.test(mainQml), 
 check(/removeInternalAction\("configure"\)/.test(mainQml) && /Configure %1/.test(mainQml), "the menu has one Configure entry: Plasma's own is replaced by the widget's, not joined by a second");
 
 // the files the renderer needs exist, and the old settings code is gone
-for (const f of ["SettingsPage", "Section", "Field", "LayoutEditor", "ColorSwatch", "AlignPicker", "EqEditor", "ColorSpec", "PresetsPanel", "SourceField", "SpotifyCheck", "BrowserSetupRow", "SitesList"])
+for (const f of ["SettingsPage", "Section", "Field", "LayoutPart", "LayoutTools", "ColorSwatch", "AlignPicker", "EqEditor", "ColorSpec", "PresetsPanel", "SourceField", "SpotifyCheck", "BrowserSetupRow", "SitesList"])
     check(fs.existsSync(ui + "settings/" + f + ".qml"), `settings/${f}.qml is missing`);
 for (const f of ["card/SchemaForm.qml", "card/schema.js", "PageHeader.qml", "PillTab.qml", "PillTabBar.qml", "PanelStack.qml", "LazyTab.qml", "audioviz/ConfigVisualizer.qml", "audioviz/ConfigCava.qml"])
     check(!fs.existsSync(ui + f), `${f} is old settings code and should be gone`);

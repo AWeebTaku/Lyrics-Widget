@@ -114,8 +114,8 @@ public:
     QString loopStatus() const { const MprisPlayer *p = m_watcher.active(); return p ? p->loop() : QStringLiteral("None"); }
     void setLoopStatus(const QString &m) { if (MprisPlayer *p = m_watcher.active()) p->setLoop(m); }
     Q_INVOKABLE void playPause() { if (MprisPlayer *p = m_watcher.active()) p->playPause(); }
-    Q_INVOKABLE void nextTrack() { if (MprisPlayer *p = m_watcher.active()) p->next(); }
-    Q_INVOKABLE void previousTrack() { if (MprisPlayer *p = m_watcher.active()) p->previous(); }
+    Q_INVOKABLE void nextTrack() { skip(true); }
+    Q_INVOKABLE void previousTrack() { skip(false); }
     Q_INVOKABLE void seekToSec(double sec) { if (MprisPlayer *p = m_watcher.active()) p->setPositionUs(qint64(sec * 1e6)); }
     Q_INVOKABLE void seekBySec(double sec) { if (MprisPlayer *p = m_watcher.active()) p->seekRelativeUs(qint64(sec * 1e6)); }
     Q_INVOKABLE double positionSec() const { const MprisPlayer *p = m_watcher.active(); return p ? p->positionUs() / 1e6 : 0; } // the song's own clock
@@ -199,6 +199,7 @@ private:
     void clearLyrics();
     void schedulePrefetch();
     void prefetchNext();
+    void skip(bool forward);   // Next / Previous, with the extension as a back-up for YouTube Music
     void romanizeKanji(bool force = false);
     void updateArt(const QString &url);
     void refreshPalette();
