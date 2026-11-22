@@ -13,8 +13,8 @@ for (const m of xml.matchAll(/<entry name="(\w+)" type="(\w+)">([\s\S]*?)<\/entr
 
 // which main.xml types a row type may store in
 const stores = { bool: ["Bool"], int: ["Int"], real: ["Double"], color: ["String"], text: ["String"], file: ["String"], font: ["String"],
-                 flow: ["Int"], palette: ["Int"], pair: ["Int"], align: ["Int"], colors: ["String"], eq: ["StringList"], source: ["String"], sites: ["String"], layouttools: ["String"] };
-const noKey = ["presets", "part", "spotify", "queuecheck", "browsercheck", "browser", "info"];
+                 flow: ["Int"], palette: ["Int"], pair: ["Int"], align: ["Int"], colors: ["String"], eq: ["StringList"], source: ["String"], sites: ["String"] };
+const noKey = ["presets", "part", "layouttools", "spotify", "queuecheck", "browsercheck", "browser", "info"];
 const seenKeys = {};
 const pageFiles = { general: "configGeneral.qml", lyrics: "configLyrics.qml", visualizer: "configVisualizer.qml", audio: "configAudio.qml",
                     card: "configCard.qml", looks: "configLooks.qml", sources: "configAccounts.qml" };
@@ -83,6 +83,8 @@ for (const p of M.pages) {
 }
 // the preset manager's own keys belong to the Looks page
 for (const k of ["vizUserPresets", "vizFavourites"]) (seenKeys[k] = seenKeys[k] || []).push("looks");
+// the layout edits belong to the Card page (the part editors write them)
+(seenKeys.layoutEdits = seenKeys.layoutEdits || []).push("card");
 
 // every setting on exactly one page; only two have none
 const noPage = ["showPanel", "debugMode"];   // showPanel: only read once, to move the old background setting to the card surface
@@ -151,9 +153,10 @@ const P = new Function(fs.readFileSync(ui + "viz/presets.js", "utf8").replace(".
 for (const [k, spec] of Object.entries(P.keys)) {
     const e = entries[k];
     check(e, `preset key ${k} is not in main.xml`);
-    if (e) check((spec.type === "boolean" && e.type === "Bool") || (spec.type === "number" && e.type === "Int") || (spec.type === "string" && e.type === "String"), `preset key ${k}: type differs from main.xml`);
+    if (e) check((spec.type === "boolean" && e.type === "Bool") || (spec.type === "number" && e.type === (spec.real ? "Double" : "Int")) || (spec.type === "string" && e.type === "String"), `preset key ${k}: type differs from main.xml`);
     if (e && spec.type === "number") check(+e.def === spec.def, `preset key ${k}: default ${spec.def} differs from main.xml ${e.def}`);
     if (e && spec.type === "boolean") check((e.def === "true") === spec.def, `preset key ${k}: boolean default differs`);
+    if (e && spec.type === "string") check(e.def === spec.def, `preset key ${k}: default ${spec.def} differs from main.xml ${e.def}`);
 }
 if (failures) process.exit(1);
 console.log("settings: ok");

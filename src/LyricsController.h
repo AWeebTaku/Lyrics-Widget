@@ -47,6 +47,8 @@ class LyricsController : public QObject
     Q_PROPERTY(bool shuffle READ shuffle WRITE setShuffle NOTIFY controlsChanged)
     Q_PROPERTY(QString loopStatus READ loopStatus WRITE setLoopStatus NOTIFY controlsChanged) // None, Track, Playlist
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
+    // A short message about something the user just did (a button that had nothing to do, or what it found), shown over the widget for a few seconds
+    Q_PROPERTY(QString notice READ notice NOTIFY noticeChanged)
     Q_PROPERTY(QStringList lines READ lines NOTIFY linesChanged)
     Q_PROPERTY(QStringList roman READ roman NOTIFY linesChanged) // parallel to lines, "" = none
     Q_PROPERTY(bool synced READ synced NOTIFY linesChanged)
@@ -120,6 +122,8 @@ public:
     Q_INVOKABLE void seekBySec(double sec) { if (MprisPlayer *p = m_watcher.active()) p->seekRelativeUs(qint64(sec * 1e6)); }
     Q_INVOKABLE double positionSec() const { const MprisPlayer *p = m_watcher.active(); return p ? p->positionUs() / 1e6 : 0; } // the song's own clock
     QString status() const { return m_status; }
+    QString notice() const { return m_notice; }
+    void flash(const QString &s) { m_notice = s; emit noticeChanged(); m_noticeTimer.start(4500); }
     QStringList lines() const { return m_lines; }
     QStringList roman() const { return m_roman; }
     bool synced() const { return m_synced; }
@@ -133,6 +137,9 @@ public:
     bool suspended() const { return m_suspended; }
     void setSuspended(bool on);
     bool playing() const { const auto *p = m_watcher.active(); return p && p->playing(); }
+    // what the lyrics library page follows, so it edits the song this widget is showing and no other
+    Track currentTrack() const { return m_track; }
+    QString songKey() const { return m_key; }
     bool anyPlayer() const { return m_anyPlayer; }
     void setAnyPlayer(bool on) { m_anyPlayer = on; m_watcher.setAnyPlayer(on); emit prefetchCountChanged(); }
     QString allowedSites() const { return m_sites; }
@@ -173,6 +180,7 @@ signals:
     void localLyricsChanged();
     void controlsChanged();
     void statusChanged();
+    void noticeChanged();
     void linesChanged();
     void currentIndexChanged();
     void offsetMsChanged();
@@ -227,6 +235,9 @@ private:
     QStringList m_skip;        // sources already shown for this song (see refreshLyrics)
     QString m_shown;           // source id of the lyrics on screen
     bool m_refreshing = false, m_libEdited = false, m_libIgnored = false;
+    int m_dupSkips = 0;        // copies identical to what is on screen skipped while looking for other lyrics
+    QString m_notice;
+    QTimer m_noticeTimer;
     StoredLyrics m_applied;    // what is on screen, to put back when refreshing finds nothing
     void restoreAfterRefresh(const QString &note);
     LyricsFetcher m_fetcher;

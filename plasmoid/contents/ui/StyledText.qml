@@ -100,7 +100,7 @@ Item {
         elide: root.elide
         font.family: root.cfg.fontFamily
         font.pixelSize: root.pixelSize
-        font.weight: root.isCurrent ? root.cfg.currentWeight : root.cfg.sideWeight
+        font.weight: Math.max(1, (root.isCurrent ? root.cfg.currentWeight : root.cfg.sideWeight) || 400)       // 0 before the page has loaded its settings
         font.italic: root.cfg.fontItalic
         font.underline: root.cfg.fontUnderline
         font.letterSpacing: root.cfg.letterSpacing

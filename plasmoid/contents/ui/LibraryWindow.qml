@@ -7,6 +7,8 @@ import "wide.js" as Wide
 
 // The lyrics library in a window of its own (opened by the widget's hover button)
 QQC2.ApplicationWindow {
+    id: win
+    property var live: null      // the widget's own controller: the library edits the song the widget shows
     title: i18n("Lyric Widget: lyrics library")
     // as wide as the settings window (see wide.js) so the lyrics have room, but never larger than the screen it opens on
     readonly property real availW: Screen.desktopAvailableWidth > 0 ? Screen.desktopAvailableWidth : 1280
@@ -29,6 +31,7 @@ QQC2.ApplicationWindow {
     }
 
     LibraryEditor {
+        live: win.live
         anchors.fill: parent
         anchors.margins: Kirigami.Units.largeSpacing
     }

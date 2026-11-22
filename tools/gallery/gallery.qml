@@ -20,6 +20,7 @@ Item {
         const d = Presets.defaults()
         for (const k in d) Cfg[k] = d[k]
         for (const k in preset.settings) Cfg[k] = preset.settings[k]
+        for (const k in preset.shot) Cfg[k] = preset.shot[k]       // what the picture needs that the look leaves to the owner (lyrics off for the GPU looks)
         Cfg.controlsShow = 2
         const o = {}
         for (const k in Presets.keys) o[k] = Cfg[k]

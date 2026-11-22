@@ -72,19 +72,12 @@ ColumnLayout {
         Cap { visible: ed.part.opacity; text: i18n("Opacity") }
         PxBox { visible: ed.part.opacity; unit: " %"; from: 0; to: 100; stepSize: 5; shown: ed.e.opacity ?? 100
                 onValueModified: ed.edit("opacity", value) }
-        Cap { visible: !!ed.part.text; text: i18n("Title size") }
-        PxBox {
-            visible: !!ed.part.text
-            from: 0; to: 96; shown: ed.e.size ?? 0
-            textFromValue: (v) => v === 0 ? i18n("As set") : v + " px"
-            onValueModified: ed.edit("size", value)
-        }
         QQC2.Button {
             text: i18n("Reset")
             icon.name: "edit-undo"
             Layout.columnSpan: 4
             enabled: Object.keys(ed.e).length > 0
-            onClicked: { for (const f of ["show", "dx", "dy", "dw", "dh", "opacity", "size"]) ed.edit(f, undefined) }
+            onClicked: { for (const f of ["show", "dx", "dy", "dw", "dh", "opacity"]) ed.edit(f, undefined) }
         }
     }
 }

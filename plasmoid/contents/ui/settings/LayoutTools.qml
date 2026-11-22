@@ -11,9 +11,11 @@ RowLayout {
     required property var kcm
     spacing: Kirigami.Units.smallSpacing
     QQC2.Button {
+        Layout.fillWidth: false
         text: i18n("Reset this layout")
         icon.name: "edit-undo"
         onClicked: tools.kcm.cfg_layoutEdits = Layouts.resetEdits(tools.kcm.cfg_layoutEdits, tools.kcm.cfg_layoutMode ?? 2)
     }
-    QQC2.Button { text: i18n("Reset every layout"); onClicked: tools.kcm.cfg_layoutEdits = "{}" }
+    QQC2.Button { Layout.fillWidth: false; text: i18n("Reset every layout"); onClicked: tools.kcm.cfg_layoutEdits = "{}" }
+    Item { Layout.fillWidth: true }
 }

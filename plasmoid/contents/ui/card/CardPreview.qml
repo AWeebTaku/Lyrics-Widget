@@ -67,6 +67,7 @@ Item {
 
     Item {
         id: stage
+        x: Math.max(0, (root.width - root.natural[0] * root.scaleFit) / 2)       // centered when there is room
         width: root.natural[0]; height: root.natural[1]
         scale: root.scaleFit
         transformOrigin: Item.TopLeft
@@ -90,7 +91,7 @@ Item {
             id: cardViz
             animate: !root.still
             still: root.still
-            visible: (root.viz.showVisualizer || root.g.vizForced) && root.g.vizPlace !== null
+            visible: root.viz.showVisualizer && root.g.vizPlace !== null
             color: "transparent"
             showListen: false
             listening: root.listening
@@ -130,7 +131,7 @@ Item {
     }
     ListenPill {
         visible: !root.still
-        anchors { right: parent.right; top: parent.top; margins: 6 }
+        anchors { right: parent.right; top: parent.top; margins: 6 }      // always the top right corner of the preview area, whatever the card's size
         idleText: qsTr("Listen to my music")
         activeText: qsTr("Listening: stop")
         active: root.listening

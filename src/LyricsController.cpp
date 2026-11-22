@@ -41,7 +41,9 @@ bool isCredit(const QString &t)
 
 LyricsController::LyricsController(QObject *parent) : QObject(parent), m_watcher(this), m_fetcher(this)
 {
-    m_status = QStringLiteral("Waiting for Spotify or Chrome…");
+    m_status = QStringLiteral("Nothing is playing yet: start a song in Spotify or your browser.");
+    m_noticeTimer.setSingleShot(true);
+    connect(&m_noticeTimer, &QTimer::timeout, this, [this] { m_notice.clear(); emit noticeChanged(); });
 
     m_timer.setSingleShot(true);
     m_timer.setTimerType(Qt::PreciseTimer);
@@ -225,7 +227,7 @@ void LyricsController::skip(bool forward)
     const qint64 pos = p->positionUs();
     const bool ytm = p->url().contains(QLatin1String("music.youtube.com"));
     forward ? p->next() : p->previous();
-    if (!ytm || !m_browser.enabled())
+    if (!ytm)
         return;
     QTimer::singleShot(1500, this, [this, p, key, pos, forward] {
         MprisPlayer *q = m_watcher.active();
@@ -233,8 +235,12 @@ void LyricsController::skip(bool forward)
             return; // another player is active now, or this one is gone
         // Previous restarts a song that has played a while: the position going back counts as it working
         const bool done = key != q->title() + QLatin1Char('\n') + q->url() || (!forward && q->positionUs() + 1000000 < pos);
-        if (!done && m_browser.extensionAlive())
+        if (done)
+            return;
+        if (m_browser.enabled() && m_browser.extensionAlive())
             m_browser.request(forward ? QStringLiteral("next") : QStringLiteral("previous"));
+        else
+            setStatus(QStringLiteral("Chrome is not answering Next and Previous. Install or reload the Lyric Widget browser extension (Settings, Sources) and turn on its queue option."));
     });
 }
 
@@ -341,7 +347,7 @@ void LyricsController::onTrackChanged()
         m_requestId = 0;
         clearLyrics();
         emit trackInfoChanged();
-        setStatus(QStringLiteral("Waiting for Spotify or Chrome…"));
+        setStatus(QStringLiteral("Nothing is playing yet: start a song in Spotify or your browser."));
         return;
     }
 
@@ -528,8 +534,18 @@ void LyricsController::onResult(quint64 id, const LyricsResult &r, bool final)
         return; // a newer track superseded this request
 
     if (m_refreshing && !r.networkError && r.synced.isEmpty()) {
-        if (final) // nothing else out there: the lyrics from before come back, the next press starts over
+        if (final) { // nothing else out there: the lyrics from before come back, the next press starts over
             restoreAfterRefresh(QStringLiteral("No other lyrics found"));
+            flash(QStringLiteral("No other lyrics found. Press again to start over."));
+        }
+        return;
+    }
+    // Providers hold the same text under several ids: a copy identical to what is on screen is not "other lyrics", so skip it
+    if (m_refreshing && final && !r.synced.isEmpty() && r.synced == m_applied.synced && !r.sourceId.isEmpty() && m_dupSkips < 4) {
+        ++m_dupSkips;
+        m_skip << r.sourceId;
+        m_track.skip = m_skip;
+        m_requestId = m_fetcher.lookup(m_track);
         return;
     }
     if (r.networkError)
@@ -584,6 +600,7 @@ void LyricsController::onResult(quint64 id, const LyricsResult &r, bool final)
         m_store.putLibrary(e);
         m_libraryStamp = m_store.libraryStamp(m_key); // no reload: it is on screen already
         m_refreshing = false;
+        flash(QStringLiteral("Other lyrics from %1 (kept for this song).").arg(r.provider));
     }
     if (r.found)
         m_shown = r.sourceId;
@@ -1088,14 +1105,19 @@ void LyricsController::refreshLyrics()
 {
     if (m_key.isEmpty() || !m_lyricsEnabled || m_suspended || m_refreshing)
         return;
+    // the lyrics on screen hide the status line, so these answers are flashed over the widget
     if (m_libIgnored) {
         setStatus(QStringLiteral("Lyrics are turned off for this song: use Get lyrics in the library to look for them"));
+        flash(QStringLiteral("Lyrics are turned off for this song. Use Get lyrics in the library to look for them."));
         return;
     }
     if (m_libEdited) {
         setStatus(QStringLiteral("You edited these lyrics: remove them in the library to look again"));
+        flash(QStringLiteral("You saved these lyrics yourself. Remove them in the library to look for others."));
         return;
     }
+    m_dupSkips = 0;
+    flash(QStringLiteral("Looking for other lyrics…"));
     if (!m_shown.isEmpty() && !m_skip.contains(m_shown))
         m_skip << m_shown;
     m_track.skip = m_skip;

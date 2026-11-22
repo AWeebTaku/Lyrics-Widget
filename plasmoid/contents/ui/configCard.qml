@@ -18,14 +18,10 @@ KCM.SimpleKCM {
     property int cfg_cardAccentSourceDefault
     property string cfg_customAccent
     property string cfg_customAccentDefault
-    property string cfg_layoutEdits
-    property string cfg_layoutEditsDefault
     property int cfg_cardSurface
     property int cfg_cardSurfaceDefault
     property string cfg_panelColor
     property string cfg_panelColorDefault
-    property int cfg_glassTint
-    property int cfg_glassTintDefault
     property int cfg_surfaceBlur
     property int cfg_surfaceBlurDefault
     property int cfg_surfaceDim
@@ -202,6 +198,8 @@ KCM.SimpleKCM {
     property int cfg_pillDockStyleDefault
     property int cfg_pillEqStyle
     property int cfg_pillEqStyleDefault
+    property string cfg_layoutEdits
+    property string cfg_layoutEditsDefault
 
     SettingsPage { kcm: page; pageId: "card" }
 }

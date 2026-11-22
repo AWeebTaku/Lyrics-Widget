@@ -43,6 +43,7 @@ public:
     ~LyricsStore();
     std::optional<StoredLyrics> get(const QString &key);
     void put(const QString &key, const StoredLyrics &value);
+    void erase(const QString &key);                 // forget a cached result (a wrong match must not come back)
     int offset(const QString &key);                 // per-track sync nudge, ms
     bool hasOffset(const QString &key);
     void setOffset(const QString &key, int ms, const QString &provider = {});

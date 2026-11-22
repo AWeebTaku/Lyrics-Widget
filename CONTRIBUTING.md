@@ -12,7 +12,7 @@ Open an issue and fill in the form. The most useful facts are the widget version
 See "For developers" in the [README](README.md). In short:
 
 ```
-./build.sh                                  # whole widget, installed into /usr (asks for sudo)
+./scripts/build.sh                                  # whole widget, installed into /usr (asks for sudo)
 node tests/settings.test.js                 # also layouts.test.js and presets.test.js
 cmake -B build -S . -G Ninja -DBUILD_TESTS=ON && cmake --build build && ctest --test-dir build
 ```

@@ -2,9 +2,9 @@
 # Clean build + install + restart. Wipes: build dir, cached lyrics, plasmashell QML cache.
 # Keeps: your per-song sync offsets (and what the widget learned from them) in lyrics.db.
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."      # the repository root
 
-./setup-romaji.sh || echo "(romanization helper not set up; the widget falls back to kakasi)"
+./scripts/setup-romaji.sh || echo "(romanization helper not set up; the widget falls back to kakasi)"
 rm -rf build
 # cached lyrics only (re-fetched on play); the offsets / nudges / wins tables stay
 python3 - "$HOME/.local/share/plasmashell/lyrics.db" <<'PY'

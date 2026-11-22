@@ -87,6 +87,16 @@ std::optional<StoredLyrics> LyricsStore::get(const QString &key)
     return s;
 }
 
+void LyricsStore::erase(const QString &key)
+{
+    if (!m_db.isOpen())
+        return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("DELETE FROM lyrics_v6 WHERE key=?"));
+    q.addBindValue(key);
+    q.exec();
+}
+
 void LyricsStore::put(const QString &key, const StoredLyrics &v)
 {
     if (!m_db.isOpen())

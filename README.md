@@ -20,8 +20,10 @@ Website: <https://aweebtaku.github.io/Lyrics-Widget/> (the source is `docs/index
 - **Audio visualizer** with 23 styles (bars, wave, blocks, LED meter, mountain, oscilloscope, orb, ribbon, plasma, terrain,
   tunnel and more), colors, glow and a battery saver.
 - **Media card** with 10 layouts, 6 cover shapes (sharp, rounded, squircle, circle, record, CD), 11 seek bar styles, several
-  backgrounds and a pill for Plasma panels. Every part of every layout can be hidden, moved, resized and faded.
-- **36 built-in looks** you can apply in one click, save, share as text and randomize.
+  backgrounds and a pill for Plasma panels. Every part (background, cover, title, buttons, seek bar, lyrics, visualizer) has
+  its own group in Settings with its colors, and its on/off switch, place and size, per layout.
+- **36 built-in looks** you can apply in one click, save, share as text and randomize. A look never takes over your lyrics
+  settings, and **Go back** returns to the setup it replaced.
 - **Cover colors** for the lyrics, the visualizer and the card.
 - **Your own styles:** visualizers, seek bars and buttons written as QML files (see [docs/custom-styles.md](docs/custom-styles.md)).
 - **Look-ahead:** lyrics of the next songs in a shuffled queue are fetched in advance.
@@ -34,12 +36,12 @@ You need KDE Plasma 6 and the packages below. On Arch Linux:
 ```
 sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
 git clone https://github.com/AWeebTaku/Lyrics-Widget && cd Lyrics-Widget
-./build.sh
+./scripts/build.sh
 ```
 
-`build.sh` (the whole widget from this folder) sets up the romanization helper (first run only, about 30 seconds and 270 MB), builds, installs into `/usr` with
+`scripts/build.sh` (the whole widget from this folder) sets up the romanization helper (first run only, about 30 seconds and 270 MB), builds, installs into `/usr` with
 `sudo`, clears the cached lyrics table and Plasma's QML cache, and restarts plasmashell. Your settings and per-song sync
-offsets are kept. (If you downloaded a zip instead of cloning, run `bash build.sh`.)
+offsets are kept. (If you downloaded a zip instead of cloning, run `bash scripts/build.sh`.)
 
 Then right-click the desktop, choose **Add or Manage Widgets**, drag **Lyric Widget** onto it and play something.
 Right-click the widget and choose **Configure…** for the settings.
@@ -55,7 +57,7 @@ bash lyric-widget.sh update       # install it
 bash lyric-widget.sh uninstall    # remove the widget (add --purge to delete your lyrics library too)
 ```
 
-`--dry-run` shows what any command would do, `-y` skips the questions, `--version v2.1.0` picks a release. It installs
+`--dry-run` shows what any command would do, `-y` skips the questions, `--version v2.4.0` picks a release. It installs
 packages itself on Arch Linux; on other systems it lists what is missing. It asks for your password only for the install
 into `/usr`, and keeps its files in `~/.local/share/lyric-widget`.
 
@@ -84,7 +86,7 @@ cd packaging/arch && makepkg -si                              # an Arch package
 
 **Check a system:** `bash /usr/share/lyric-widget/doctor.sh` only reads and prints what is missing.
 
-**Remove everything:** `./uninstall.sh --dry-run` shows what it would do, `./uninstall.sh` asks first. It keeps the source
+**Remove everything:** `./scripts/uninstall.sh --dry-run` shows what it would do, `./scripts/uninstall.sh` asks first. It keeps the source
 folder. Remove the browser extension yourself in the browser.
 
 ## Settings
@@ -108,9 +110,12 @@ How the pages work:
 - **Live preview.** Lyrics, Visualizer and Card each show a live, animated preview at the top. Press **Listen to my music** on
   it to see your real music: the visualizer draws the sound playing now (needs `cava`), the card shows the real title, cover,
   colors and lyric line, and the lyrics preview shows the real lines.
-- **Looks.** The Looks page shows the 36 looks as picture cards in groups (Favorites, Visualizer, Cards and layouts,
-  Mine). Click one to apply it. **Random look**, **Look of the day** and **Save current look** are cards too. A look can set
-  settings from other pages, and the General page follows.
+- **Looks.** The Looks page shows the 36 looks as picture cards (filter: All, Favorites, Visualizer, Cards and layouts, Mine).
+  Click one to apply it. A look turns the visualizer on (and the card, for the card looks), sets the visualizer and card
+  settings it is about and leaves your lyrics, reduced motion and battery saver alone. The setup it replaces is saved as
+  **Before the last look** under Mine, and **Go back** returns to it. **Random look**, **Look of the day** and **Save current
+  look** sit above the cards; a saved look is a full snapshot of the visualizer and the card, including edits to the layout.
+  The widget's own right-click menu has **Random look** and **Go back to before the last look** too.
 - **Colors from the cover.** Pick it in **Visualizer, Colors, Color mode**, or turn on **Use colors from the album cover** on
   the Lyrics page.
 - **Each part in one place** (Card page). A part's group (Background, Cover, Buttons, Seek bar, Title and details, ...) has its
@@ -179,7 +184,10 @@ The same extension is a back-up for Next and Previous. Chrome's media controls f
 widget's buttons and the keyboard's media keys alike) until Chrome is restarted. When the song has not changed 1.5 seconds
 after you press Next or Previous in the widget, and the extension is running, it presses the page's own button. This needs the
 queue option above to be on, a song playing in the tab, and the extension at version 0.2.0 or newer (reload it in
-`chrome://extensions` after updating the widget).
+`chrome://extensions` after updating the widget). From version 0.3.0 the extension also puts Next and Previous back into
+Chrome's media controls (it registers the page's skip actions again every few seconds), so the Plasma Media Player's buttons
+and the keyboard's media keys work again too instead of being greyed out. If Chrome still does not answer, the widget says so
+over the lyrics.
 
 **Sources, Next songs, Check the next songs** shows what both the Spotify app and the extension can see, with one line each
 saying what works and what to fix.
@@ -198,7 +206,7 @@ pronunciation, and a `.chapters` or `.cue` file puts chapter marks on the seek b
 
 ### Japanese romanization
 
-`./setup-romaji.sh` (run by `build.sh`) makes a private Python environment with MeCab and UniDic. Nothing is installed
+`scripts/setup-romaji.sh` (run by `build.sh`) makes a private Python environment with MeCab and UniDic. Nothing is installed
 system-wide and no root is needed. Without it the widget falls back to a simpler converter.
 
 ## Troubleshooting
@@ -207,7 +215,7 @@ system-wide and no root is needed. Without it the widget falls back to a simpler
 |---|---|
 | No lyrics for a song | `mkdir -p ~/.cache/lyric-widget && touch ~/.cache/lyric-widget/debug`, restart plasmashell, replay; then `journalctl --user -u plasma-plasmashell -n 300 \| grep -E "netease\|kugou\|publish"` shows each provider's pick |
 | Browser shows `Song \| YouTube Music` with no artist | install and enable **Plasma Browser Integration** |
-| Wrong Japanese readings | make sure `./setup-romaji.sh` finished; readings come from the furigana service when it has the song |
+| Wrong Japanese readings | make sure `scripts/setup-romaji.sh` finished; readings come from the furigana service when it has the song |
 | Visualizer is blank | see "Audio visualizer" above, then `bash /usr/share/lyric-widget/doctor.sh` |
 | Spotify route does not connect | see "Spotify app" above; the port must answer `curl http://127.0.0.1:8088/json` |
 | A setting turns itself off after Apply | rebuild: older builds let the General page write its old value back |
@@ -252,21 +260,22 @@ interfaces are unofficial and can change or rate-limit without notice.
 ## For developers
 
 ```
-CMakeLists.txt  build.sh  uninstall.sh  setup-romaji.sh
-.github/    issue and pull request templates, workflows/release.yml (publishes a release from a version tag)
-CONTRIBUTING.md  SECURITY.md  CODE_OF_CONDUCT.md
-src/        C++ plugin (QML module org.lyricwidget): player watching, lyric lookup and matching, cache, library,
-            visualizer analysis, window placement
-plasmoid/   the widget: metadata.json, contents/ui (widget, card, visualizer, settings), contents/config (main.xml: the
-            settings schema), contents/kwin (the window-centering script)
-romaji/     the MeCab + UniDic helper run in the private Python environment
-extension/  browser extension (Manifest V3) for the YouTube Music queue
-examples/   example visualizers, seek bars and buttons you can copy
-tools/      doctor.sh (checks a system), gen-settings.js (writes the settings pages), gallery/ (renders the gallery)
-tests/      table-driven checks of lyric matching, layouts, presets and settings
-docs/       the website (index.html), the gallery, and the guide to writing your own styles
-packaging/  arch/PKGBUILD for Arch Linux; release/lyric-widget.sh, the one-file installer, updater and uninstaller attached to
-            each release, and notes.py, which writes the release notes
+CMakeLists.txt                 builds and installs the plugin, the widget, the extension and the helper files
+README.md  CHANGELOG.md  LICENSE  NOTICE  CONTRIBUTING.md  SECURITY.md  CODE_OF_CONDUCT.md
+src/         C++ plugin (QML module org.lyricwidget): player watching, lyric lookup and matching, cache, library,
+             visualizer analysis, window placement
+plasmoid/    the widget: metadata.json, contents/ui (widget, card, visualizer, settings), contents/config (main.xml: the
+             settings schema), contents/kwin (the window-centering script)
+extension/   browser extension (Manifest V3): the YouTube Music queue and the Next / Previous controls
+romaji/      the MeCab + UniDic helper run in the private Python environment
+examples/    example visualizers, seek bars and buttons you can copy
+scripts/     build.sh (build and install from this folder), uninstall.sh, setup-romaji.sh, doctor.sh (checks a system)
+packaging/   arch/PKGBUILD for Arch Linux; release/lyric-widget.sh, the one-file installer, updater and uninstaller attached to
+             each release, and notes.py, which writes the release notes
+docs/        the website (index.html and its pictures), the gallery, and the guide to writing your own styles
+tests/       table-driven checks of lyric matching, layouts, presets and settings
+tools/       gen-settings.js (writes the settings pages), gallery/ (renders the look pictures)
+.github/     issue and pull request templates, workflows/release.yml (publishes a release from a version tag)
 ```
 
 - **Settings are defined once**, in `plasmoid/contents/ui/settings/model.js`. After changing it, run
@@ -281,9 +290,9 @@ packaging/  arch/PKGBUILD for Arch Linux; release/lyric-widget.sh, the one-file 
   ```
 
 - **Make a release:** raise `Version` in `plasmoid/metadata.json`, add a `## <version>` section to `CHANGELOG.md`, commit, then
-  `git tag v2.3.0 && git push origin v2.3.0`. The workflow in `.github/workflows/release.yml` publishes the release with
+  `git tag v3.0.0 && git push origin v3.0.0`. The workflow in `.github/workflows/release.yml` publishes the release with
   `lyric-widget.sh` and `SHA256SUMS`. The notes are `.github/release-notes.md` plus that CHANGELOG section,
-  so every release reads the same (`python3 packaging/release/notes.py v2.3.0` previews them).
+  so every release reads the same (`python3 packaging/release/notes.py v3.0.0` previews them).
 - **Redraw the gallery** after changing a look: `tools/gallery/render.sh` (needs a display and a built backend). It writes
   `docs/gallery/*.png` and `docs/gallery.md`, and copies the pictures into the app for the settings window.
 

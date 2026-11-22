@@ -6,11 +6,11 @@
 #   - the build output in this folder.
 # The source code in this folder is kept.
 #
-#   ./uninstall.sh              asks for confirmation
-#   ./uninstall.sh -y           no confirmation
-#   ./uninstall.sh --dry-run    only prints what it would do
+#   ./scripts/uninstall.sh              asks for confirmation
+#   ./scripts/uninstall.sh -y           no confirmation
+#   ./scripts/uninstall.sh --dry-run    only prints what it would do
 set -u
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."      # the repository root
 
 DRY=0
 YES=0

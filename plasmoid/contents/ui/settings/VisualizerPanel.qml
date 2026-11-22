@@ -11,8 +11,8 @@ QQC2.ScrollView {
     implicitHeight: 100
     contentWidth: availableWidth
     clip: true
-    readonly property var keys: ["visualizerStyle","waveMode","fillWave","pinnedDownSides","drawInactiveBlocks","roundedBars","centeredBars","waveSimulateWaveform","orientation","barWidth","barGap","blockHeight","blockSpacing","ribbonCurvature","ribbonFullness","allowCustomQml","customQmlFile","circleMode","circleModeSize","circleModeFill","vizColorMode","vizPalette","vizRainbowSpeed","barColors","waveFillColors","inactiveBlockColors","vizColorFlow","vizColorByLevel","vizGlow","vizGlowColorMode","vizSmoothing","vizReleaseMs","vizPeakFall","vizBassWeight","vizTrebleWeight","vizTaper","vizSpacing","fadeVizWhenPaused","expanding","length","minimumLength","fillPanel","vizWidthPct","vizHeightPct","vizHAlign","vizVAlign","vizOffsetX","vizOffsetY"]
-    readonly property var defaults: ({"visualizerStyle":1,"waveMode":0,"fillWave":true,"pinnedDownSides":false,"drawInactiveBlocks":false,"roundedBars":false,"centeredBars":false,"waveSimulateWaveform":false,"orientation":1,"barWidth":2,"barGap":5,"blockHeight":2,"blockSpacing":2,"ribbonCurvature":100,"ribbonFullness":100,"allowCustomQml":false,"customQmlFile":"","circleMode":false,"circleModeSize":0.5,"circleModeFill":false,"vizColorMode":0,"vizPalette":0,"vizRainbowSpeed":30,"barColors":"{}","waveFillColors":"{}","inactiveBlockColors":"{}","vizColorFlow":0,"vizColorByLevel":false,"vizGlow":0,"vizGlowColorMode":0,"vizSmoothing":0,"vizReleaseMs":350,"vizPeakFall":40,"vizBassWeight":100,"vizTrebleWeight":100,"vizTaper":false,"vizSpacing":0,"fadeVizWhenPaused":false,"expanding":false,"length":200,"minimumLength":50,"fillPanel":false,"vizWidthPct":100,"vizHeightPct":60,"vizHAlign":1,"vizVAlign":2,"vizOffsetX":0,"vizOffsetY":0})
+    readonly property var keys: ["visualizerStyle","waveMode","fillWave","pinnedDownSides","drawInactiveBlocks","roundedBars","centeredBars","waveSimulateWaveform","orientation","barWidth","barGap","blockHeight","blockSpacing","ribbonCurvature","ribbonFullness","allowCustomQml","customQmlFile","circleMode","circleModeSize","circleModeFill","vizColorMode","vizPalette","vizRainbowSpeed","barColors","waveFillColors","inactiveBlockColors","vizColorFlow","vizColorByLevel","vizGlow","vizGlowColorMode","vizSmoothing","vizReleaseMs","vizPeakFall","vizBassWeight","vizTrebleWeight","vizTaper","vizSpacing","fadeVizWhenPaused","vizWidthPct","vizHeightPct","vizHAlign","vizVAlign","vizOffsetX","vizOffsetY"]
+    readonly property var defaults: ({"visualizerStyle":1,"waveMode":0,"fillWave":true,"pinnedDownSides":false,"drawInactiveBlocks":false,"roundedBars":false,"centeredBars":false,"waveSimulateWaveform":false,"orientation":1,"barWidth":2,"barGap":5,"blockHeight":2,"blockSpacing":2,"ribbonCurvature":100,"ribbonFullness":100,"allowCustomQml":false,"customQmlFile":"","circleMode":false,"circleModeSize":0.5,"circleModeFill":false,"vizColorMode":0,"vizPalette":0,"vizRainbowSpeed":30,"barColors":"{}","waveFillColors":"{}","inactiveBlockColors":"{}","vizColorFlow":0,"vizColorByLevel":false,"vizGlow":0,"vizGlowColorMode":0,"vizSmoothing":0,"vizReleaseMs":350,"vizPeakFall":40,"vizBassWeight":100,"vizTrebleWeight":100,"vizTaper":false,"vizSpacing":0,"fadeVizWhenPaused":false,"vizWidthPct":100,"vizHeightPct":60,"vizHAlign":1,"vizVAlign":2,"vizOffsetX":0,"vizOffsetY":0})
 
     property int cfg_visualizerStyle
     property int cfg_visualizerStyleDefault
@@ -90,14 +90,6 @@ QQC2.ScrollView {
     property int cfg_vizSpacingDefault
     property bool cfg_fadeVizWhenPaused
     property bool cfg_fadeVizWhenPausedDefault
-    property bool cfg_expanding
-    property bool cfg_expandingDefault
-    property int cfg_length
-    property int cfg_lengthDefault
-    property int cfg_minimumLength
-    property int cfg_minimumLengthDefault
-    property bool cfg_fillPanel
-    property bool cfg_fillPanelDefault
     property int cfg_vizWidthPct
     property int cfg_vizWidthPctDefault
     property int cfg_vizHeightPct
@@ -111,12 +103,24 @@ QQC2.ScrollView {
     property int cfg_vizOffsetY
     property int cfg_vizOffsetYDefault
 
+    // true while load() fills the page: the preview waits for it (it would redraw after every one of the page's settings)
+    property bool loading: true
     function load(cfg) {
         if (!cfg) return
+        loading = true
         for (const k of keys) {
             panel["cfg_" + k] = cfg[k]
             panel["cfg_" + k + "Default"] = defaults[k]
         }
+        loading = false
+    }
+    // how many settings this page holds that differ from the saved ones (an edit not applied yet)
+    function changes(cfg) {
+        let n = 0
+        if (!cfg) return 0
+        for (const k of keys)
+            if (JSON.stringify(panel["cfg_" + k]) !== JSON.stringify(cfg[k])) ++n
+        return n
     }
     function save(cfg) {
         let changed = 0

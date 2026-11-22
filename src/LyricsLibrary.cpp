@@ -1,5 +1,7 @@
 #include "LyricsLibrary.h"
 
+#include "LyricsController.h"
+
 #include "Keys.h"
 #include "LrcParser.h"
 
@@ -13,7 +15,7 @@
 LyricsLibrary::LyricsLibrary(QObject *parent) : QObject(parent), m_watcher(this), m_fetcher(this)
 {
     m_watcher.setWatchPosition(true); // playheadSec() must follow seeks the player does not announce
-    connect(&m_watcher, &PlayerWatcher::trackChanged, this, &LyricsLibrary::onTrack);
+    connect(&m_watcher, &PlayerWatcher::trackChanged, this, [this] { if (!m_follow) onTrack(); });
     connect(&m_fetcher, &LyricsFetcher::result, this, [this](quint64 id, const LyricsResult &r, bool final) {
         if (id != m_searchId || !final)
             return;
@@ -51,18 +53,39 @@ void LyricsLibrary::setStatus(const QString &s, bool busy)
     emit statusChanged();
 }
 
+void LyricsLibrary::follow(QObject *controller)
+{
+    auto *c = qobject_cast<LyricsController *>(controller);
+    if (c == m_follow)
+        return;
+    if (m_follow)
+        disconnect(m_follow, nullptr, this, nullptr);
+    m_follow = c;
+    if (c)
+        connect(c, &LyricsController::trackInfoChanged, this, &LyricsLibrary::onTrack);
+    onTrack();
+}
+
 void LyricsLibrary::onTrack()
 {
-    const MprisPlayer *p = m_watcher.active();
     Track t;
-    if (p && !p->title().isEmpty()) {
-        t.title = p->title();
-        t.artist = p->artist();
-        t.album = p->album();
-        t.id = Keys::trackId(p->url());
-        t.durationSec = int(p->lengthUs() / 1'000'000);
+    QString key;
+    if (m_follow) {
+        if (m_follow->hasPlayer() && !m_follow->songKey().isEmpty()) {
+            t = m_follow->currentTrack();
+            key = m_follow->songKey();      // the widget's own key: saved lyrics are found again by it
+        }
+    } else {
+        const MprisPlayer *p = m_watcher.active();
+        if (p && !p->title().isEmpty()) {
+            t.title = p->title();
+            t.artist = p->artist();
+            t.album = p->album();
+            t.id = Keys::trackId(p->url());
+            t.durationSec = int(p->lengthUs() / 1'000'000);
+        }
+        key = t.title.isEmpty() ? QString() : Keys::songKey(t);
     }
-    const QString key = t.title.isEmpty() ? QString() : Keys::songKey(t);
     m_track = t;
     if (key == m_key && !key.isEmpty()) {
         emit trackChanged();
@@ -205,6 +228,7 @@ void LyricsLibrary::remove()
     if (m_key.isEmpty())
         return;
     m_store.removeLibrary(m_key);
+    m_store.erase(m_key); // also the cached result: it may be the wrong match the user came here to replace, and would be shown again
     m_saved = m_ignored = false;
     emit savedChanged();
     setStatus(tr("Removed from the library. The widget looks the song up again."));
@@ -228,6 +252,8 @@ const QRegularExpression &leadStamp()
 
 double LyricsLibrary::playheadSec() const
 {
+    if (m_follow)
+        return m_follow->hasPlayer() ? m_follow->positionSec() : -1;
     const MprisPlayer *p = m_watcher.active();
     return p ? p->positionUs() / 1e6 : -1;
 }

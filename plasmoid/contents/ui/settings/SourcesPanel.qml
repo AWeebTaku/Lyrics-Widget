@@ -33,12 +33,24 @@ QQC2.ScrollView {
     property string cfg_allowedSites
     property string cfg_allowedSitesDefault
 
+    // true while load() fills the page: the preview waits for it (it would redraw after every one of the page's settings)
+    property bool loading: true
     function load(cfg) {
         if (!cfg) return
+        loading = true
         for (const k of keys) {
             panel["cfg_" + k] = cfg[k]
             panel["cfg_" + k + "Default"] = defaults[k]
         }
+        loading = false
+    }
+    // how many settings this page holds that differ from the saved ones (an edit not applied yet)
+    function changes(cfg) {
+        let n = 0
+        if (!cfg) return 0
+        for (const k of keys)
+            if (JSON.stringify(panel["cfg_" + k]) !== JSON.stringify(cfg[k])) ++n
+        return n
     }
     function save(cfg) {
         let changed = 0

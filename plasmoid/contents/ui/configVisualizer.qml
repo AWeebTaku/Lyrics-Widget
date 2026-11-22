@@ -88,14 +88,6 @@ KCM.SimpleKCM {
     property int cfg_vizSpacingDefault
     property bool cfg_fadeVizWhenPaused
     property bool cfg_fadeVizWhenPausedDefault
-    property bool cfg_expanding
-    property bool cfg_expandingDefault
-    property int cfg_length
-    property int cfg_lengthDefault
-    property int cfg_minimumLength
-    property int cfg_minimumLengthDefault
-    property bool cfg_fillPanel
-    property bool cfg_fillPanelDefault
     property int cfg_vizWidthPct
     property int cfg_vizWidthPctDefault
     property int cfg_vizHeightPct

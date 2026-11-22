@@ -31,7 +31,9 @@ Item {
     readonly property color controlsColor: CardColors.pick(cfg.controlsColorSource, accent, textColor, systemAccent, cfg.customControlColor)
     readonly property color titleColor: CardColors.pick(cfg.titleColorSource, accent, textColor, systemAccent, cfg.customTitleColor)
     readonly property color progressColor: CardColors.pick(cfg.progressColorSource, accent, textColor, systemAccent, cfg.customProgressColor)
-    readonly property bool customOk: cfg.allowCustomQml
+    readonly property bool customOk: !!cfg.allowCustomQml
+    // "Look up the song online" only counts while the details it feeds are on (Title and details, Details): a hidden switch never sends anything
+    readonly property bool onlineOn: !!cfg.onlineInfo && cfg.trackDetails !== 0
     readonly property bool orbitShowsCover: !geo.orbit || cfg.orbitCenter <= 1
     readonly property bool orbitTitleInside: geo.orbit && (cfg.orbitCenter === 1 || cfg.orbitCenter === 2)
     // one alignment setting: left, center or right, or "by the layout" (centered for stacked, orbit and poster)
@@ -46,7 +48,6 @@ Item {
     readonly property var vizPlace: geo.vizPlace         // where the visualizer is drawn (the layout's, or the Visualizer page's), null when hidden
     readonly property var surfaceRect: geo.surface       // the card's background: a part of the card, null when hidden
     readonly property bool vizFill: geo.vizFill
-    readonly property bool vizForced: geo.vizForced
     readonly property bool orbit: geo.orbit
     readonly property bool hasCard: mode !== 0 && mode !== 1
     readonly property bool wantsHeaderHidden: mode !== 0
@@ -65,11 +66,13 @@ Item {
     TrackDetails { id: online }
     Connections {
         target: root.player
-        function onTrackInfoChanged() { if (!root.previewMode && root.cfg.onlineInfo && root.hasCard) online.lookup(root.player.title, root.player.artist, root.player.album, root.player.lengthSec) }
+        function onTrackInfoChanged() { if (!root.previewMode && root.onlineOn && root.hasCard) online.lookup(root.player.title, root.player.artist, root.player.album, root.player.lengthSec) }
     }
+    function syncOnline() { if (onlineOn) online.lookup(player.title, player.artist, player.album, player.lengthSec); else online.clear() }
     Connections {
         target: root.previewMode ? null : root.cfg
-        function onOnlineInfoChanged() { if (root.cfg.onlineInfo) online.lookup(root.player.title, root.player.artist, root.player.album, root.player.lengthSec); else online.clear() }
+        function onOnlineInfoChanged() { root.syncOnline() }
+        function onTrackDetailsChanged() { root.syncOnline() }
     }
 
     // pointer: hover shows the buttons; the wheel changes the volume (when on). Handlers (not a MouseArea) so that the
@@ -156,7 +159,7 @@ Item {
             title: root.player.title; artist: root.player.artist; album: root.player.album
             lengthSec: root.player.lengthSec; positionSec: root.position
             volume: root.player.volume; shuffle: root.player.shuffle; loop: root.player.loopStatus
-            online: root.cfg.onlineInfo; busy: online.busy; year: root.cfg.detailYear ? online.year : ""; country: root.cfg.detailCountry ? online.country : ""; label: root.cfg.detailLabel ? online.label : ""; tags: root.cfg.detailTags ? online.tags : ""; about: root.cfg.detailAbout ? online.about : ""
+            online: root.onlineOn; busy: online.busy; year: root.cfg.detailYear ? online.year : ""; country: root.cfg.detailCountry ? online.country : ""; label: root.cfg.detailLabel ? online.label : ""; tags: root.cfg.detailTags ? online.tags : ""; about: root.cfg.detailAbout ? online.about : ""
             textColor: root.textColor; accent: root.accent
             clip: true
         }
@@ -189,7 +192,7 @@ Item {
         QQC2.ToolTip.visible: hovered && root.cfg.trackDetails === 1
         QQC2.ToolTip.delay: 300
         QQC2.ToolTip.text: root.player.title + "\n" + root.player.artist + (root.player.album ? "\n" + root.player.album : "")
-                           + (root.cfg.onlineInfo && (online.year || online.label) ? "\n" + [online.year, online.label].filter(x => x).join(" · ") : "")
+                           + (root.onlineOn && (online.year || online.label) ? "\n" + [online.year, online.label].filter(x => x).join(" · ") : "")
     }
 
     // orbit with the title in the middle of the ring (and the cover too when it is "cover and title")
@@ -228,7 +231,7 @@ Item {
         title: root.player.title; artist: root.player.artist; album: root.player.album
         lengthSec: root.player.lengthSec; positionSec: root.position
         volume: root.player.volume; shuffle: root.player.shuffle; loop: root.player.loopStatus
-        online: root.cfg.onlineInfo; busy: online.busy; year: root.cfg.detailYear ? online.year : ""; country: root.cfg.detailCountry ? online.country : ""; label: root.cfg.detailLabel ? online.label : ""; tags: root.cfg.detailTags ? online.tags : ""; about: root.cfg.detailAbout ? online.about : ""
+        online: root.onlineOn; busy: online.busy; year: root.cfg.detailYear ? online.year : ""; country: root.cfg.detailCountry ? online.country : ""; label: root.cfg.detailLabel ? online.label : ""; tags: root.cfg.detailTags ? online.tags : ""; about: root.cfg.detailAbout ? online.about : ""
         textColor: root.textColor; accent: root.accent
         z: 10
     }

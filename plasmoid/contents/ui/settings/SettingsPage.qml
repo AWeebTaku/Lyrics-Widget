@@ -20,14 +20,23 @@ Item {
     implicitHeight: col.implicitHeight + 2 * Kirigami.Units.largeSpacing
     implicitWidth: Kirigami.Units.gridUnit * 30
 
-    // ---- the settings for the preview: the page's unsaved values over the saved ones
+    // ---- the settings for the preview: every setting of the widget, as the pages show them now (an edit not yet applied counts).
+    // The preview draws the widget's own code, which reads far more than one page holds.
+    readonly property var cache: ({ live: null })     // a plain object: writing it does not make live() run again
     function live() {
+        // while the page fills itself the preview keeps what it has (one redraw afterwards, not one per setting)
+        if (kcm.loading && cache.live) return cache.live
         const o = {}
-        const keys = Object.keys(Presets.keys).concat(Model.pageKeys(page))
-        for (const k of keys) {
-            const v = kcm["cfg_" + k]
-            o[k] = v !== undefined ? v : Plasmoid.configuration[k]
+        const w = root.Window.window
+        for (const k of Plasmoid.configuration.keys()) o[k] = Plasmoid.configuration[k]
+        if (w && w.collect) w.collect(o)
+        if (!kcm.loading) {
+            for (const k of Object.keys(Presets.keys).concat(Model.pageKeys(page))) {
+                const v = kcm["cfg_" + k]
+                if (v !== undefined) o[k] = v
+            }
         }
+        cache.live = o
         return o
     }
 
@@ -47,11 +56,13 @@ Item {
             Layout.fillWidth: true
             implicitHeight: noticeRow.implicitHeight + 2 * Kirigami.Units.smallSpacing
             radius: T.radius
-            color: Qt.alpha(Kirigami.Theme.textColor, T.plate)
-            border.width: 1; border.color: Qt.alpha(Kirigami.Theme.textColor, T.hairline)
+            color: Qt.alpha(Kirigami.Theme.highlightColor, 0.12)
+            border.width: 1; border.color: Qt.alpha(Kirigami.Theme.highlightColor, 0.45)
             RowLayout {
                 id: noticeRow
                 anchors { fill: parent; margins: Kirigami.Units.smallSpacing; leftMargin: Kirigami.Units.largeSpacing }
+                spacing: Kirigami.Units.largeSpacing
+                Kirigami.Icon { source: "dialog-information"; implicitWidth: Kirigami.Units.iconSizes.smallMedium; implicitHeight: implicitWidth }
                 QQC2.Label { text: parent.parent.b ? parent.parent.b.text : ""; wrapMode: Text.WordWrap; Layout.fillWidth: true }
                 QQC2.Button {
                     text: parent.parent.b ? parent.parent.b.button : ""
@@ -73,23 +84,43 @@ Item {
                 placeholderText: i18n("Search these settings")
                 onTextChanged: root.query = text.trim().toLowerCase()
             }
+            QQC2.ToolButton {
+                visible: root.page.sections.length > 1 && root.query === ""
+                icon.name: "view-list-tree"; text: i18n("Open all")
+                display: QQC2.AbstractButton.TextBesideIcon
+                onClicked: root.openAll(true)
+            }
+            QQC2.ToolButton {
+                visible: root.page.sections.length > 1 && root.query === ""
+                icon.name: "view-list-details"; text: i18n("Close all")
+                display: QQC2.AbstractButton.TextBesideIcon
+                onClicked: root.openAll(false)
+            }
         }
+        // the preview sits on a quiet stage, centered, so it lines up with the controls below it
+        Rectangle {
+            visible: !!root.page.preview
+            Layout.fillWidth: true
+            Layout.preferredHeight: previewLoader.item ? previewLoader.item.implicitHeight + 2 * Kirigami.Units.largeSpacing : 0
+            radius: T.radius
+            color: "#181c26"           // dark in every theme: the "Listen to my music" pill (white text) sits in its corner
+            border.width: 1; border.color: Qt.alpha(Kirigami.Theme.textColor, T.hairline)
         Loader {
+            id: previewLoader
             active: !!root.page.preview
             visible: active
-            Layout.fillWidth: true
-            Layout.preferredHeight: active ? (item ? item.implicitHeight : 0) : 0
-            source: active ? ({ viz: "../viz/VizPreview.qml", card: "../card/CardPreview.qml", lyrics: "LyricsPreview.qml" })[root.page.preview] : ""
+            anchors { fill: parent; margins: Kirigami.Units.largeSpacing }
+            source: active ? ({ viz: "../viz/VizPreview.qml", card: "../card/CardPreview.qml", widget: "../card/CardPreview.qml", lyrics: "LyricsPreview.qml" })[root.page.preview] : ""
             onLoaded: {
                 item.s = Qt.binding(() => root.live())
-                if (root.page.preview === "card") {
-                    item.forceCard = true
+                if (root.page.preview === "card" || root.page.preview === "widget") {
+                    item.forceCard = root.page.preview === "card"      // "widget": what the widget will show now (lyrics, visualizer or card)
                     item.viz = Qt.binding(() => root.live())
                     item.accent = Qt.binding(() => Plasmoid.configuration.cardAccentSource === 1 ? Kirigami.Theme.highlightColor : "#e0875a")
                 } else {
                     item.still = Qt.binding(() => Plasmoid.configuration.reducedMotion)
                 }
-                if (root.page.preview === "card") {
+                if (root.page.preview === "card" || root.page.preview === "widget") {
                     item.still = Qt.binding(() => Plasmoid.configuration.reducedMotion)
                     item.live = Qt.binding(() => root.Window.window ? root.Window.window.live : null)     // the song playing now
                 }
@@ -98,6 +129,7 @@ Item {
                     item.live = Qt.binding(() => root.Window.window ? root.Window.window.live : null)     // the song playing now
                 }
             }
+        }
         }
 
         // ---- the sections
@@ -118,6 +150,12 @@ Item {
             text: i18n("Nothing here matches \"%1\".", root.query)
             opacity: T.muted
             Layout.alignment: Qt.AlignHCenter
+        }
+    }
+    function openAll(on) {
+        for (let i = 0; i < sectionsRepeater.count; ++i) {
+            const it = sectionsRepeater.itemAt(i)
+            if (it && !it.plain) it.open = on
         }
     }
     // is anything shown while searching? (the sections hide themselves when nothing in them matches)

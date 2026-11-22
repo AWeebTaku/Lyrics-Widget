@@ -2,13 +2,16 @@
 build/
 build-*/
 cmake-build-*/
-*.o
-*.so
-*.a
-compile_commands.json
+cmake-build-debug/
 CMakeUserPresets.json
 CMakeLists.txt.user
+compile_commands.json
 .cache/
+.clangd/
+*.o
+*.a
+*.so
+dist/
 
 # local data and tool state (never part of the project)
 .claude/
@@ -18,6 +21,7 @@ CMakeLists.txt.user
 *.db-wal
 *.db-shm
 spotify.json
+.env
 
 # scratch and test leftovers
 *.log
@@ -27,26 +31,19 @@ spotify.json
 *.bak
 scratch/
 tmp/
+core
+*.core
+.gdb_history
 
 # editors, system and python
-__pycache__/
-*.pyc
-node_modules/
 .idea/
 .vscode/
 *.swp
+*.swo
 *~
 .directory
 .DS_Store
-
-# more local leftovers
-.clangd/
-.gdb_history
-core
-*.core
-*.swo
 Thumbs.db
-.env
-
-# release packaging output
-dist/
+__pycache__/
+*.pyc
+node_modules/

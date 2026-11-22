@@ -7,6 +7,8 @@
 #include "LyricsStore.h"
 #include "PlayerWatcher.h"
 
+class LyricsController;
+
 // Behind the "Lyrics library" settings page: gets, edits, retimes and saves the lyrics of the song that is
 // playing. A saved song goes into the library table of lyrics.db, which wins over every provider and over
 // the cache, and survives rebuilds. The widget notices the change by itself.
@@ -35,6 +37,16 @@ public:
     QString words() const { return m_words; }
     QString origTitle() const { return m_origTitle; }
     QString origArtist() const { return m_origArtist; }
+    // The players the library looks at: the same two settings the widget has (otherwise it may pick another player than the widget does)
+    Q_PROPERTY(bool anyPlayer READ anyPlayer WRITE setAnyPlayer)
+    Q_PROPERTY(QString allowedSites READ allowedSites WRITE setAllowedSites)
+    bool anyPlayer() const { return m_any; }
+    void setAnyPlayer(bool on) { m_any = on; m_watcher.setAnyPlayer(on); }
+    QString allowedSites() const { return m_sites; }
+    void setAllowedSites(const QString &s) { m_sites = s; m_watcher.setSites(s.split(QLatin1Char(','), Qt::SkipEmptyParts)); }
+    // Follow the widget's own song (its controller) instead of looking for a player of its own: the song, its key and its position
+    // are then exactly the widget's, so what is saved here is what the widget loads.
+    Q_INVOKABLE void follow(QObject *controller);
     explicit LyricsLibrary(QObject *parent = nullptr);
 
     QString title() const { return m_track.title; }
@@ -82,7 +94,9 @@ private:
     LyricsFetcher m_fetcher;
     Track m_track;
     QString m_key, m_status, m_origTitle, m_origArtist, m_words;
-    bool m_saved = false, m_ignored = false, m_busy = false;
+    bool m_saved = false, m_ignored = false, m_busy = false, m_any = false;
+    QString m_sites;
+    LyricsController *m_follow = nullptr;
     quint64 m_searchId = 0;
     QStringList m_skip; // results of this search already shown: each press of Get lyrics shows the next one
     QString m_query;

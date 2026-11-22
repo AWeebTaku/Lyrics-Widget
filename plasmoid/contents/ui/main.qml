@@ -11,6 +11,7 @@ import "audioviz"
 import "card"
 import "card/layouts.js" as Layouts
 import "card/colors.js" as CardColors
+import "viz/presets.js" as Presets
 
 PlasmoidItem {
     id: root
@@ -23,8 +24,31 @@ PlasmoidItem {
             text: i18n("Configure %1…", Plasmoid.title)
             icon.name: "configure"
             onTriggered: root.openSettingsWindow()
+        },
+        PlasmaCore.Action {
+            text: i18n("Random look")
+            icon.name: "roll"
+            onTriggered: root.applyLook(Presets.randomPick(Presets.all(root.cfg.vizUserPresets, root.cfg.vizFavourites), ""))
+        },
+        PlasmaCore.Action {
+            text: i18n("Go back to before the last look")
+            icon.name: "edit-undo"
+            visible: Presets.parseUser(root.cfg.vizUserPresets).some(p => p.name === root.undoName)
+            onTriggered: root.applyLook(Presets.parseUser(root.cfg.vizUserPresets).find(p => p.name === root.undoName))
         }
     ]
+    // A look from the widget's menu does what picking it in Settings does: the setup it replaces is saved as "Before the last look"
+    readonly property string undoName: i18n("Before the last look")
+    function applyLook(p) {
+        if (!p) return
+        const w = settingsWindow.item           // an open settings window learns the new values too, so it does not write the old ones back
+        const set = (k, v) => { if (w) w.setKey(k, v); else cfg[k] = v }
+        const before = {}
+        for (const k in Presets.keys) before[k] = w ? w.get(k) : cfg[k]
+        set("vizUserPresets", Presets.saveUser(cfg.vizUserPresets, undoName, before))
+        for (const k in p.settings) set(k, p.settings[k])
+        cfg.writeConfig()
+    }
     function openSettingsWindow() {
         if (settingsWindow.item) { settingsWindow.item.raise(); settingsWindow.item.requestActivate() }
         else settingsWindow.active = true
@@ -47,7 +71,7 @@ PlasmoidItem {
         id: settingsLibrary      // the lyrics library, from the settings window (the widget's hover button opens the same window)
         active: false
         source: "LibraryWindow.qml"
-        onLoaded: { item.visible = true; item.closing.connect(() => settingsLibrary.active = false) }
+        onLoaded: { item.live = lyrics; item.visible = true; item.closing.connect(() => settingsLibrary.active = false) }
     }
 
     // On the desktop the widget is the card. In a panel it is the card, a small pill that opens the card, or (adaptive)
@@ -86,7 +110,7 @@ PlasmoidItem {
     Timer { id: openCard; interval: 350; onTriggered: root.expanded = true }
     Timer { id: closeCard; interval: 450; onTriggered: if (!root.pinned && !hover.hovered) root.expanded = false }
     // "Blur behind the card": let Plasma draw its own (blurred) background behind a glass card
-    Plasmoid.backgroundHints: cfg.compositorGlass && cfg.cardSurface !== 0 ? PlasmaCore.Types.DefaultBackground : PlasmaCore.Types.NoBackground
+    Plasmoid.backgroundHints: cfg.compositorGlass && (cfg.cardSurface === 3 || cfg.cardSurface === 4) ? PlasmaCore.Types.DefaultBackground : PlasmaCore.Types.NoBackground
     // Size: 0 = free, 1 = fixed width/height from settings, 2 = full screen width (+ height)
     // (a fixed size of 0 means "as small as possible": 1 px; a free widget can be dragged down to 1 px)
     readonly property real wantW: cfg.sizeMode === 2 ? Screen.width : (cfg.sizeMode === 1 ? Math.max(1, cfg.widthPx) : 0)
@@ -273,11 +297,11 @@ PlasmoidItem {
         }
 
         // the audio visualizer (the canvas renderer + cava), behind the lyrics;
-        // the Loader keeps cava off unless it is wanted and music is playing. Layouts built around the music
-        // (visualizer only, hero wave, orbit, poster) turn it on by themselves.
+        // the Loader keeps cava off unless it is wanted and music is playing. Show: Visualizer (General) decides: the layouts built
+        // around the music (hero wave, orbit, poster) need it on, and the looks that use them turn it on.
         Loader {
             id: vizLoader
-            active: (root.cfg.showVisualizer || card.vizForced) && card.vizPlace !== null && !lyrics.idle && (lyrics.playing || root.cfg.hideAfterSec > 0) && !root.suspended && !root.covered
+            active: root.cfg.showVisualizer && card.vizPlace !== null && !lyrics.idle && (lyrics.playing || root.cfg.hideAfterSec > 0) && !root.suspended && !root.covered
             source: "AudioViz.qml"
             onLoaded: {
                 item.tintFlow = Qt.binding(() => root.cfg.vizColorFlow)
@@ -446,6 +470,18 @@ PlasmoidItem {
         // Hover to nudge this song's timing (remembered per song): + = lyrics earlier, - = later.
         // Off by default; Settings -> Lyrics -> Lines and timing.
         HoverHandler { id: hover }
+        // what a button just did or could not do (looking for other lyrics, say), for a few seconds
+        Rectangle {
+            visible: lyrics.notice !== ""
+            z: 30
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 8 }
+            width: Math.min(parent.width - 24, noticeText.implicitWidth + 24)
+            height: noticeText.implicitHeight + 12
+            radius: height / 2
+            color: "#e0202020"
+            border.width: 1; border.color: "#40ffffff"
+            Text { id: noticeText; anchors.centerIn: parent; width: parent.width - 24; text: lyrics.notice; color: "white"; font.pixelSize: 12; wrapMode: Text.WordWrap; horizontalAlignment: Text.AlignHCenter }
+        }
         // Hover buttons, top right: look for other lyrics (saved to the library) and open the library
         Grid {
             visible: root.cfg.hoverButtons && hover.hovered && !lyrics.idle && card.toolsRect !== null
@@ -486,7 +522,7 @@ PlasmoidItem {
             id: libraryLoader
             active: false
             source: "LibraryWindow.qml"
-            onLoaded: { item.visible = true; item.closing.connect(() => libraryLoader.active = false) }
+            onLoaded: { item.live = lyrics; item.visible = true; item.closing.connect(() => libraryLoader.active = false) }
         }
         // on a card the sync row sits over the lyrics' edge: a soft backing keeps it readable (a sibling: a child of the Row would be laid out in it)
         Rectangle {

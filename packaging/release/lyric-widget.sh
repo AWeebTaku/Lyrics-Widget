@@ -110,7 +110,9 @@ do_install() {
     run sudo cmake --install "$src/build"
 
     say "Japanese romanization (optional, private Python environment, about 30 seconds the first time)"
-    if [ "$DRY" = 1 ]; then echo "+ $src/setup-romaji.sh"; else "$src/setup-romaji.sh" || echo "(not set up; the widget uses a simpler converter)"; fi
+    # the script moved to scripts/ in 3.0.0: an older release keeps it at the top
+    romaji="$src/scripts/setup-romaji.sh"; [ -f "$romaji" ] || romaji="$src/setup-romaji.sh"
+    if [ "$DRY" = 1 ]; then echo "+ $romaji"; else "$romaji" || echo "(not set up; the widget uses a simpler converter)"; fi
 
     say "Restarting Plasma"
     run rm -rf "$HOME/.cache/plasmashell/qmlcache"

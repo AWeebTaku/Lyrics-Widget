@@ -60,7 +60,7 @@ function layout(mode, W, H, art, pad, opts) {
     opts = opts || {}
     const gap = 10
     const o = { art: null, info: null, controls: null, progress: null, lyrics: r(0, 0, W, H), clock: null,
-                vizFill: false, orbit: false, headline: false, ring: false, vizForced: false, controlsAlign: "center", tools: null, toolsRow: false, nudge: null, mode: mode }
+                vizFill: false, orbit: false, headline: false, ring: false, controlsAlign: "center", tools: null, toolsRow: false, nudge: null, mode: mode }
     const a = Math.max(32, Math.min(art, H - 2 * pad, Math.round(W * 0.45)))
     const ctrlH = 36, progH = 22
     switch (mode) {
@@ -177,7 +177,6 @@ function layout(mode, W, H, art, pad, opts) {
     // the visualizer: in the area the layout gives it (behind the text), or over the whole card; otherwise (no card, or the icon)
     // the Position settings of the Visualizer page place it
     if (mode === 9) o.vizFill = true
-    o.vizForced = mode === 5 || mode === 7 || mode === 8     // the music is the point of these: the visualizer is on even if Show: Visualizer is off
     fit(o, W, H)
     placeExtras(o, W, H)
     // without a card the sync row sits a quarter of the way up, as it always did

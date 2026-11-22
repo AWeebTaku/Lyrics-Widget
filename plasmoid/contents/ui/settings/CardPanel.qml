@@ -11,8 +11,8 @@ QQC2.ScrollView {
     implicitHeight: 100
     contentWidth: availableWidth
     clip: true
-    readonly property var keys: ["layoutMode","cardAccentSource","customAccent","layoutEdits","cardSurface","panelColor","glassTint","surfaceBlur","surfaceDim","compositorGlass","panelRadius","surfaceGrain","surfaceShadow","surfaceEdge","panelGlow","ambientGlow","artShape","artFormat","artSize","artFit","artFocusH","artFocusV","artBorder","artGlow","artTilt","artReflect","artGreyPaused","artSpin","artSparks","artThumbnail","artFallback","artClick","controlsShow","dockStyle","customButtonsFile","controlsColorSource","customControlColor","showSkip","showShuffleRepeat","progressStyle","customProgressFile","progressColorSource","customProgressColor","timeLabels","seekHover","showChapters","reactiveProgress","wheelSeekSec","doubleClickSkip","trackTextStyle","titleColorSource","customTitleColor","titleSize","textAlign","trackShowAlbum","showSource","showPlayerSwitch","trackScroll","trackDetails","onlineInfo","detailYear","detailLabel","detailCountry","detailTags","detailAbout","posterLines","posterVizBehind","posterVizOpacity","posterClock","orbitCenter","orbitRotate","orbitCoverPulse","orbitGlowRing","scrollVolume","hoverLift","panelMode","panelOrientation","panelCardSizing","panelCardScale","pillContent","pillArt","pillEq","pillProgress","pillControls","pillControlsOnHover","pillMaxWidth","pillScroll","pillPopupTrigger","pillClick","pillArtShape","pillArtBorder","pillArtGlow","pillTextStyle","pillDockStyle","pillEqStyle"]
-    readonly property var defaults: ({"layoutMode":2,"cardAccentSource":0,"customAccent":"#a855f7","layoutEdits":"{}","cardSurface":0,"panelColor":"#a0101018","glassTint":0,"surfaceBlur":40,"surfaceDim":35,"compositorGlass":false,"panelRadius":20,"surfaceGrain":0,"surfaceShadow":false,"surfaceEdge":true,"panelGlow":0,"ambientGlow":0,"artShape":1,"artFormat":0,"artSize":96,"artFit":0,"artFocusH":1,"artFocusV":1,"artBorder":0,"artGlow":0,"artTilt":false,"artReflect":false,"artGreyPaused":false,"artSpin":true,"artSparks":false,"artThumbnail":0,"artFallback":0,"artClick":0,"controlsShow":1,"dockStyle":0,"customButtonsFile":"","controlsColorSource":1,"customControlColor":"#ffffff","showSkip":true,"showShuffleRepeat":false,"progressStyle":1,"customProgressFile":"","progressColorSource":0,"customProgressColor":"#3daee9","timeLabels":1,"seekHover":true,"showChapters":true,"reactiveProgress":true,"wheelSeekSec":5,"doubleClickSkip":true,"trackTextStyle":0,"titleColorSource":1,"customTitleColor":"#ffffff","titleSize":15,"textAlign":0,"trackShowAlbum":false,"showSource":false,"showPlayerSwitch":false,"trackScroll":true,"trackDetails":0,"onlineInfo":false,"detailYear":true,"detailLabel":true,"detailCountry":true,"detailTags":true,"detailAbout":true,"posterLines":2,"posterVizBehind":true,"posterVizOpacity":60,"posterClock":true,"orbitCenter":0,"orbitRotate":true,"orbitCoverPulse":true,"orbitGlowRing":false,"scrollVolume":false,"hoverLift":false,"panelMode":0,"panelOrientation":0,"panelCardSizing":0,"panelCardScale":100,"pillContent":0,"pillArt":true,"pillEq":1,"pillProgress":0,"pillControls":0,"pillControlsOnHover":false,"pillMaxWidth":300,"pillScroll":true,"pillPopupTrigger":0,"pillClick":0,"pillArtShape":3,"pillArtBorder":0,"pillArtGlow":0,"pillTextStyle":0,"pillDockStyle":4,"pillEqStyle":0})
+    readonly property var keys: ["layoutMode","cardAccentSource","customAccent","cardSurface","panelColor","surfaceBlur","surfaceDim","compositorGlass","panelRadius","surfaceGrain","surfaceShadow","surfaceEdge","panelGlow","ambientGlow","artShape","artFormat","artSize","artFit","artFocusH","artFocusV","artBorder","artGlow","artTilt","artReflect","artGreyPaused","artSpin","artSparks","artThumbnail","artFallback","artClick","controlsShow","dockStyle","customButtonsFile","controlsColorSource","customControlColor","showSkip","showShuffleRepeat","progressStyle","customProgressFile","progressColorSource","customProgressColor","timeLabels","seekHover","showChapters","reactiveProgress","wheelSeekSec","doubleClickSkip","trackTextStyle","titleColorSource","customTitleColor","titleSize","textAlign","trackShowAlbum","showSource","showPlayerSwitch","trackScroll","trackDetails","onlineInfo","detailYear","detailLabel","detailCountry","detailTags","detailAbout","posterLines","posterVizBehind","posterVizOpacity","posterClock","orbitCenter","orbitRotate","orbitCoverPulse","orbitGlowRing","scrollVolume","hoverLift","panelMode","panelOrientation","panelCardSizing","panelCardScale","pillContent","pillArt","pillEq","pillProgress","pillControls","pillControlsOnHover","pillMaxWidth","pillScroll","pillPopupTrigger","pillClick","pillArtShape","pillArtBorder","pillArtGlow","pillTextStyle","pillDockStyle","pillEqStyle","layoutEdits"]
+    readonly property var defaults: ({"layoutMode":2,"cardAccentSource":0,"customAccent":"#a855f7","cardSurface":0,"panelColor":"#a0101018","surfaceBlur":40,"surfaceDim":35,"compositorGlass":false,"panelRadius":20,"surfaceGrain":0,"surfaceShadow":false,"surfaceEdge":true,"panelGlow":0,"ambientGlow":0,"artShape":1,"artFormat":0,"artSize":96,"artFit":0,"artFocusH":1,"artFocusV":1,"artBorder":0,"artGlow":0,"artTilt":false,"artReflect":false,"artGreyPaused":false,"artSpin":true,"artSparks":false,"artThumbnail":0,"artFallback":0,"artClick":0,"controlsShow":1,"dockStyle":0,"customButtonsFile":"","controlsColorSource":1,"customControlColor":"#ffffff","showSkip":true,"showShuffleRepeat":false,"progressStyle":1,"customProgressFile":"","progressColorSource":0,"customProgressColor":"#3daee9","timeLabels":1,"seekHover":true,"showChapters":true,"reactiveProgress":true,"wheelSeekSec":5,"doubleClickSkip":true,"trackTextStyle":0,"titleColorSource":1,"customTitleColor":"#ffffff","titleSize":15,"textAlign":0,"trackShowAlbum":false,"showSource":false,"showPlayerSwitch":false,"trackScroll":true,"trackDetails":0,"onlineInfo":false,"detailYear":true,"detailLabel":true,"detailCountry":true,"detailTags":true,"detailAbout":true,"posterLines":2,"posterVizBehind":true,"posterVizOpacity":60,"posterClock":true,"orbitCenter":0,"orbitRotate":true,"orbitCoverPulse":true,"orbitGlowRing":false,"scrollVolume":false,"hoverLift":false,"panelMode":0,"panelOrientation":0,"panelCardSizing":0,"panelCardScale":100,"pillContent":0,"pillArt":true,"pillEq":1,"pillProgress":0,"pillControls":0,"pillControlsOnHover":false,"pillMaxWidth":300,"pillScroll":true,"pillPopupTrigger":0,"pillClick":0,"pillArtShape":3,"pillArtBorder":0,"pillArtGlow":0,"pillTextStyle":0,"pillDockStyle":4,"pillEqStyle":0,"layoutEdits":"{}"})
 
     property int cfg_layoutMode
     property int cfg_layoutModeDefault
@@ -20,14 +20,10 @@ QQC2.ScrollView {
     property int cfg_cardAccentSourceDefault
     property string cfg_customAccent
     property string cfg_customAccentDefault
-    property string cfg_layoutEdits
-    property string cfg_layoutEditsDefault
     property int cfg_cardSurface
     property int cfg_cardSurfaceDefault
     property string cfg_panelColor
     property string cfg_panelColorDefault
-    property int cfg_glassTint
-    property int cfg_glassTintDefault
     property int cfg_surfaceBlur
     property int cfg_surfaceBlurDefault
     property int cfg_surfaceDim
@@ -204,13 +200,27 @@ QQC2.ScrollView {
     property int cfg_pillDockStyleDefault
     property int cfg_pillEqStyle
     property int cfg_pillEqStyleDefault
+    property string cfg_layoutEdits
+    property string cfg_layoutEditsDefault
 
+    // true while load() fills the page: the preview waits for it (it would redraw after every one of the page's settings)
+    property bool loading: true
     function load(cfg) {
         if (!cfg) return
+        loading = true
         for (const k of keys) {
             panel["cfg_" + k] = cfg[k]
             panel["cfg_" + k + "Default"] = defaults[k]
         }
+        loading = false
+    }
+    // how many settings this page holds that differ from the saved ones (an edit not applied yet)
+    function changes(cfg) {
+        let n = 0
+        if (!cfg) return 0
+        for (const k of keys)
+            if (JSON.stringify(panel["cfg_" + k]) !== JSON.stringify(cfg[k])) ++n
+        return n
     }
     function save(cfg) {
         let changed = 0

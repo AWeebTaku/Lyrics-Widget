@@ -17,21 +17,36 @@ ColumnLayout {
     property string picked: ""                  // the look applied last, outlined in the grid
     readonly property var list: Presets.all(kcm.cfg_vizUserPresets, kcm.cfg_vizFavourites)
     readonly property var current: list.find(p => p.name === picked) ?? null
-    readonly property int tileW: Kirigami.Units.gridUnit * 9
+    readonly property int tileW: Kirigami.Units.gridUnit * 10
     readonly property int gap: Kirigami.Units.smallSpacing
-    readonly property int cols: Math.max(1, Math.floor((scroll.availableWidth + gap) / (tileW + gap)))
+    readonly property int cols: Math.max(1, Math.floor((width + gap) / (tileW + gap)))
     // the looks in groups: favorites first, then the ready-made visualizer looks, the card looks, and your own
     readonly property var groups: [
-        { name: i18n("Favorites"), items: list.filter(p => p.fav) },
-        { name: i18n("Visualizer"), items: list.filter(p => !p.fav && p.builtin && p.img < 16) },
-        { name: i18n("Cards and layouts"), items: list.filter(p => !p.fav && p.builtin && p.img >= 16) },
-        { name: i18n("Mine"), items: list.filter(p => !p.fav && !p.builtin) }
+        { id: "fav", name: i18n("Favorites"), items: list.filter(p => p.fav) },
+        { id: "viz", name: i18n("Visualizer"), items: list.filter(p => !p.fav && p.builtin && p.img < 16) },
+        { id: "card", name: i18n("Cards and layouts"), items: list.filter(p => !p.fav && p.builtin && p.img >= 16) },
+        { id: "mine", name: i18n("Mine"), items: list.filter(p => !p.fav && !p.builtin) }
     ]
+    property string filter: "all"                       // which group to show: all, fav, viz, card or mine
+    readonly property var shownGroups: groups.filter(g => filter === "all" || g.id === filter)
+    readonly property bool hasUndo: list.some(p => p.name === undoName)
     spacing: Kirigami.Units.largeSpacing
 
+    // Keep a setting right away (the config file too): my looks and favorites do not wait for Apply, as picking a look does not
+    function store(key, value) {
+        if (kcm["cfg_" + key] !== undefined) kcm["cfg_" + key] = value
+        const w = panel.Window.window
+        if (w && w.setKey) w.setKey(key, value)
+        else Plasmoid.configuration[key] = value
+        Plasmoid.configuration.writeConfig()
+    }
+    // Picking a look changes many settings at once. The setup it replaces is saved as this look of mine, so it can be picked to go back
+    // (picking it saves the setup it replaces, so going back and forth works).
+    readonly property string undoName: i18n("Before the last look")
     function apply(p) {
         if (!p) return
         const w = panel.Window.window
+        store("vizUserPresets", Presets.saveUser(kcm.cfg_vizUserPresets, undoName, currentSettings()))
         for (const k in p.settings) {
             const v = p.settings[k]
             if (kcm["cfg_" + k] !== undefined) kcm["cfg_" + k] = v
@@ -40,11 +55,12 @@ ColumnLayout {
         }
         Plasmoid.configuration.writeConfig()
         picked = p.name
-        note = i18n("Applied \"%1\".", p.name)
+        note = i18n("Applied \"%1\". Your setup before it is saved as \"%2\" under Mine.", p.name, undoName)
     }
     function currentSettings() {
         const o = {}
-        for (const k in Presets.keys) o[k] = kcm["cfg_" + k] !== undefined ? kcm["cfg_" + k] : Plasmoid.configuration[k]
+        const w = panel.Window.window
+        for (const k in Presets.keys) o[k] = kcm["cfg_" + k] !== undefined ? kcm["cfg_" + k] : (w && w.get ? w.get(k) : Plasmoid.configuration[k])
         return o
     }
 
@@ -88,111 +104,116 @@ ColumnLayout {
         }
     }
 
-    // ---- quick cards
+    // ---- the quick choices: one row of buttons, then saving the setup as a look of mine
     RowLayout {
         spacing: Kirigami.Units.smallSpacing
         Layout.fillWidth: true
-        Tile {
-            picRatio: 0.28
-            title: i18n("Random look")
-            caption: i18n("Something you have not seen yet.")
+        QQC2.Button {
+            icon.name: "roll"; text: i18n("Random look")
+            QQC2.ToolTip.text: i18n("Something you have not seen yet."); QQC2.ToolTip.visible: hovered; QQC2.ToolTip.delay: 500
             onClicked: panel.apply(Presets.randomPick(panel.list, panel.picked))
-            pic: Kirigami.Icon { source: "roll"; anchors.centerIn: parent; width: Kirigami.Units.iconSizes.large; height: width }
         }
-        Tile {
-            picRatio: 0.28
-            title: i18n("Look of the day")
-            caption: i18n("The same one all day.")
+        QQC2.Button {
+            icon.name: "view-calendar-day"; text: i18n("Look of the day")
+            QQC2.ToolTip.text: i18n("The same one all day."); QQC2.ToolTip.visible: hovered; QQC2.ToolTip.delay: 500
             onClicked: panel.apply(Presets.dailyPick(panel.list, new Date().toISOString().slice(0, 10)))
-            pic: Kirigami.Icon { source: "view-calendar-day"; anchors.centerIn: parent; width: Kirigami.Units.iconSizes.large; height: width }
         }
-        Tile {
-            id: saveTile
-            picRatio: 0.28
-            title: i18n("Save current look")
-            clickable: false
-            pic: RowLayout {
-                anchors { fill: parent; margins: Kirigami.Units.smallSpacing }
-                QQC2.TextField { id: saveName; Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter; maximumLength: 40; placeholderText: i18n("Name") }
-                QQC2.Button {
-                    Layout.alignment: Qt.AlignVCenter
-                    text: i18n("Save")
-                    enabled: saveName.text.trim() !== ""
-                    onClicked: {
-                        panel.kcm.cfg_vizUserPresets = Presets.saveUser(panel.kcm.cfg_vizUserPresets, saveName.text, panel.currentSettings())
-                        panel.note = i18n("Saved \"%1\".", saveName.text.trim())
-                        saveName.text = ""
-                    }
-                }
+        QQC2.Button {
+            icon.name: "edit-undo"; text: i18n("Go back")
+            enabled: panel.hasUndo
+            QQC2.ToolTip.text: panel.hasUndo ? i18n("Your setup from before the last look") : i18n("Nothing to go back to yet: pick a look first."); QQC2.ToolTip.visible: hovered; QQC2.ToolTip.delay: 500
+            onClicked: panel.apply(panel.list.find(p => p.name === panel.undoName))
+        }
+        Item { Layout.fillWidth: true }
+    }
+    RowLayout {
+        spacing: Kirigami.Units.smallSpacing
+        Layout.fillWidth: true
+        QQC2.TextField { id: saveName; Layout.fillWidth: true; Layout.maximumWidth: Kirigami.Units.gridUnit * 20; maximumLength: 40; placeholderText: i18n("Name the current setup to keep it as a look") }
+        QQC2.Button {
+            icon.name: "document-save"; text: i18n("Save current look")
+            enabled: saveName.text.trim() !== ""
+            onClicked: {
+                panel.store("vizUserPresets", Presets.saveUser(panel.kcm.cfg_vizUserPresets, saveName.text, panel.currentSettings()))
+                panel.note = i18n("Saved \"%1\" under Mine.", saveName.text.trim())
+                saveName.text = ""
             }
         }
     }
     QQC2.Label { visible: panel.note !== ""; text: panel.note; wrapMode: Text.WordWrap; Layout.fillWidth: true; opacity: T.muted }
 
-    // ---- the looks: groups of small cards in a scroll box of their own
-    QQC2.ScrollView {
-        id: scroll
+    // ---- which looks to show
+    RowLayout {
+        spacing: Kirigami.Units.smallSpacing
         Layout.fillWidth: true
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 20
-        contentWidth: availableWidth
-        clip: true
-        background: Rectangle { color: "transparent"; radius: T.radius; border.width: 1; border.color: Qt.alpha(Kirigami.Theme.textColor, T.hairline) }
-        ColumnLayout {
-            width: scroll.availableWidth
-            spacing: Kirigami.Units.smallSpacing
-            Repeater {
-                model: panel.groups
-                ColumnLayout {
-                    id: grp
-                    required property var modelData
-                    visible: modelData.items.length > 0
+        Repeater {
+            model: [{ id: "all", name: i18n("All") }].concat(panel.groups.map(g => ({ id: g.id, name: g.name })))
+            QQC2.Button {
+                required property var modelData
+                text: modelData.name
+                flat: panel.filter !== modelData.id
+                highlighted: panel.filter === modelData.id
+                visible: modelData.id === "all" || panel.groups.find(g => g.id === modelData.id).items.length > 0
+                onClicked: panel.filter = modelData.id
+            }
+        }
+    }
+
+    // ---- the looks: groups of cards; the page scrolls, not the list
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: Kirigami.Units.largeSpacing
+        Repeater {
+            model: panel.shownGroups
+            ColumnLayout {
+                id: grp
+                required property var modelData
+                visible: modelData.items.length > 0
+                Layout.fillWidth: true
+                spacing: panel.gap
+                QQC2.Label { visible: panel.filter === "all"; text: grp.modelData.name; font.weight: Font.DemiBold }
+                GridLayout {
+                    columns: panel.cols
+                    columnSpacing: panel.gap
+                    rowSpacing: panel.gap
                     Layout.fillWidth: true
-                    Layout.margins: panel.gap
-                    spacing: panel.gap
-                    QQC2.Label { text: grp.modelData.name; font.weight: Font.DemiBold; Layout.topMargin: panel.gap }
-                    GridLayout {
-                        columns: panel.cols
-                        columnSpacing: panel.gap
-                        rowSpacing: panel.gap
-                        Layout.fillWidth: true
-                        Repeater {
-                            model: grp.modelData.items
-                            Tile {
-                                id: look
-                                required property var modelData
-                                picRatio: 0.34
-                                title: (modelData.fav ? "★ " : "") + modelData.name
-                                caption: modelData.builtin ? (modelData.about ?? "") : ""
-                                selected: modelData.name === panel.picked
-                                onClicked: panel.apply(modelData)
-                                pic: Rectangle {
+                    Repeater {
+                        model: grp.modelData.items
+                        Tile {
+                            id: look
+                            required property var modelData
+                            picRatio: 0.34
+                            title: (modelData.fav ? "★ " : "") + modelData.name
+                            caption: modelData.builtin ? (modelData.about ?? "") : ""
+                            selected: modelData.name === panel.picked
+                            onClicked: panel.apply(modelData)
+                            pic: Rectangle {
+                                anchors.fill: parent
+                                color: "#181c26"
+                                Image {
                                     anchors.fill: parent
-                                    color: "#181c26"
-                                    Image {
-                                        anchors.fill: parent
-                                        visible: look.modelData.builtin
-                                        source: look.modelData.builtin ? Qt.resolvedUrl("../viz/looks/" + String(look.modelData.img).padStart(2, "0") + ".png") : ""
-                                        fillMode: Image.PreserveAspectFit
-                                        asynchronous: true
-                                        sourceSize.width: panel.tileW * 2
-                                        smooth: true
+                                    visible: look.modelData.builtin
+                                    source: look.modelData.builtin ? Qt.resolvedUrl("../viz/looks/" + String(look.modelData.img).padStart(2, "0") + ".png") : ""
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                    sourceSize.width: panel.tileW * 2
+                                    smooth: true
+                                }
+                                QQC2.Label { visible: !look.modelData.builtin; anchors.centerIn: parent; text: look.modelData.name; color: "white"; opacity: 0.8; elide: Text.ElideRight; width: parent.width - 8; horizontalAlignment: Text.AlignHCenter }
+                                Row {
+                                    anchors { right: parent.right; top: parent.top }
+                                    QQC2.ToolButton {
+                                        icon.name: look.modelData.fav ? "starred-symbolic" : "non-starred-symbolic"
+                                        padding: 2
+                                        QQC2.ToolTip.text: i18n("Favorite: keeps it at the top"); QQC2.ToolTip.visible: hovered
+                                        onClicked: panel.store("vizFavourites", Presets.toggleFav(panel.kcm.cfg_vizFavourites, look.modelData.name))
                                     }
-                                    QQC2.Label { visible: !look.modelData.builtin; anchors.centerIn: parent; text: look.modelData.name; color: "white"; opacity: 0.8 }
-                                    Row {
-                                        anchors { right: parent.right; top: parent.top }
-                                        QQC2.ToolButton {
-                                            icon.name: look.modelData.fav ? "starred-symbolic" : "non-starred-symbolic"
-                                            padding: 2
-                                            QQC2.ToolTip.text: i18n("Favorite: keeps it at the top"); QQC2.ToolTip.visible: hovered
-                                            onClicked: panel.kcm.cfg_vizFavourites = Presets.toggleFav(panel.kcm.cfg_vizFavourites, look.modelData.name)
-                                        }
-                                        QQC2.ToolButton {
-                                            visible: !look.modelData.builtin
-                                            icon.name: "edit-delete"
-                                            padding: 2
-                                            QQC2.ToolTip.text: i18n("Delete this look of mine"); QQC2.ToolTip.visible: hovered
-                                            onClicked: panel.kcm.cfg_vizUserPresets = Presets.deleteUser(panel.kcm.cfg_vizUserPresets, look.modelData.name)
-                                        }
+                                    QQC2.ToolButton {
+                                        visible: !look.modelData.builtin
+                                        icon.name: "edit-delete"
+                                        padding: 2
+                                        QQC2.ToolTip.text: i18n("Delete this look of mine"); QQC2.ToolTip.visible: hovered
+                                        onClicked: panel.store("vizUserPresets", Presets.deleteUser(panel.kcm.cfg_vizUserPresets, look.modelData.name))
                                     }
                                 }
                             }
@@ -225,7 +246,7 @@ ColumnLayout {
             onClicked: {
                 const r = Presets.importText(share.text)
                 if (!r.ok) { panel.note = i18n(r.error); return }
-                panel.kcm.cfg_vizUserPresets = Presets.saveUser(panel.kcm.cfg_vizUserPresets, r.preset.name, r.preset.settings)
+                panel.store("vizUserPresets", Presets.saveUser(panel.kcm.cfg_vizUserPresets, r.preset.name, r.preset.settings))
                 panel.note = i18n("Imported \"%1\" into your looks.", r.preset.name)
             }
         }

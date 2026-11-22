@@ -8,6 +8,9 @@
 const PANEL_RADIUS = 20   // the widget's corner radius default (config/main.xml)
 const num = (def, min, max) => ({ def: def, type: "number", min: min, max: max })
 const bool = def => ({ def: def, type: "boolean" })
+const real = (def, min, max) => ({ def: def, type: "number", real: true, min: min, max: max })     // not rounded to a whole number
+const color = def => ({ def: def, type: "string", pattern: /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/ })
+const json = def => ({ def: def, type: "string", pattern: /^\{[\s\S]*\}$/ })     // a setting kept as JSON text (colors, layout edits)
 const keys = {
     // visualizer
     visualizerStyle: num(1, 0, 22), orientation: num(1, 0, 3),
@@ -18,6 +21,13 @@ const keys = {
     vizColorMode: num(0, 0, 4), vizPalette: num(0, 0, 7), vizRainbowSpeed: num(30, 0, 100),
     vizGlow: num(0, 0, 100), vizGlowColorMode: num(0, 0, 2), vizSpacing: num(0, 0, 2), vizColorByLevel: bool(false),
     showVisualizer: bool(false),
+    // the rest of the visualizer: its other shapes, its colors and where it sits
+    pinnedDownSides: bool(false), drawInactiveBlocks: bool(false), waveSimulateWaveform: bool(false),
+    ribbonCurvature: num(100, 0, 300), ribbonFullness: num(100, 10, 300),
+    circleMode: bool(false), circleModeSize: real(0.5, 0, 0.99), circleModeFill: bool(false),
+    barColors: json("{}"), waveFillColors: json("{}"), inactiveBlockColors: json("{}"), vizColorFlow: num(0, 0, 6), fadeVizWhenPaused: bool(false),
+    vizWidthPct: num(100, 0, 100), vizHeightPct: num(60, 0, 100), vizHAlign: num(1, 0, 2), vizVAlign: num(2, 0, 2),
+    vizOffsetX: num(0, -4000, 4000), vizOffsetY: num(0, -4000, 4000),
     // effects
     lyricPulse: num(0, 0, 100), panelGlow: num(0, 0, 100), ambientGlow: num(0, 0, 100), autoContrast: bool(false),
     reducedMotion: bool(false), batterySaver: bool(false),
@@ -33,6 +43,10 @@ const keys = {
     trackTextStyle: num(0, 0, 2), trackShowAlbum: bool(false), trackScroll: bool(true),
     // card details that are part of a look
     cardAccentSource: num(0, 0, 2), artSparks: bool(false), hoverLift: bool(false),
+    customAccent: color("#a855f7"), layoutEdits: json("{}"), compositorGlass: bool(false),
+    artFormat: num(0, 0, 1), artFit: num(0, 0, 1), artFocusH: num(1, 0, 2), artFocusV: num(1, 0, 2),
+    controlsColorSource: num(1, 0, 3), customControlColor: color("#ffffff"), progressColorSource: num(0, 0, 3), customProgressColor: color("#3daee9"),
+    titleColorSource: num(1, 0, 3), customTitleColor: color("#ffffff"), titleSize: num(15, 9, 48), textAlign: num(0, 0, 3), trackDetails: num(0, 0, 3),
     posterLines: num(2, 1, 3), posterVizBehind: bool(true), posterVizOpacity: num(60, 5, 100), posterClock: bool(true),
     orbitCenter: num(0, 0, 3), orbitRotate: bool(true), orbitCoverPulse: bool(true), orbitGlowRing: bool(false)
 }
@@ -52,7 +66,7 @@ function complete(partial) {
         if (typeof v !== spec.type || (spec.type === "number" && (!isFinite(v) || v < spec.min || v > spec.max))
                 || (spec.type === "string" && !spec.pattern.test(v)))
             continue
-        o[k] = spec.type === "number" ? Math.round(v) : v
+        o[k] = spec.type === "number" && !spec.real ? Math.round(v) : v
     }
     return o
 }
@@ -97,6 +111,7 @@ const about = {
     "Compact": "No cover column: visualizer, seek bar and title only."
 }
 
+const OWN_CHOICE = ["showLyrics", "showCard", "reducedMotion", "batterySaver", "autoContrast"]
 const builtin = [
     // visualizer looks
     { name: "Classic bars", settings: { visualizerStyle: 0 } },
@@ -111,10 +126,10 @@ const builtin = [
     { name: "Spark storm", settings: { visualizerStyle: 14, vizColorMode: 3, vizGlow: 30, barWidth: 4, lyricPulse: 15, panelGlow: 30 } },
     { name: "Calm", settings: { visualizerStyle: 1, vizSmoothing: 80, vizReleaseMs: 700, vizColorMode: 1, vizPalette: 7, reducedMotion: true } },
     { name: "Battery friendly", settings: { visualizerStyle: 0, batterySaver: true } },
-    { name: "Neon terrain", settings: { showLyrics: false, visualizerStyle: 17, vizColorMode: 1, vizPalette: 4, vizSmoothing: 30 } },
-    { name: "Tunnel run", settings: { showLyrics: false, visualizerStyle: 18, vizColorMode: 2, vizSmoothing: 20 } },
-    { name: "Plasma wash", settings: { showLyrics: false, visualizerStyle: 15, vizColorMode: 1, vizPalette: 0, vizSmoothing: 40 } },
-    { name: "Stereo scope", settings: { showLyrics: false, visualizerStyle: 19, vizColorMode: 1, vizPalette: 2, vizGlow: 40, barWidth: 2 } },
+    { name: "Neon terrain", shot: { showLyrics: false }, settings: { visualizerStyle: 17, vizColorMode: 1, vizPalette: 4, vizSmoothing: 30 } },
+    { name: "Tunnel run", shot: { showLyrics: false }, settings: { visualizerStyle: 18, vizColorMode: 2, vizSmoothing: 20 } },
+    { name: "Plasma wash", shot: { showLyrics: false }, settings: { visualizerStyle: 15, vizColorMode: 1, vizPalette: 0, vizSmoothing: 40 } },
+    { name: "Stereo scope", shot: { showLyrics: false }, settings: { visualizerStyle: 19, vizColorMode: 1, vizPalette: 2, vizGlow: 40, barWidth: 2 } },
     // cards
     { name: "Plain card", settings: { layoutMode: 2, cardSurface: 1, panelColor: "#e61c2030", progressStyle: 1, visualizerStyle: 3, vizSmoothing: 40, barWidth: 4, barGap: 3 } },
     { name: "Frosted card", settings: { layoutMode: 2, cardSurface: 3, surfaceBlur: 80, artShape: 1, progressStyle: 4, dockStyle: 0, visualizerStyle: 1, vizSmoothing: 50, vizGlow: 20, surfaceShadow: true } },
@@ -136,7 +151,14 @@ const builtin = [
     { name: "Slim strip", settings: { layoutMode: 9, visualizerStyle: 0, barWidth: 3, barGap: 2, vizSmoothing: 40, progressStyle: 4, dockStyle: 4, artShape: 1 } },
     { name: "Mirrored minimal", settings: { layoutMode: 3, cardSurface: 0, progressStyle: 8, dockStyle: 4, controlsShow: 1, visualizerStyle: 1, centeredBars: true, vizSmoothing: 60 } },
     { name: "Compact", settings: { layoutMode: 10, cardSurface: 1, panelColor: "#d9141820", progressStyle: 4, visualizerStyle: 3, vizSmoothing: 40, barWidth: 3, barGap: 2 } }
-].map((p, i) => ({ name: p.name, builtin: true, img: i, about: about[p.name] || "", settings: complete(Object.assign({ showVisualizer: true, showCard: p.settings.layoutMode !== undefined }, p.settings)) }))   // a look includes its visualizer, and the card when it names a layout
+].map((p, i) => {
+    // A look turns the visualizer on, and the card when it names a layout. What the owner chose for themselves (the lyrics, the
+    // card of a visualizer look, reduced motion, battery saver, dark text on light) is left alone unless the look is about it.
+    const raw = Object.assign({ showVisualizer: true }, p.settings.layoutMode !== undefined ? { showCard: true } : {}, p.settings)
+    const settings = complete(raw)
+    for (const k of OWN_CHOICE) if (!(k in raw)) delete settings[k]
+    return { name: p.name, builtin: true, img: i, about: about[p.name] || "", shot: p.shot || {}, settings: settings }
+})
 
 // the user's presets are stored as a JSON array in one setting
 function parseUser(json) {

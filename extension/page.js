@@ -38,6 +38,20 @@
   if (typeof module !== "undefined") module.exports = { extractQueue, fields };
   if (typeof document === "undefined") return;
 
+  // Next / Previous for the whole system. When YouTube Music's own media-session handlers are missing, Chrome reports "cannot skip":
+  // the Plasma Media Player's buttons are greyed out and the keyboard's media keys do nothing. Registering the handlers here (again,
+  // as the page drops them now and then) makes Chrome report that it can, and presses the page's own buttons.
+  const press = (sel) => () => { const b = document.querySelector("ytmusic-player-bar " + sel); if (b) b.click(); };
+  function registerSkip() {
+    if (!navigator.mediaSession) return;
+    try {
+      navigator.mediaSession.setActionHandler("nexttrack", press(".next-button"));
+      navigator.mediaSession.setActionHandler("previoustrack", press(".previous-button"));
+    } catch (e) { /* an action this Chrome does not know */ }
+  }
+  registerSkip();
+  setInterval(registerSkip, 5000);
+
   let last = "", lastSent = 0;
   setInterval(() => {
     const els = document.querySelectorAll("ytmusic-player-queue-item");

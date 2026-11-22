@@ -55,11 +55,11 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/org/lyricwidget/lyricbackend.qmltypes
   DESTINATION ${LYRIC_QML_DIR})
 
-# ---- Japanese romanization helper (run by the widget with the Python environment from setup-romaji.sh)
+# ---- Japanese romanization helper (run by the widget with the Python environment from scripts/setup-romaji.sh)
 install(FILES romaji/romaji.py DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget)
 
 # ---- the doctor script (checks what the widget needs) and examples of your own visualizers, seek bars and buttons
-install(PROGRAMS tools/doctor.sh DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget)
+install(PROGRAMS scripts/doctor.sh DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget)
 install(DIRECTORY examples/ DESTINATION ${CMAKE_INSTALL_DATADIR}/lyric-widget/examples)
 
 # ---- Chrome extension for the YouTube Music queue (load it unpacked)

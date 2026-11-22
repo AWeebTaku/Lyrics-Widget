@@ -60,6 +60,43 @@ int main()
         const auto c = candidates(track("Heat Waves (Official Video)", "Glass Animals", "Dreamland", 238));
         CHECK(c.size() == 1 && has(c, "Glass Animals", "Heat Waves"));
     }
+    {   // "平行線 - Heikousen" by "Eve & suis from Yorushika": the video is named in two scripts, and neither side is the artist
+        const auto c = candidates(track("\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A - Heikousen", "Eve & suis from Yorushika", "", 274));
+        CHECK(has(c, "Eve & suis from Yorushika", "\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A", 1));
+        CHECK(has(c, "Eve", "\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A", 3));
+        CHECK(has(c, "Eve & suis from Yorushika", "Heikousen", 4));
+        // a title in romaji only: the database's kanji title is the same song when the artist and the length agree
+        const Candidate rom{QStringLiteral("Eve"), QStringLiteral("Heikousen")};
+        const QString kanji = QString::fromUtf8("\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A");
+        const double s = Text::score(rom, 274, kanji, QStringLiteral("Eve"), 279.05);
+        CHECK(s >= 0.55 && s < 1.0);
+        CHECK(Text::score(rom, 274, kanji, QStringLiteral("Eve"), 240) < 0);                          // another length
+        CHECK(Text::score(rom, 274, kanji, QStringLiteral("Someone else"), 274) < 0);                // another artist
+        CHECK(Text::score(rom, 274, kanji + QString::fromUtf8("(\xE3\x83\x94\xE3\x82\xA2\xE3\x83\x8E)"), QStringLiteral("Eve"), 276) < 0); // a piano version
+    }
+    {   // the same video as YouTube names it: "Song - Artist MV" (the artist on the right, with a credit)
+        const auto c = candidates(track("\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A - Eve \xC3\x97 suis from \xE3\x83\xA8\xE3\x83\xAB\xE3\x82\xB7\xE3\x82\xAB MV", "Eve & suis from Yorushika", "", 274));
+        CHECK(has(c, "Eve \xC3\x97 suis from \xE3\x83\xA8\xE3\x83\xAB\xE3\x82\xB7\xE3\x82\xAB", "\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A", 1)); // first
+        CHECK(has(c, "Eve", "\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A", 2));                                                                              // and the first artist alone, second
+        CHECK(!has(c, "\xE5\xB9\xB3\xE8\xA1\x8C\xE7\xB7\x9A", "Eve \xC3\x97 suis from \xE3\x83\xA8\xE3\x83\xAB\xE3\x82\xB7\xE3\x82\xAB", 3)); // the song is not the artist
+    }
+    {   // music videos: the kind of upload is written in many ways, and none of it is part of the song's name
+        struct { const char *title, *artist, *wantArtist, *wantSong; } mv[] = {
+            {"Kenshi Yonezu \xE7\xB1\xB3\xE6\xB4\xA5\xE7\x8E\x84\xE5\xB8\xAB - Lemon Music Video", "Kenshi Yonezu", "Kenshi Yonezu \xE7\xB1\xB3\xE6\xB4\xA5\xE7\x8E\x84\xE5\xB8\xAB", "Lemon"},
+            {"LiSA - \xE7\xB4\x85\xE8\x93\xAE\xE8\x8F\xAF -Music Clip-", "LiSA", "LiSA", "\xE7\xB4\x85\xE8\x93\xAE\xE8\x8F\xAF"},
+            {"Ado - \xE6\x96\xB0\xE6\x99\x82\xE4\xBB\xA3 (Official Music Video) / Ado", "Ado", "Ado", "\xE6\x96\xB0\xE6\x99\x82\xE4\xBB\xA3"},
+            {"Eve - \xE5\xBB\xBB\xE5\xBB\xBB\xE5\xA5\x87\xE8\xAD\x9A | Kaikai Kitan MV", "Eve", "Eve", "\xE5\xBB\xBB\xE5\xBB\xBB\xE5\xA5\x87\xE8\xAD\x9A"},
+            {"Artist - Song OFFICIAL MV", "Artist", "Artist", "Song"},
+            {"Artist - Song Official Music Video 4K", "Artist", "Artist", "Song"},
+            {"Artist - Song (Official Music Video) - Topic", "Artist", "Artist", "Song"},
+            {"Artist - Song (Official Performance Video)", "Artist", "Artist", "Song"},
+            {"Hello (Official Music Video)", "Adele", "Adele", "Hello"},
+        };
+        for (const auto &x : mv)
+            CHECK(has(candidates(track(QString::fromUtf8(x.title), QString::fromUtf8(x.artist))), QString::fromUtf8(x.wantArtist), QString::fromUtf8(x.wantSong), 3));
+        // a name that ends in a word that can also mean an upload keeps it (a plain "video" is not stripped)
+        CHECK(has(candidates(track("Artist - Silent Video", "Artist")), "Artist", "Silent Video", 3));
+    }
     {   // an upload by a channel: "Song - Artist" and "Artist - Song" are both tried, early
         const auto c = candidates(track("Come With Me Now - Kongos (High Audio Quality)", "ImMusicFanMusicLover - MusicForLife"));
         CHECK(has(c, "Kongos", "Come With Me Now", 2));

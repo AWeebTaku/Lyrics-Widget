@@ -55,6 +55,25 @@ QQC2.ApplicationWindow {
             if (it) it.load(cfg)
         }
     }
+    // Put the pages' values over `o` (a copy of the saved settings): what the previews draw. One pass over the pages' own keys.
+    function collect(o) {
+        for (let i = 0; i < panels.count; ++i) {
+            const it = panel(i)
+            if (!it || it.loading) continue
+            for (const k of it.keys) {
+                const v = it["cfg_" + k]
+                if (v !== undefined) o[k] = v
+            }
+        }
+    }
+    // The value of one setting as the pages show it now: an edit not yet applied counts
+    function get(key) {
+        for (let i = 0; i < panels.count; ++i) {
+            const it = panel(i)
+            if (it && it["cfg_" + key] !== undefined) return it["cfg_" + key]
+        }
+        return cfg ? cfg[key] : undefined
+    }
     // Set one setting right away (the "Turn it on" notices, applying a look): in the widget's configuration, and in every page that
     // has loaded it, so a page does not write its older value back on Apply (the General page's "show the visualizer" switch).
     function setKey(key, value) {
@@ -65,6 +84,16 @@ QQC2.ApplicationWindow {
             if (it && it["cfg_" + key] !== undefined) it["cfg_" + key] = value
         }
     }
+    // the page being built (a page is made the first time it is opened)
+    readonly property bool building: panels.count > current && panels.itemAt(current) !== null && panels.itemAt(current).status === Loader.Loading
+    // edits not applied yet, counted while the window is open (the footer shows them; Apply waits for them)
+    property int pending: 0
+    function countPending() {
+        let n = 0
+        if (cfg) for (let i = 0; i < panels.count; ++i) { const it = panel(i); if (it) n += it.changes(cfg) }
+        return n
+    }
+    Timer { interval: 300; repeat: true; running: win.visible; onTriggered: win.pending = win.countPending() }
     // write what changed on every page that has been opened
     function apply() {
         if (!cfg) return
@@ -74,6 +103,7 @@ QQC2.ApplicationWindow {
             if (it) changed += it.save(cfg)
         }
         if (changed > 0) cfg.writeConfig()
+        pending = 0
         note = changed > 0 ? i18n("Applied: %1 changed.", changed) : i18n("Nothing to apply.")
     }
 
@@ -146,6 +176,7 @@ QQC2.ApplicationWindow {
                         required property var modelData
                         required property int index
                         active: win.seen[index] === true
+                        asynchronous: true       // built a piece at a time: the window keeps answering while a big page is made
                         source: win.files[modelData.id] ? Qt.resolvedUrl("settings/" + win.files[modelData.id] + ".qml") : ""
                         onLoaded: if (win.cfg) item.load(win.cfg)
                     }
@@ -155,10 +186,17 @@ QQC2.ApplicationWindow {
             RowLayout {
                 Layout.margins: Kirigami.Units.largeSpacing
                 spacing: Kirigami.Units.smallSpacing
-                QQC2.Label { text: win.note; opacity: T.muted; Layout.fillWidth: true; elide: Text.ElideRight }
-                QQC2.Button { text: i18n("Close"); icon.name: "window-close"; onClicked: win.close() }
+                QQC2.BusyIndicator { running: win.building; visible: running; Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium; Layout.preferredWidth: Layout.preferredHeight }
+                // what the footer says: edits waiting for Apply, else the last thing that happened
+                QQC2.Label {
+                    text: win.building ? i18n("Opening the page…") : win.pending > 0 ? i18n("%1 changes not applied yet", win.pending) : win.note
+                    font.weight: win.pending > 0 && !win.building ? Font.DemiBold : Font.Normal
+                    opacity: win.pending > 0 ? 1 : T.muted
+                    Layout.fillWidth: true; elide: Text.ElideRight
+                }
+                QQC2.Button { text: win.pending > 0 ? i18n("Discard and close") : i18n("Close"); icon.name: "window-close"; onClicked: win.close() }
                 QQC2.Button { text: i18n("OK"); icon.name: "dialog-ok"; onClicked: { win.apply(); win.close() } }
-                QQC2.Button { text: i18n("Apply"); icon.name: "dialog-ok-apply"; highlighted: true; onClicked: win.apply() }
+                QQC2.Button { text: i18n("Apply"); icon.name: "dialog-ok-apply"; highlighted: win.pending > 0; enabled: win.pending > 0; onClicked: win.apply() }
             }
         }
     }

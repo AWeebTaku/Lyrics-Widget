@@ -16,7 +16,7 @@ Item {
     property bool first: false
     property string query: ""
     readonly property bool plain: section.plain === true      // the page's only group: no heading, never folded
-    property bool open: plain || section.open === true
+    property bool open: plain || section.open === true || first
     readonly property bool searching: query !== ""
     readonly property bool inPanel: (Plasmoid.location ?? 0) !== 0       // 0: floating, on the desktop
     readonly property bool titleHit: searching && section.title.toLowerCase().indexOf(query) >= 0

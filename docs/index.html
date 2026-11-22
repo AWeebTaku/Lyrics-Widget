@@ -367,7 +367,7 @@
     <div class="looks-head rv">
       <div>
         <h2>36 looks, ready to wear</h2>
-        <p class="lead">Every picture is a real render of the widget. Apply one, or save your own.</p>
+        <p class="lead">Every picture is a real render of the widget. Apply one, save your own, or press Go back to get your old setup again.</p>
       </div>
     </div>
     <div class="tabs rv" role="tablist" aria-label="Kinds of look">
@@ -448,7 +448,7 @@
 
       <article class="cell k7 rv" style="--d:.16s">
         <h3>Look-ahead</h3>
-        <p class="p">Lyrics for the next songs in a shuffled queue are fetched before they start.</p>
+        <p class="p">Lyrics for the next songs in a shuffled queue are fetched before they start. The same extension keeps Next and Previous working in Chrome.</p>
         <ul class="queue" id="queue"></ul>
         <button class="btn sm" id="skip" type="button">Skip track</button>
       </article>
@@ -457,7 +457,7 @@
 
   <section id="numbers">
     <h2 class="rv">Made to be changed</h2>
-    <p class="lead rv">Write your own visualizer, seek bar or buttons as a QML file, or keep lyrics in a <code>.lrc</code> beside the song.</p>
+    <p class="lead rv">Every part of the card has its own place, size and colors. Write your own visualizer, seek bar or buttons as a QML file, or keep lyrics in a <code>.lrc</code> beside the song.</p>
     <div class="nums" id="nums">
       <div class="rv"><b data-to="36">0</b><span>built-in looks</span></div>
       <div class="rv" style="--d:.06s"><b data-to="23">0</b><span>visualizer styles</span></div>
@@ -496,9 +496,9 @@
 <span class="d">$ </span>bash lyric-widget.sh uninstall</pre>
 <pre data-p="src" hidden><span class="d">$ </span>sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-websockets icu python cava
 <span class="d">$ </span>git clone https://github.com/AWeebTaku/Lyrics-Widget &amp;&amp; cd Lyrics-Widget
-<span class="d">$ </span>./build.sh
+<span class="d">$ </span>./scripts/build.sh
 <span class="c"># to remove everything later, preview first:</span>
-<span class="d">$ </span>./uninstall.sh --dry-run</pre>
+<span class="d">$ </span>./scripts/uninstall.sh --dry-run</pre>
 <pre data-p="arch" hidden><span class="d">$ </span>git clone https://github.com/AWeebTaku/Lyrics-Widget
 <span class="d">$ </span>cd Lyrics-Widget/packaging/arch
 <span class="d">$ </span>makepkg -si

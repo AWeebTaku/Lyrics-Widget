@@ -65,11 +65,21 @@ inline QString cleanTitle(QString t)
     static const QRegularExpression songLabel(
         QStringLiteral(R"(\s+(?:official\s+)?(?:full(?:\s+video)?|video|lyrical)\s+song\b)"),
         QRegularExpression::CaseInsensitiveOption);
+    // "Song Music Video", "Song OFFICIAL MV", "Song Official Music Video 4K", "Song -Music Clip-": the kind of upload written after
+    // the name without brackets. A plain "video" or "audio" at the end may be part of a name, so one of the words that only
+    // ever mean an upload (official, music video, mv, clip, lyric video) has to be there.
+    static const QRegularExpression uploadTail(
+        QStringLiteral(R"(\s*-?\s+-?\s*(?:(?:official|hd|hq|4k|uhd|full)\s+)*(?:music\s+video|music\s+clip|lyrics?\s+video|official\s+(?:video|audio|visuali[sz]er)|mv|m/v|pv)(?:\s+(?:hd|hq|4k|uhd|version|ver\.?))*\s*-?\s*$)"),
+        QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression topic(QStringLiteral(R"(\s+-\s+Topic\s*$)"), QRegularExpression::CaseInsensitiveOption);
     t.remove(QRegularExpression(QStringLiteral("[\"\u201C\u201D]")));
     t.remove(songLabel);
     t.remove(site);
     t.remove(kind);
     t.remove(bracket);
+    t = t.simplified();
+    t.remove(topic);
+    t.remove(uploadTail);
     t.remove(tail);
     t.remove(dashTail);
     t.remove(ft);
@@ -186,7 +196,14 @@ inline QVector<Candidate> candidates(const Track &t)
     const auto m = sep.match(title);
     const bool split = m.hasMatch() && m.capturedStart() > 0;
     const QString left = split ? cleanArtist(title.left(m.capturedStart())) : QString();
-    const QString right = split ? cleanTitle(title.mid(m.capturedEnd())) : QString();
+    QString right = split ? cleanTitle(title.mid(m.capturedEnd())) : QString();
+    // "Ado - 新時代 (Official Music Video) / Ado": the artist written again at the end is not part of the title
+    static const QRegularExpression echo(QStringLiteral(R"(\s*[/／]\s*([^/／]+)$)"));
+    if (split) {
+        const auto em = echo.match(right);
+        if (em.hasMatch() && em.capturedStart() > 0 && (similarity(em.captured(1).simplified(), left) > 0.8 || (!artist.isEmpty() && similarity(em.captured(1).simplified(), artist) > 0.8)))
+            right = right.left(em.capturedStart()).simplified();
+    }
 
     // Fan uploads: "Anime【Song】" (after the upload-kind tag is gone): the song is in the brackets
     static const QRegularExpression boxed(QStringLiteral(R"(^(.+?)\s*【(.+?)】\s*$)"));
@@ -216,9 +233,28 @@ inline QVector<Candidate> candidates(const Track &t)
         if (!km.captured(1).isEmpty() && videoLike)
             add(QString(), km.captured(2).simplified());
     }
+    // "平行線 - Heikousen": a video named in two scripts (the original title, then its romaji or translation) by the player's own
+    // artist. Neither side is the artist, both are the song: search the artist with each name first.
+    if (split && !artist.isEmpty() && hasNonLatin(left) != hasNonLatin(right) && left.count(QLatin1Char(' ')) < 6 && right.count(QLatin1Char(' ')) < 6
+            && similarity(artist, left) < 0.5 && similarity(artist, right) < 0.5) {
+        add(artist, hasNonLatin(left) ? left : right);
+        add(artist, hasNonLatin(left) ? right : left);
+    }
+    // "平行線 - Eve × suis from ヨルシカ": which side is the artist? The one that looks like the player's artist, or like a credit
+    // (two names joined by ×, & or feat.). Only the first two guesses are searched at once, so the likelier order goes first.
+    static const QRegularExpression credit(QStringLiteral(R"(\s(?:×|&|x|feat\.?|ft\.?)\s)"), QRegularExpression::CaseInsensitiveOption);
+    const bool rightIsArtist = split && (!artist.isEmpty() ? (similarity(artist, right) >= 0.5 && similarity(artist, right) > similarity(artist, left))
+                                                            : (credit.match(right).hasMatch() && !credit.match(left).hasMatch()));
     if (split && videoLike) {
-        add(left, right);
+        if (!rightIsArtist)
+            add(left, right);
         add(right, left); // "Song - Artist" ordering
+        // "Eve - 廻廻奇譚 | Kaikai Kitan MV": the title in two scripts or names; each is also tried alone
+        static const QRegularExpression bar(QStringLiteral(R"(\s*[|｜]\s*)"));
+        const QStringList pieces = right.split(bar, Qt::SkipEmptyParts);
+        if (pieces.size() == 2)
+            for (const QString &pc : pieces)
+                add(left, cleanTitle(pc));
     }
     // "W●R K - WORK" on the album WORK: the part after the dash is the real title, the first part is styling
     if (split && !t.album.isEmpty() && norm(right) == norm(cleanTitle(t.album)))
@@ -292,6 +328,8 @@ inline QVector<Candidate> candidates(const Track &t)
         if (!known)
             out.insert(std::min<qsizetype>(1, out.size()), {artist, at});
     }
+    if (rightIsArtist && videoLike)
+        add(left, right); // the unlikely order, last: it is a song's name only when the other reading found nothing
     // several artists ("A, B", "A & B", "A feat. B", "A × B"): the databases often list only the first or the
     // main one, so each of the first two is also tried alone, right after the full credit
     static const QRegularExpression artistSep(
@@ -379,15 +417,23 @@ inline double score(const Candidate &want, int wantSec, const QString &title,
                     const QString &artist, double durSec, const QString &wantAlbum = {},
                     const QString &album = {})
 {
-    const double ts = similarity(want.title, title);
-    if (ts < 0.6)
-        return -1;
-    if (!want.hint.isEmpty() && !(title + QLatin1Char(' ') + artist).contains(want.hint, Qt::CaseInsensitive))
-        return -1; // a vocaloid's version: the hit has to be a vocaloid's too
     // "-Instrumental-", "(Karaoke)", "off vocal" listings have no lyrics: skip unless asked for
     static const QRegularExpression noVocals(
-        QStringLiteral(R"((instrumental|inst\.|karaoke|off\s*vocal|backing track|伴奏|纯音乐|カラオケ))"),
+        QStringLiteral(R"((instrumental|inst\.|karaoke|off\s*vocal|backing track|伴奏|纯音乐|カラオケ|ピアノ|piano ver|orgel|オルゴール))"),
         QRegularExpression::CaseInsensitiveOption);
+    const double ts = similarity(want.title, title);
+    if (ts < 0.6) {
+        // The song is named in Latin letters (a video's romaji title, "Heikousen") and the database has it in the original
+        // script ("平行線"): the two cannot be compared, but the same artist at nearly the same length is the same song.
+        // Kept below a real title match, so it only wins when nothing better answers.
+        if (!want.artist.isEmpty() && want.hint.isEmpty() && !want.boxed && hasNonLatin(title) && !hasNonLatin(want.title)
+                && wantSec > 0 && durSec > 0 && std::abs(durSec - wantSec) <= 6 && similarity(want.artist, artist) >= 0.85
+                && !noVocals.match(title).hasMatch())
+            return std::abs(durSec - wantSec) <= 2 ? 0.65 : 0.6;
+        return -1;
+    }
+    if (!want.hint.isEmpty() && !(title + QLatin1Char(' ') + artist).contains(want.hint, Qt::CaseInsensitive))
+        return -1; // a vocaloid's version: the hit has to be a vocaloid's too
     if (noVocals.match(title).hasMatch() && !noVocals.match(want.title).hasMatch())
         return -1;
     const double as = want.artist.isEmpty() ? 0.5 : similarity(want.artist, artist);

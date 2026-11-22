@@ -24,7 +24,7 @@
 //   presets                      the visualizer look manager
 //   part    part                 one part of the card (surface, art, ring, info, controls, progress, clock, lyrics, viz, tools, nudge):
 //                                on or off, X, Y, Width, Height and opacity in the layout in use (the edits are stored in layoutEdits)
-//   layouttools                  the buttons that reset those edits (stored as JSON text, key layoutEdits)
+//   layouttools                  the buttons that reset those edits
 //   spotify / browser / sites    the player-source tools on the Sources page
 //   info    text                 a paragraph
 // Conventions: a label is a short noun phrase in sentence case with no unit; the unit is `unit.suffix` (" px", " %", " s", " ms", " Hz"),
@@ -115,6 +115,7 @@ const lyrics = [
         { key: "hoverButtons", type: "bool", label: "Corner buttons on hover", hint: "Other lyrics, and the library." }
     ] },
     { id: "position", title: "Position", desc: "Where the lines sit.", rows: [
+        { type: "info", text: "With the card on, the layout places the lyrics: only the place below applies. Move them in Card, Lyrics and visualizer." },
         { type: "align", keys: ["lyricsHAlign", "lyricsVAlign"], label: "Place" },
         { type: "pair", keys: ["lyricsOffsetX", "lyricsOffsetY"], names: ["X", "Y"], label: "Move", unit: { suffix: " px" }, min: -4000, max: 4000, step: 5 }
     ] }
@@ -178,13 +179,8 @@ const visualizer = [
         { key: "vizSpacing", type: "combo", label: "Frequency axis", options: ["As cava (logarithmic)", "Mel", "Linear"] },
         { key: "fadeVizWhenPaused", type: "bool", label: "Fade while paused" }
     ] },
-    { id: "panel", title: "Size in a panel", desc: "In a panel only.", rows: [
-        { key: "expanding", type: "bool", label: "Fill the panel's length", panel: true },
-        { key: "length", type: "int", label: "Fixed length", unit: { suffix: " px" }, min: 1, max: 9999, when: { key: "expanding", in: [false] }, panel: true },
-        { key: "minimumLength", type: "int", label: "Minimum length", unit: { suffix: " px" }, min: 1, max: 9999, when: { key: "expanding", in: [true] }, panel: true },
-        { key: "fillPanel", type: "bool", label: "Fill the panel's thickness", panel: true }
-    ] },
     { id: "position", title: "Position", desc: "Where it sits.", rows: [
+        { type: "info", text: "Used with no card and in the Inline and Icon layouts. The other layouts place the visualizer themselves: move it in Card, Lyrics and visualizer." },
         { type: "pair", keys: ["vizWidthPct", "vizHeightPct"], names: ["Width", "Height"], label: "Size", unit: { suffix: " %" }, min: 0, max: 100 },
         { type: "align", keys: ["vizHAlign", "vizVAlign"], label: "Place" },
         { type: "pair", keys: ["vizOffsetX", "vizOffsetY"], names: ["X", "Y"], label: "Move", unit: { suffix: " px" }, min: -4000, max: 4000, step: 5 }
@@ -200,8 +196,8 @@ const audio = [
         { key: "inputSource", type: "source", label: "Source", hint: "Empty hears everything you play." },
         { key: "sampleRate", type: "int", label: "Sample rate", unit: { suffix: " Hz" }, min: 1, max: 192000, step: 1000 },
         { key: "sampleBits", type: "int", label: "Sample bits", min: 8, max: 32, step: 8, hint: "Some methods only." },
-        { key: "inputChannels", type: "int", label: "Channels", min: 2, max: 4 },
-        { key: "autoconnect", type: "int", label: "Auto connect", min: 2, max: 4, hint: "Jack only." },
+        { key: "inputChannels", type: "combo", label: "Input channels", options: ["One (mono)", "Two (stereo)"], values: [1, 2] },
+        { key: "autoconnect", type: "combo", label: "Auto connect", options: ["Never", "Only at the start", "Keep reconnecting"], values: [0, 1, 2], hint: "JACK only." },
         { key: "active", type: "bool", label: "Keep the capture active", hint: "PipeWire only." },
         { key: "remix", type: "bool", label: "Remix channels", hint: "PipeWire only." },
         { key: "virtual", type: "bool", label: "Virtual node", hint: "PipeWire only." }
@@ -233,15 +229,15 @@ const audio = [
 const cardSections = [
     { id: "layout", title: "Layout", desc: "How the card is arranged.", open: true, rows: [
         { key: "layoutMode", type: "combo", label: "Layout", options: ["Classic", "Mirrored", "Inline", "Hero wave", "Stacked", "Orbit", "Poster", "Slim strip", "Compact (no art)", "Icon (cover in a progress ring)"], values: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11], hint: "The card is turned on in General." },
+        { type: "info", text: "Hero wave, Orbit and Poster are built around the music: turn the visualizer on in General for them.", when: { key: "layoutMode", in: [5, 7, 8] } },
         { key: "cardAccentSource", type: "combo", label: "Accent color", options: ["Same as the lyrics", "The Plasma accent", "A color of my own"] },
         { key: "customAccent", type: "color", label: "My accent", when: { key: "cardAccentSource", in: [2] } },
-        { key: "layoutEdits", type: "layouttools", label: "Changes to this layout" }
+        { type: "layouttools", label: "Changes to this layout" }
     ] },
     { id: "surface", title: "Background and glow", desc: "Corners and glow.", rows: [
-        { type: "part", part: "surface", label: "On or off, place and size" },
+        { type: "part", part: "surface", label: "Background: show, place and size" },
         { key: "cardSurface", type: "combo", label: "Background", options: ["None", "Color", "Art backdrop", "Glass", "Liquid glass", "Atmosphere", "Solid"] },
         { key: "panelColor", type: "color", alpha: true, label: "Color", when: { key: "cardSurface", in: [1, 6] } },
-        { key: "glassTint", type: "combo", label: "Glass tint", options: ["Clear", "Dark", "Light", "The accent"], when: { key: "cardSurface", in: [3] } },
         { key: "surfaceBlur", type: "int", label: "Blur", min: 0, max: 100, when: { key: "cardSurface", in: [2, 3] } },
         { key: "surfaceDim", type: "int", label: "Darken", min: 0, max: 100, when: { key: "cardSurface", in: [2, 3, 4] } },
         { key: "compositorGlass", type: "bool", label: "Blur the desktop behind", when: { key: "cardSurface", in: [3, 4] }, hint: "Needs KWin's Blur effect." },
@@ -253,8 +249,8 @@ const cardSections = [
         { key: "ambientGlow", type: "int", label: "Glow around the card", min: 0, max: 100, hint: "Needs the visualizer.", off: "Off" }
     ] },
     { id: "cover", title: "Cover", desc: "The album picture.", rows: [
-        { type: "part", part: "art", label: "On or off, place and size" },
-        { type: "part", part: "ring", label: "Progress ring round the cover" },
+        { type: "part", part: "art", label: "Cover: show, place and size" },
+        { type: "part", part: "ring", label: "Progress ring: show" },
         { key: "artShape", type: "combo", label: "Shape", options: ["Sharp", "Rounded", "Squircle", "Circle", "Vinyl record", "CD"] },
         { key: "artFormat", type: "combo", label: "Format", options: ["Square", "Wide (4:3)"], when: { key: "artShape", in: [0, 1, 2] } },
         { key: "artSize", type: "int", label: "Size", unit: { suffix: " px" }, min: 32, max: 400 },
@@ -272,7 +268,7 @@ const cardSections = [
         { key: "artClick", type: "combo", label: "Click on the cover", options: ["Nothing", "Play / pause", "Show the details"] }
     ] },
     { id: "buttons", title: "Buttons", desc: "Previous, play, next.", rows: [
-        { type: "part", part: "controls", label: "On or off, place and size" },
+        { type: "part", part: "controls", label: "Buttons: show, place and size" },
         { key: "controlsShow", type: "combo", label: "Show", options: ["Never", "When the pointer is over the card", "Always"] },
         { key: "dockStyle", type: "combo", label: "Look", options: ["Glass", "Soft", "Outline", "Tinted", "Bare", "Accent play button", "My own QML file"], when: { key: "controlsShow", in: [1, 2] } },
         { key: "customButtonsFile", type: "file", folder: "buttons", label: "Buttons file", when: { key: "dockStyle", in: [6] } },
@@ -282,7 +278,7 @@ const cardSections = [
         { key: "showShuffleRepeat", type: "bool", label: "Shuffle and repeat", when: { key: "controlsShow", in: [1, 2] } }
     ] },
     { id: "seek", title: "Seek bar", desc: "Song progress.", rows: [
-        { type: "part", part: "progress", label: "On or off, place and size" },
+        { type: "part", part: "progress", label: "Seek bar: show, place and size" },
         { key: "progressStyle", type: "combo", label: "Style", options: ["None", "Sleek", "Minimal", "Glow pulse", "Pill", "Waveform", "Squiggle", "Segmented", "Dotted", "Capsule", "Time only", "Ring round the cover", "My own QML file"] },
         { key: "customProgressFile", type: "file", folder: "progress", label: "Seek bar file", when: { key: "progressStyle", in: [12] } },
         { key: "progressColorSource", type: "combo", label: "Color", options: ["The card's accent", "The text color", "The Plasma accent", "A color of my own"] },
@@ -295,7 +291,7 @@ const cardSections = [
         { key: "doubleClickSkip", type: "bool", label: "Double click skips 10 s" }
     ] },
     { id: "text", title: "Title and details", desc: "Name and details.", rows: [
-        { type: "part", part: "info", label: "On or off, place and size" },
+        { type: "part", part: "info", label: "Title and artist: show, place and size" },
         { key: "trackTextStyle", type: "combo", label: "Look", options: ["Plain", "Shadow", "Frosted plate"] },
         { key: "titleColorSource", type: "combo", label: "Title color", options: ["The card's accent", "The text color", "The Plasma accent", "A color of my own"] },
         { key: "customTitleColor", type: "color", label: "My title color", when: { key: "titleColorSource", in: [3] } },
@@ -314,7 +310,7 @@ const cardSections = [
         { key: "detailAbout", type: "bool", label: "Show: Text about the artist", when: { key: "onlineInfo", in: "positive" } }
     ] },
     { id: "poster", title: "Poster arrangement", desc: "Poster layout only.", rows: [
-        { type: "part", part: "clock", label: "On or off, place and size" },
+        { type: "part", part: "clock", label: "Clock: show, place and size" },
         { key: "posterLines", type: "int", label: "Title lines", min: 1, max: 3, when: { key: "layoutMode", in: [8] } },
         { key: "posterVizBehind", type: "bool", label: "Music behind the title", when: { key: "layoutMode", in: [8] } },
         { key: "posterVizOpacity", type: "int", label: "Music strength", unit: { suffix: " %" }, min: 5, max: 100, when: { key: "layoutMode", in: [8] } },
@@ -327,12 +323,12 @@ const cardSections = [
         { key: "orbitGlowRing", type: "bool", label: "A glowing ring", when: { key: "layoutMode", in: [7] } }
     ] },
     { id: "inside", title: "Lyrics and visualizer", desc: "Where they sit in the card.", rows: [
-        { type: "part", part: "lyrics", label: "Lyrics: on or off, place and size" },
-        { type: "part", part: "viz", label: "Visualizer: on or off, place and size" }
+        { type: "part", part: "lyrics", label: "Lyrics: show, place and size" },
+        { type: "part", part: "viz", label: "Visualizer: show, place and size" }
     ] },
     { id: "extras", title: "Corner buttons", desc: "Other lyrics, library, sync.", rows: [
-        { type: "part", part: "tools", label: "Corner buttons: on or off, place" },
-        { type: "part", part: "nudge", label: "Sync row: on or off, place" }
+        { type: "part", part: "tools", label: "Corner buttons: show and place" },
+        { type: "part", part: "nudge", label: "Sync row: show and place" }
     ] },
     { id: "behavior", title: "Pointer", desc: "Mouse over the card.", rows: [
         { key: "scrollVolume", type: "bool", label: "Scroll changes the volume" },
@@ -400,7 +396,7 @@ const pages = [
       banner: { key: "showVisualizer", text: "The visualizer is off.", button: "Turn it on" }, sections: audio },
     { id: "card", title: "Card", icon: "view-media-playlist", subtitle: "Cover, title, buttons, seek bar.",
       banner: { key: "showCard", text: "The card is off.", button: "Turn it on" }, preview: "card", sections: cardSections },
-    { id: "looks", title: "Looks", icon: "preferences-desktop-theme", subtitle: "Ready-made looks, and your own.", preview: "viz", sections: looks },
+    { id: "looks", title: "Looks", icon: "draw-brush", subtitle: "Ready-made looks, and your own.", preview: "widget", sections: looks },
     { id: "sources", title: "Sources", icon: "folder-music", subtitle: "Where lyrics come from.", sections: sources }
 ]
 
@@ -411,6 +407,8 @@ function pageKeys(p) {
     for (const s of p.sections) for (const r of s.rows) for (const k of rowKeys(r)) out.push(k)
     // the preset manager keeps the user's looks and favorites
     if (p.id === "looks") out.push("vizUserPresets", "vizFavourites")
+    // the card layout edits are set by the part editors on the page, not by a row of their own
+    if (p.id === "card") out.push("layoutEdits")
     return out
 }
 function pageById(id) { return pages.find(p => p.id === id) }

@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.lyricwidget
+import org.kde.plasma.plasmoid
 import "words.js" as Words
 import "settings"
 import "settings/tokens.js" as T
@@ -17,6 +18,14 @@ Item {
     implicitHeight: Kirigami.Units.gridUnit * 28
 
     LyricsLibrary { id: lib }
+    // The widget's own controller. With it the library edits exactly the song the widget shows (same player, same key), so what is
+    // saved here is what the widget loads. Without it (the settings dialog) it looks for a player with the widget's two settings.
+    property var live: null
+    function followSong() {
+        if (live) lib.follow(live)
+        else { lib.anyPlayer = Plasmoid.configuration.anyPlayer; lib.allowedSites = Plasmoid.configuration.allowedSites }
+    }
+    onLiveChanged: followSong()
 
     property bool loading: false
     property bool dirty: false
@@ -139,7 +148,7 @@ Item {
         function onCoverModeChanged() { if (!lib.coverMode) { origTitle.text = ""; origArtist.text = "" } }
         function onFound(text) { root.setText(text, true) }
     }
-    Component.onCompleted: reloadFromSong()
+    Component.onCompleted: { followSong(); reloadFromSong() }
 
     Kirigami.PromptDialog {
         id: confirmSearch
