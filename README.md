@@ -1,5 +1,9 @@
 # Lyric Widget for KDE Plasma 6
 
+<!-- badges:start -->
+[![Release](https://img.shields.io/github/v/release/AWeebTaku/Lyrics-Widget?display_name=tag)](https://github.com/AWeebTaku/Lyrics-Widget/releases/latest) [![License](https://img.shields.io/badge/license-GPL--3.0-green)](https://github.com/AWeebTaku/Lyrics-Widget/blob/main/LICENSE) ![C++](https://img.shields.io/badge/C++-00599C?logo=cplusplus&logoColor=white) ![Qt 6](https://img.shields.io/badge/Qt%206-41CD52?logo=qt&logoColor=white) ![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma%206-1D99F3?logo=kde&logoColor=white) ![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)
+<!-- badges:end -->
+
 Synced lyrics on your desktop for **Spotify** and for **YouTube / YouTube Music in a browser**. It also has an audio
 visualizer, a media card, romanization of Japanese, Korean and Chinese, and colors taken from the album cover. It is a native
 Plasma widget: QML for the interface, a C++ plugin for everything else.
